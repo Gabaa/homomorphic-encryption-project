@@ -1,6 +1,5 @@
 /.vscode/
 /.idea/
-
 /target/
-
 /report/out/
+.DS_Store
