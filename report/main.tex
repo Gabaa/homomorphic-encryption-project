@@ -1,18 +1,150 @@
-\documentclass[12pt]{article}
-\usepackage{preamble}
+\documentclass[11pt,openright]{report}
+
+\usepackage[latin1]{inputenc}
+\usepackage[american]{babel}
+\usepackage{a4}
+\usepackage{url}
+\usepackage{latexsym}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{epsfig}
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx}
+\usepackage{color}
+\usepackage{epstopdf}
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage[useregional]{datetime2}
+\DTMlangsetup[en-US]{showdayofmonth=false}
+\usepackage{lipsum}
+\usepackage{listings}
+\usepackage{placeins}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{mwe}
+\usepackage{comment}
+\usepackage{needspace}
+
+\renewcommand*\sfdefault{lmss}
+\renewcommand*\ttdefault{txtt}
+
+\newcommand{\todo}[1]{{\color[rgb]{.5,0,0}\textbf{$\blacktriangleright$#1$\blacktriangleleft$}}}
 
 \begin{document}
 
-    % TODO: Add front page.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    \tableofcontents
-    \newpage
+\pagestyle{empty} 
+\pagenumbering{roman} 
+\vspace*{\fill}\noindent{\rule{\linewidth}{1mm}\\[4ex]
+{\Huge\sf Title}\\[4ex]
+{\huge\sf Mikkel Gaba, Marcus Sellebjergen, Kasper Ils{\o}e}\\[2ex]
+\noindent\rule{\linewidth}{1mm}\\[4ex]
+\noindent{\Large\sf Project Report (10 ECTS) in Computer Science\\[1ex]
+Advisor: Ivan Damgård \\[1ex
+Department of Computer Science, Aarhus University\\[1ex]  
+May 22th, 2022 \\[15ex]}\\[\fill]}
+\epsfig{file=logo.eps}\clearpage
+\linespread{1.15}
 
-    % Add the different sections we have.
-    \section{hejsa}
-        hejsa \cite{ringLWE}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    \newpage
-    \printbibliography
+%%% Code environment
+\definecolor{commentsColor}{rgb}{0.497495, 0.497587, 0.497464}
+\definecolor{keywordsColor}{rgb}{0.000000, 0.000000, 0.635294}
+\definecolor{stringColor}{rgb}{0.558215, 0.000000, 0.135316}
+
+
+\lstset{
+  basicstyle=\ttfamily\small,                   % the size of the fonts that are used for the code
+  breakatwhitespace=false,                      % sets if automatic breaks should only happen at whitespace
+  breaklines=true,                              % sets automatic line breaking
+  frame=tb,                                     % adds a frame around the code
+  commentstyle=\color{commentsColor}\textit,    % comment style
+  keywordstyle=\color{keywordsColor}\bfseries,  % keyword style
+  stringstyle=\color{stringColor},              % string literal style
+  numbers=left,                                 % where to put the line-numbers; possible values are (none, left, right)
+  numbersep=5pt,                                % how far the line-numbers are from the code
+  numberstyle=\tiny\color{commentsColor},       % the style that is used for the line-numbers
+  showstringspaces=false,                       % underline spaces within strings only
+  tabsize=2,                                    % sets default tabsize to 2 spaces
+  language=Golang
+}
+
+
+\pagestyle{plain}
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+placeholder
+
+\vspace{2ex}
+\begin{flushright}
+  \emph{Mikkel Gaba, Marcus Sellebjergen, Kasper Ils{\o}e}\\
+  \emph{Aarhus, May 22th, 2022.}
+\end{flushright}
+
+\tableofcontents
+\cleardoublepage
+\pagenumbering{arabic}
+\setcounter{secnumdepth}{2}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Introduction}
+\label{ch:intro}
+
+%\todo{motivate and explain the problem to be addressed}
+
+%\todo{example of a citation: ...}
+%\todo{get your bibtex entries from \url{https://dblp.org/}}
+
+placeholder
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Review of literature}
+\label{ch:main1}
+
+placeholder
+
+
+\chapter{Implementation eller noget i guess}
+\label{ch:main2}
+
+placehodler
+
+\section{Testing eller noget i guess}
+
+placeholder
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Conclusion}
+\label{ch:conclusion}
+
+placeholder
+
+\chapter*{Acknowledgments}
+\addcontentsline{toc}{chapter}{Acknowledgments}
+
+We would like to thank no one.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\cleardoublepage
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibliographystyle{plain} 
+\bibliography{refs}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\cleardoublepage
+\appendix
+\chapter{Placeholder}
+
 
 \end{document}
+
