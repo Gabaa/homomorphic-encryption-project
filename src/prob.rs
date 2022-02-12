@@ -1,11 +1,7 @@
 use probability::prelude::*;
 use rand::{distributions::Uniform, rngs::OsRng, Rng, RngCore};
-use abstalg::{
-    Domain, Integers,
-};
 
-type BigInt = <Integers as Domain>::Elem;
-type Polynomial = Vec<BigInt>;
+pub type Polynomial = Vec<i128>;
 
 /// Creating Source to use rand package as source of randomness
 struct Source<T>(T);
@@ -27,7 +23,7 @@ pub fn sample_from_gaussian(sd: f64, n: usize) -> Polynomial {
     let samples = sampler.take(n).collect::<Vec<_>>();
 
     // Rounding to make samples discrete
-    samples.iter().map(|x| BigInt::from(x.round() as i128)).collect()
+    samples.iter().map(|x| x.round() as i128).collect()
 }
 
 /// Returns n samples from a Uniform distribution in the interval [0, q)
@@ -36,5 +32,5 @@ pub fn sample_from_uniform(q: i128, n: usize) -> Polynomial {
     let range = Uniform::new(0.0, q as f64);
 
     let samples: Vec<f64> = rng.sample_iter(&range).take(n).collect();
-    samples.iter().map(|x| BigInt::from(x.round() as i128)).collect()
+    samples.iter().map(|x| x.round() as i128).collect()
 }
