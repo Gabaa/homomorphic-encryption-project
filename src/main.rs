@@ -11,8 +11,8 @@ fn main() {
     let quotient_ring = quotient_ring::Rq::new(q, vec![ 1, 0, 0, 0, 1]);
     let params = Parameters {
         quotient_ring,
-        r: 10.0,
-        r_prime: 20000.0,
+        r: 0.5,
+        r_prime: 1.0,
         n: 4,
         q,
         t: 7,
@@ -23,11 +23,12 @@ fn main() {
     let msg = vec![1];
     let (a0, b0) = &pk;
     let encrypted_msg = encryption::encrypt(&params, msg, &pk);
-    //print_polynomial(&encrypted_msg.0);
-    //print_polynomial(&encrypted_msg.1);
+    println!("c_0: {:?}", encrypted_msg.0);
+    println!("c_1: {:?}", encrypted_msg.1);
 
     let decrypted_msg = encryption::decrypt(&params, encrypted_msg, &sk);
-    println!("{:?}", decrypted_msg)
+    println!("decrypted: {:?}", decrypted_msg)
+
 } 
 
 /* fn print_polynomial(p: &Vec<BigInt>) {

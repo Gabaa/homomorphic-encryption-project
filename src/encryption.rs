@@ -36,9 +36,9 @@ pub fn encrypt(params: &Parameters, m: Polynomial, pk: &(Polynomial, Polynomial)
     let b = rq.add(&b0_mul_v, &t_mul_e_prime_prime);
 
     let c0 = rq.add(&b, &m);
-    println!("a: {:?}", a);
+    //println!("a: {:?}", a);
     let c1 = rq.neg(&a);
-    println!("c1: {:?}", c1);
+    //println!("c1: {:?}", c1);
     (c0, c1)
 }
 
@@ -46,7 +46,7 @@ pub fn decrypt(params: &Parameters, c: (Polynomial, Polynomial), sk: &Polynomial
     let rq = &params.quotient_ring;
 
     let (c0, c1) = c;
-    let tmp = rq.mul(&c1, &sk);
+    let tmp = rq.mul(&c1, &sk); 
     let msg = rq.add(&c0, &tmp);
     mod_coefficients(&msg, params.t)
 }
