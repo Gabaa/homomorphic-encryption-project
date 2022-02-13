@@ -1,19 +1,20 @@
 print("----- Starting a new run -----")
 
+q = 16041433
 
-Pq.<x> = PolynomialRing(GF(311))
+Pq.<x> = PolynomialRing(GF(q))
 ring = Pq.quotient(x^4 + 1); ring
 a = ring.gen()
 
 m = 1
 
-s = -1 -a -a^2 + a^3
+s = -1+1*a^1+-1*a^2+-3*a^3
 
-e_prime = 1 -2*a^2 -2*a^3
-e_prime_prime = 16 -2*a +2*a^2 -7*a^3
-a0 = 297 + 69*a + 253*a^2 + 22*a^3
-b0 = 220 + 18*a + 292*a^2 + 264*a^3
-v = 2 + a - a^3
+e_prime = 0+0*a^1+1*a^2+1*a^3
+e_prime_prime = 5+-4*a^1+0*a^2+-3*a^3
+a0 = 9080416+7408485*a^1+1430815*a^2+6810925*a^3
+b0 = 7764922+12775315*a^1+1288603*a^2+8094449*a^3
+v = -1+-2*a^1+0*a^2+2*a^3
 t = 7
 
 a0_mul_v = a0 * v

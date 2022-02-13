@@ -28,26 +28,26 @@ pub fn encrypt(params: &Parameters, m: Polynomial, pk: &(Polynomial, Polynomial)
     let e_prime: Polynomial = sample_from_gaussian(params.r, params.n);
     let e_prime_prime: Polynomial = sample_from_gaussian(params.r_prime, params.n);
 
-    println!("v: {:?}", v);
-    println!("e': {:?}", e_prime);
-    println!("e'': {:?}", e_prime_prime);
-    println!("a0: {:?}", a0);
-    println!("b0: {:?}", b0);
+    //println!("v: {:?}", pretty_pol(&v));
+    //println!("e': {:?}", pretty_pol(&e_prime));
+    //println!("e'': {:?}", pretty_pol(&e_prime_prime));
+    //println!("a0: {:?}", pretty_pol(&a0));
+    //println!("b0: {:?}", pretty_pol(&b0));
 
     let a0_mul_v = rq.mul(&a0, &v);
-    println!("a0 * v: {:?}", a0_mul_v);
+    //println!("a0 * v: {:?}", pretty_pol(&a0_mul_v));
     let t_mul_e_prime = rq.times(&e_prime, params.t);
-    println!("t * e_prime: {:?}", t_mul_e_prime);
+    //println!("t * e_prime: {:?}", pretty_pol(&t_mul_e_prime));
     let a = rq.add(&a0_mul_v, &t_mul_e_prime);
-    println!("a: {:?}", a);
+    //println!("a: {:?}", a);
 
-    println!("v (anden gang): {:?}", v);
+    //println!("v (anden gang): {:?}", v);
     let b0_mul_v = rq.mul(&b0, &v);
-    println!("b0 * v: {:?}", b0_mul_v);
+    //println!("b0 * v: {:?}", pretty_pol(&b0_mul_v));
     let t_mul_e_prime_prime = rq.times(&e_prime_prime, params.t);
-    println!("t * e_prime_prime: {:?}", t_mul_e_prime_prime);
+    //println!("t * e_prime_prime: {:?}", pretty_pol(&t_mul_e_prime_prime));
     let b = rq.add(&b0_mul_v, &t_mul_e_prime_prime);
-    println!("b: {:?}", b);
+    //println!("b: {:?}", pretty_pol(&b));
 
     let c0 = rq.add(&b, &m);
     //println!("a: {:?}", a);
@@ -61,9 +61,12 @@ pub fn decrypt(params: &Parameters, c: (Polynomial, Polynomial), sk: &Polynomial
 
     let (c0, c1) = c;
     let c1_mul_s = rq.mul(&c1, &sk);
-    println!("c1 * s: {:?}", c1_mul_s);
+    //println!("c1 * s: {:?}", pretty_pol(&c1_mul_s));
     let msg = rq.add(&c0, &c1_mul_s);
-    println!("msg (no modulo t): {:?}", msg);
+    //println!("msg (no modulo t): {:?}", pretty_pol(&msg));
+    println!("l_inf_norm: {}", l_inf_norm(&msg));
+    println!("q is set to: {}", 17);
+    println!("l_inf_norm < q/2: {}", l_inf_norm(&msg) < 17.0/2.0);
     mod_coefficients(&msg, params.t)
 }
 
@@ -94,9 +97,17 @@ pub fn generate_key_pair(params: &Parameters) -> (PublicKey, SecretKey) {
     let elem2 = rq.times(&e0, *t);
     let pk = (a0, rq.add(&elem1, &elem2));
 
-    println!("sk: {:?}", sk);
+    println!("sk: {:?}", pretty_pol(&sk));
 
     (pk, sk)
+}
+
+pub fn l_inf_norm(pol: &Polynomial) -> f64 {
+    let mut sum = 0.0;
+    for i in 0..pol.len() {
+        sum += (pol[i] as f64).powi(2)
+    }
+    sum.sqrt()
 }
 
 #[cfg(test)]

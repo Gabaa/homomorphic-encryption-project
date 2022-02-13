@@ -95,3 +95,11 @@ pub fn pol_trim_res(pol: &Polynomial) -> Polynomial {
     };
     res
 }
+
+pub fn pretty_pol(pol: &Polynomial) -> String {
+    let mut res: String =  pol[0].to_string();
+    for i in 1..pol.len() {
+        res = res + " + " + &pol[i].to_string() + "*a^" + &i.to_string()
+    }
+    res
+}

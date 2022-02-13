@@ -6,16 +6,16 @@ use crate::encryption::Parameters;
 
 fn main() {
     // TODO: don't hardcode this
-    let q = 311;
+    let q = 17;
     let modulo_poly = vec![1, 0, 0, 0, 1];
     let quotient_ring = quotient_ring::Rq::new(q, modulo_poly);
     let params = Parameters {
         quotient_ring,
-        r: 1.0,
-        r_prime: 10.0,
+        r: 0.1,
+        r_prime: 2.0,
         n: 4,
         q,
-        t: 7
+        t: 2
     };
 
     let (pk, sk) = encryption::generate_key_pair(&params);
@@ -28,7 +28,6 @@ fn main() {
  
     let decrypted_msg = encryption::decrypt(&params, encrypted_msg, &sk);
     println!("decrypted: {:?}", decrypted_msg);
-
 } 
 
 /* fn print_polynomial(p: &Vec<BigInt>) {
