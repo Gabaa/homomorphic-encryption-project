@@ -89,7 +89,6 @@ pub fn pol_neg(pol: &Polynomial) -> Polynomial {
 }
 
 pub fn pol_trim_res(pol: &Polynomial) -> Polynomial {
-    
     let mut res = pol.clone();
     while let Some(true) = res.last().map(|x| *x == 0) {
         res.pop();
