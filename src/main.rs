@@ -11,7 +11,7 @@ fn main() {
     let quotient_ring = quotient_ring::Rq::new(q, modulo_poly);
     let params = Parameters {
         quotient_ring,
-        r: 0.1,
+        r: 1.0,
         r_prime: 2.0,
         n: 4,
         q,
