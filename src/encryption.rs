@@ -1,10 +1,8 @@
-use abstalg::{
-    AbelianGroup, Domain, Integers, PolynomialAlgebra, 
-    QuotientField, QuotientRing, Semigroup,
-};
+use crate::prob::sample_from_uniform;
+use crate::prob::sample_from_gaussian;
+use std::cmp;
 
 use crate::quotient_ring::*;
-use crate::prob::{sample_from_gaussian, sample_from_uniform};
 
 pub type Polynomial = Vec<i128>;
 type SecretKey = Polynomial;
@@ -19,7 +17,11 @@ pub struct Parameters {
     pub q: i128,
 }
 
-pub fn encrypt(params: &Parameters, m: Polynomial, pk: &(Polynomial, Polynomial)) -> (Polynomial, Polynomial) {
+pub fn encrypt(
+    params: &Parameters,
+    m: Polynomial,
+    pk: &(Polynomial, Polynomial),
+) -> (Polynomial, Polynomial) {
     let rq = &params.quotient_ring;
 
     let (a0, b0) = pk;
@@ -64,10 +66,12 @@ pub fn decrypt(params: &Parameters, c: (Polynomial, Polynomial), sk: &Polynomial
     //println!("c1 * s: {:?}", pretty_pol(&c1_mul_s));
     let msg = rq.add(&c0, &c1_mul_s);
     //println!("msg (no modulo t): {:?}", pretty_pol(&msg));
+    println!("msg: {:?}", &msg);
     println!("l_inf_norm: {}", l_inf_norm(&msg));
-    println!("q is set to: {}", 17);
-    println!("l_inf_norm < q/2: {}", l_inf_norm(&msg) < 17.0/2.0);
-    mod_coefficients(&msg, params.t)
+    println!("q is set to: {}", params.q);
+    println!("l_inf_norm < q/2: {}", l_inf_norm(&msg) < params.q / 2);
+    pol_trim_res(&msg.iter().map(|x| x.rem_euclid(params.t)).collect())
+    //mod_coefficients(&msg, params.t)
 }
 
 /* fn print_polynomial(p: &Vec<BigInt>) {
@@ -102,12 +106,12 @@ pub fn generate_key_pair(params: &Parameters) -> (PublicKey, SecretKey) {
     (pk, sk)
 }
 
-pub fn l_inf_norm(pol: &Polynomial) -> f64 {
-    let mut sum = 0.0;
+pub fn l_inf_norm(pol: &Polynomial) -> i128 {
+    let mut norm = 0;
     for i in 0..pol.len() {
-        sum += (pol[i] as f64).powi(2)
+        norm = cmp::max(norm, pol[i].abs());
     }
-    sum.sqrt()
+    norm
 }
 
 #[cfg(test)]

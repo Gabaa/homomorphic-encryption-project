@@ -1,5 +1,6 @@
 use std::cmp;
 
+// TODO: Overvej at lave det til en struct (så vi kan implementere Div, Mul, osv.)
 pub type Polynomial = Vec<i128>;
 
 pub struct Rq {
@@ -51,7 +52,7 @@ impl Rq {
 }
 
 pub fn mod_coefficients(pol: &Polynomial, modulus: i128) -> Polynomial {
-    pol_trim_res(&pol.iter().map(|x| x.rem_euclid(modulus)).collect())
+    pol_trim_res(&pol.iter().map(|x| x % modulus).collect())
 }
 
 pub fn pol_add(a: &Polynomial, b: &Polynomial) -> Polynomial {
@@ -97,6 +98,9 @@ pub fn pol_trim_res(pol: &Polynomial) -> Polynomial {
 }
 
 pub fn pretty_pol(pol: &Polynomial) -> String {
+    if pol.len() == 0 {
+        return "0".to_string();
+    }
     let mut res: String =  pol[0].to_string();
     for i in 1..pol.len() {
         res = res + " + " + &pol[i].to_string() + "*a^" + &i.to_string()
