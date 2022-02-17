@@ -52,7 +52,7 @@ impl Rq {
 }
 
 pub fn mod_coefficients(pol: &Polynomial, modulus: i128) -> Polynomial {
-    pol_trim_res(&pol.iter().map(|x| x % modulus).collect())
+    pol_trim_res(&pol.iter().map(|x| x.rem_euclid(modulus)).collect())
 }
 
 pub fn pol_add(a: &Polynomial, b: &Polynomial) -> Polynomial {

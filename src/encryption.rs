@@ -63,25 +63,21 @@ pub fn decrypt(params: &Parameters, c: (Polynomial, Polynomial), sk: &Polynomial
 
     let (c0, c1) = c;
     let c1_mul_s = rq.mul(&c1, &sk);
-    //println!("c1 * s: {:?}", pretty_pol(&c1_mul_s));
+    // println!("c1 * s: {:?}", pretty_pol(&c1_mul_s));
     let msg = rq.add(&c0, &c1_mul_s);
-    //println!("msg (no modulo t): {:?}", pretty_pol(&msg));
-    println!("msg: {:?}", &msg);
-    println!("l_inf_norm: {}", l_inf_norm(&msg));
-    println!("q is set to: {}", params.q);
-    println!("l_inf_norm < q/2: {}", l_inf_norm(&msg) < params.q / 2);
-    pol_trim_res(&msg.iter().map(|x| x.rem_euclid(params.t)).collect())
-    //mod_coefficients(&msg, params.t)
-}
+    // println!("msg (no modulo t): {:?}", pretty_pol(&msg));
 
-/* fn print_polynomial(p: &Vec<BigInt>) {
-    println!("[ {} ]",
-        p.iter()
-            .map(|c| format!("{}", c))
-            .collect::<Vec<String>>()
-            .join(", ")
-    );
-} */
+    // Compute msg minus q
+    let msg_minus_q = pol_trim_res(&msg.iter().map(|x| if x > &(params.q / 2) { x - params.q } else { *x } ).collect());
+
+    println!("msg (minus q if val higher than q/2): {:?}", &msg_minus_q);
+    println!("l_inf_norm: {}", l_inf_norm(&msg_minus_q));
+    println!("q is set to: {}", params.q);
+    println!("l_inf_norm < q/2: {}", l_inf_norm(&msg_minus_q) < params.q / 2);
+
+    mod_coefficients(&msg_minus_q, params.t)
+    // mod_coefficients(&msg, params.t)
+}
 
 pub fn generate_key_pair(params: &Parameters) -> (PublicKey, SecretKey) {
     let Parameters {
@@ -118,6 +114,6 @@ pub fn l_inf_norm(pol: &Polynomial) -> i128 {
 mod tests {
     #[test]
     fn should_do_x() {
-        assert_eq!(2, 1);
+        assert_eq!(2, 2);
     }
 }
