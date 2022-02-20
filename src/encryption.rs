@@ -4,8 +4,11 @@ use crate::{
     quotient_ring::*,
 };
 
+use std::cmp;
+
 type SecretKey = Polynomial;
 type PublicKey = (Polynomial, Polynomial);
+type Ciphertext = Vec<Polynomial>;
 
 pub struct Parameters {
     pub quotient_ring: Rq,
@@ -20,7 +23,7 @@ pub fn encrypt(
     params: &Parameters,
     m: Polynomial,
     pk: &(Polynomial, Polynomial),
-) -> (Polynomial, Polynomial) {
+) -> Ciphertext {
     let rq = &params.quotient_ring;
 
     let (a0, b0) = pk;
@@ -39,7 +42,7 @@ pub fn encrypt(
 
     let c0 = rq.add(&b, &m);
     let c1 = rq.neg(&a);
-    (c0, c1)
+    vec![c0, c1]
 }
 
 #[derive(Debug)]
@@ -49,14 +52,28 @@ pub enum DecryptionError {
 
 pub fn decrypt(
     params: &Parameters,
-    c: (Polynomial, Polynomial),
+    c: Ciphertext,
     sk: &Polynomial,
 ) -> Result<Polynomial, DecryptionError> {
     let rq = &params.quotient_ring;
 
-    let (c0, c1) = c;
-    let c1_mul_s = rq.mul(&c1, &sk);
-    let msg = rq.add(&c0, &c1_mul_s);
+    // Construct secret key vector
+    let mut sk_vec: Vec<Polynomial> = vec![];
+    let mut cur_vec_entry: Polynomial = Polynomial(vec![1]);
+    sk_vec.push(cur_vec_entry.clone());
+
+    for _ in 1..c.len() {
+        cur_vec_entry = rq.mul(&cur_vec_entry, &sk);
+        sk_vec.push(cur_vec_entry.clone());
+    }
+
+    // Compute plaintext using ciphertext and sk vector
+    let mut msg = Polynomial(vec![0]);
+
+    for i in 0..c.len() {
+        let ci_mul_sk_veci = rq.mul(&c[i], &sk_vec[i]);
+        msg = rq.add(&msg, &ci_mul_sk_veci);
+    }
 
     // Compute msg minus q
     let msg_minus_q = Polynomial(
@@ -82,22 +99,35 @@ pub fn decrypt(
 }
 
 pub fn generate_key_pair(params: &Parameters) -> (PublicKey, SecretKey) {
-    let Parameters {
-        quotient_ring: rq,
-        t,
-        r,
-        r_prime: _,
-        n,
-        q,
-    } = params;
+    let rq = &params.quotient_ring;
 
-    let sk = Polynomial(sample_from_gaussian(*r, *n));
-    let a0 = Polynomial(sample_from_uniform(*q, *n));
-    let e0 = Polynomial(sample_from_gaussian(*r, *n));
+    let sk = Polynomial(sample_from_gaussian(params.r, params.n));
+    let a0 = Polynomial(sample_from_uniform(params.q, params.n));
+    let e0 = Polynomial(sample_from_gaussian(params.r, params.n));
 
     let elem1 = rq.mul(&a0, &sk);
-    let elem2 = rq.times(&e0, *t);
+    let elem2 = rq.times(&e0, params.t);
     let pk = (a0, rq.add(&elem1, &elem2));
 
     (pk, sk)
+}
+
+pub fn add(params: &Parameters, c1: Ciphertext, c2: Ciphertext) -> Ciphertext {
+    let rq = &params.quotient_ring;
+
+    let max = cmp::max(c1.len(), c2.len());
+    let mut res = vec![Polynomial(vec![0]); max];
+
+    for i in 0..c1.len() {
+        res[i] = rq.add(&res[i], &c1[i]);
+    }
+    for i in 0..c2.len() {
+        res[i] = rq.add(&res[i], &c2[i]);
+    }
+
+    res
+}
+
+pub fn mul(c1: Ciphertext, c2: Ciphertext) {
+    
 }

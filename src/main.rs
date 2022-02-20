@@ -14,8 +14,8 @@ fn main() {
     let msg = Polynomial(vec![1]);
 
     let encrypted_msg = encryption::encrypt(&params, msg, &pk);
-    println!("c_0: {}", encrypted_msg.0);
-    println!("c_1: {}", encrypted_msg.1);
+    println!("c_0: {}", encrypted_msg[0]);
+    println!("c_1: {}", encrypted_msg[1]);
 
     let decrypted_msg = encryption::decrypt(&params, encrypted_msg, &sk);
     println!("decrypted: {}", decrypted_msg.unwrap());
@@ -71,6 +71,24 @@ mod tests {
             let decrypted_msg = encryption::decrypt(&params, encrypted_msg, &sk).unwrap();
 
             assert_eq!(decrypted_msg, expected);
+        }
+    }
+
+    #[test]
+    fn add_ciphertexts() {
+        let params = default_params();
+
+        for _ in 0..1000 {
+            let (pk, sk) = encryption::generate_key_pair(&params);
+
+            let msg1 = Polynomial(vec![1]);
+            let msg2 = Polynomial(vec![2]);
+            let encrypted_msg1 = encryption::encrypt(&params, msg1, &pk);
+            let encrypted_msg2 = encryption::encrypt(&params, msg2, &pk);
+            let added_encrypted_msg = encryption::add(&params, encrypted_msg1, encrypted_msg2);
+            let decrypted_msg = encryption::decrypt(&params, added_encrypted_msg, &sk).unwrap();
+
+            assert_eq!(decrypted_msg, Polynomial(vec![3]));
         }
     }
 }
