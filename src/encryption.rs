@@ -128,6 +128,17 @@ pub fn add(params: &Parameters, c1: Ciphertext, c2: Ciphertext) -> Ciphertext {
     res
 }
 
-pub fn mul(c1: Ciphertext, c2: Ciphertext) {
-    
+pub fn mul(params: &Parameters, c1: Ciphertext, c2: Ciphertext) -> Ciphertext {
+    let rq = &params.quotient_ring;
+
+    let mut res = vec![Polynomial(vec![0]); c1.len() + c2.len() - 1];
+
+    for i in 0..c1.len() {
+        for j in 0..c2.len() {
+            let c1i_mul_c2i = rq.mul(&c1[i], &c2[j]);
+            res[i + j] = rq.add(&res[i + j], &c1i_mul_c2i);
+        }
+    }
+
+    res
 }
