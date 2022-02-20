@@ -40,7 +40,7 @@ fn default_params() -> Parameters {
 mod tests {
     use crate::poly::Polynomial;
 
-    use super::{default_params, encryption};
+    use super::{default_params, encryption, prob};
 
     #[test]
     fn decrypt_and_encrypt_many_times() {
@@ -54,6 +54,23 @@ mod tests {
             let decrypted_msg = encryption::decrypt(&params, encrypted_msg, &sk).unwrap();
 
             assert_eq!(decrypted_msg, Polynomial(vec![1]));
+        }
+    }
+
+    #[test]
+    fn decrypt_and_encrypt_random_messages() {
+        let params = default_params();
+
+        for _ in 0..1000 {
+            let (pk, sk) = encryption::generate_key_pair(&params);
+
+            let msg = Polynomial(prob::sample_from_uniform(params.t - 1, params.n)).trim_res();
+            let expected = msg.clone();
+
+            let encrypted_msg = encryption::encrypt(&params, msg, &pk);
+            let decrypted_msg = encryption::decrypt(&params, encrypted_msg, &sk).unwrap();
+
+            assert_eq!(decrypted_msg, expected);
         }
     }
 }
