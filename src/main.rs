@@ -81,14 +81,14 @@ mod tests {
         for _ in 0..1000 {
             let (pk, sk) = encryption::generate_key_pair(&params);
 
-            let msg1 = Polynomial(vec![1]);
-            let msg2 = Polynomial(vec![2]);
+            let msg1 = Polynomial(vec![1, 4]);
+            let msg2 = Polynomial(vec![2, 1]);
             let encrypted_msg1 = encryption::encrypt(&params, msg1, &pk);
             let encrypted_msg2 = encryption::encrypt(&params, msg2, &pk);
             let added_encrypted_msg = encryption::add(&params, encrypted_msg1, encrypted_msg2);
             let decrypted_msg = encryption::decrypt(&params, added_encrypted_msg, &sk).unwrap();
 
-            assert_eq!(decrypted_msg, Polynomial(vec![3]));
+            assert_eq!(decrypted_msg, Polynomial(vec![3, 5]));
         }
     }
 }
