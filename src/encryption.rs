@@ -32,6 +32,9 @@ pub fn encrypt(
     let e_prime = Polynomial(sample_from_gaussian(params.r, params.n));
     let e_prime_prime = Polynomial(sample_from_gaussian(params.r_prime, params.n));
 
+    println!("e_prime: {:?}", e_prime);
+    println!("e_prime_prime: {:?}", e_prime_prime);
+
     let a0_mul_v = rq.mul(&a0, &v);
     let t_mul_e_prime = rq.times(&e_prime, params.t);
     let a = rq.add(&a0_mul_v, &t_mul_e_prime);
@@ -75,7 +78,7 @@ pub fn decrypt(
         msg = rq.add(&msg, &ci_mul_sk_veci);
     }
 
-    // Compute msg minus q
+    // Compute msg minus q if x > q/2
     let msg_minus_q = Polynomial(
         msg.0
             .iter()
@@ -141,4 +144,11 @@ pub fn mul(params: &Parameters, c1: Ciphertext, c2: Ciphertext) -> Ciphertext {
     }
 
     res
+}
+
+// Drowns noise by adding an encryption of 0 with a large amount of noise
+pub fn drown_noise(params: &Parameters, params_noisy: &Parameters, c: Ciphertext, pk: (Polynomial, Polynomial)) -> Ciphertext {
+    let zero = Polynomial(vec![0]);
+    let noisy_zero = encrypt(&params_noisy, zero, &pk);
+    add(params, c, noisy_zero)
 }
