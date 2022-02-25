@@ -1,0 +1,47 @@
+%! Author = sellebjergen
+%! Date = 25/02/2022
+
+% TODO: Måske der skal indsættes et eksempel af de her 2? Burde være ganske let at gøre, da vi kan bruge implementationen
+
+% Preamble
+\documentclass[11pt]{article}
+
+% Packages
+\usepackage{amsmath}
+\usepackage{amsfonts}
+
+% Document
+\begin{document}
+    \section*{Encoding messages as polynomials}
+    Encoding messages as polynomials follows simply by the fact that a letter can be represented by a number.
+    These numbers can then be combined into a vector which can be encoded as a polynomial.
+    As an example take the message: ``CRYPTO'', using the ASCII table, this message can be represented by the
+    vector $[67, 82, 89, 80, 84, 79]$.
+    This vector can be represented as a polynomial by $67 + 82x + 89x^2 + 80x^^ + 84x^4 + 79x^5$.
+    Trivially we can also decode any polynomial into a message, by reverting these steps one by one.
+
+    \section*{Ring LWE}
+    In the paper ``Fully Homomorphic Encryption from Ring-LWE and Security for Key Dependent Messages'' written by
+    Zvika Brakerski and Vinod Vaikuntanathan \cite{} % TODO: få lige indsat ref
+    they describe a method for converting the Ring Learnig with errors (RingLWE) problem into an encryption scheme
+    which reduces to the worst-case hardness of problems on ideal lattices.
+    We'll shortly describe the encryption scheme here but will omit proofs and detailed discussions.
+    Both system will be over the message space of $R_t = \mathbb{Z}_t[x] / \langle f(x) \rangle $.
+
+    \subsection*{Symmetric version}
+    Let $\kappa$ be the security parameter and let further q and t be prime numbers where $t \in \mathbb{Z}_n^*$.
+    We also need a polynomial of degree n $f(x) \in \mathbb{Z}[x]$ and an error distribution $\chi$ over the ring
+    $R_q = \mathbb{Z}_q[x] / \langle f(x) \rangle$.
+
+    \subsubsection*{Key-gen}
+    Given the security parameter $\kappa$ sample a ring element s uniformly at random from $\kappa$ and define the
+    secret key vector as $(s^0, s^1, s^2, \dots, s^D) \in R_q^{D+1}.
+
+    \subsubsection*{Encryption}
+    \subsubsection*{Eval}
+    \subsubsection*{Decryption}
+
+    \subsection*{Public key version}
+        hejsa
+
+\end{document}
