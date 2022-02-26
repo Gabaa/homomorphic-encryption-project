@@ -10,49 +10,24 @@ fn main() {
     let params = default_params();
 
     //Construct noisy params
-    let q = 65537; //6293976653 for testing
-    let modulo_poly = Polynomial(vec![1, 0, 0, 0, 1]);
-    let quotient_ring = quotient_ring::Rq::new(q, modulo_poly);
-    let noisy_params = Parameters {
-        quotient_ring,
-        r: (2.0 as i32).pow(10) as f64,
-        r_prime: (2.0 as i32).pow(20) as f64,
-        n: 4,
-        q,
-        t: 7,
-    };
+    let noisy_params = encryption::new_params(65537, (2.0 as i32).pow(10) as f64, (2.0 as i32) as f64, 4, 7);
 
     let (pk, sk) = encryption::generate_key_pair(&params);
-
     let msg = Polynomial(vec![1]);
 
     let encrypted_msg = encryption::encrypt(&params, msg, &pk);
-
     println!("{:?}", encrypted_msg);
 
     let noisy_ciphertext = encryption::drown_noise(&params, &noisy_params, encrypted_msg, pk);
-
     println!("{:?}", noisy_ciphertext);
 
     let decrypted_noisy = encryption::decrypt(&params, noisy_ciphertext, &sk);
-
     println!("{:?}", decrypted_noisy)
 
 }
 
 fn default_params() -> Parameters {
-    let q = 65537; // TODO: don't hardcode this
-    let modulo_poly = Polynomial(vec![1, 0, 0, 0, 1]); // TODO: don't hardcode this (get it from n)
-
-    let quotient_ring = quotient_ring::Rq::new(q, modulo_poly);
-    return Parameters {
-        quotient_ring,
-        r: 10.0,
-        r_prime: 20.0,
-        n: 4,
-        q,
-        t: 7,
-    };
+    return encryption::new_params(65537, 1.0, 2.0, 4, 7)
 }
 
 #[cfg(test)]

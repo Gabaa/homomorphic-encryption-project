@@ -19,6 +19,22 @@ pub struct Parameters {
     pub q: i128,
 }
 
+pub fn new_params(q: i128, r: f64, r_prime: f64, n: usize, t: i128) -> Parameters {
+    let mut fx_vec = vec![0; n + 1];
+    fx_vec[0] = 1;
+    fx_vec[n] = 1;
+    let fx = Polynomial(fx_vec);
+    let quotient_ring = Rq::new(q, fx);
+    return Parameters {
+        quotient_ring,
+        r,
+        r_prime,
+        n,
+        q,
+        t,
+    };
+}
+
 pub fn encrypt(
     params: &Parameters,
     m: Polynomial,
