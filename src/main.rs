@@ -26,7 +26,7 @@ fn main() {
 
 }
 
-fn _params() -> Parameters {
+fn default_params() -> Parameters {
     return encryption::new_params(65537, 1.0, 2.0, 4, 7)
 }
 
@@ -37,7 +37,7 @@ fn _params() -> Parameters {
 // t: 2
 // r: 2 = w * sqrt(log2(1024)) = 0.632 * 3.162
 // r_prime: 80 >= 2^(0.632 * log2(1024)) = 2^(0.632 * 10)
-fn default_params() -> Parameters {
+fn secure_params() -> Parameters {
     return encryption::new_params(80708963, 2.0, 80.0, 1024, 2)
 }
 
