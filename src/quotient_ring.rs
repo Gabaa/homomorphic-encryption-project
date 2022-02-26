@@ -46,3 +46,16 @@ impl Rq {
         self.reduce(&res)
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use crate::poly::Polynomial;
+    use crate::quotient_ring;
+
+    #[test]
+    fn test() {
+        assert_eq!(2 + 2, 4);
+    }
+}
+
