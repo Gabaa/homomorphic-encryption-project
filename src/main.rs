@@ -26,8 +26,19 @@ fn main() {
 
 }
 
-fn default_params() -> Parameters {
+fn _params() -> Parameters {
     return encryption::new_params(65537, 1.0, 2.0, 4, 7)
+}
+
+// Loosely based on http://homomorphicencryption.org/wp-content/uploads/2018/11/HomomorphicEncryptionStandardv1.1.pdf
+// security level (quantum): 128 bits
+// q: 27 bit prime
+// n: 1024
+// t: 2
+// r: 2 = w * sqrt(log2(1024)) = 0.632 * 3.162
+// r_prime: 80 >= 2^(0.632 * log2(1024)) = 2^(0.632 * 10)
+fn default_params() -> Parameters {
+    return encryption::new_params(80708963, 2.0, 80.0, 1024, 2)
 }
 
 #[cfg(test)]
@@ -82,7 +93,7 @@ mod tests {
             let added_encrypted_msg = encryption::add(&params, encrypted_msg1, encrypted_msg2);
             let decrypted_msg = encryption::decrypt(&params, added_encrypted_msg, &sk).unwrap();
 
-            assert_eq!(decrypted_msg, Polynomial(vec![3, 5]));
+            assert_eq!(decrypted_msg, Polynomial(vec![3 % default_params().t, 5 % default_params().t]));
         }
     }
 
@@ -100,7 +111,7 @@ mod tests {
             let added_encrypted_msg = encryption::mul(&params, encrypted_msg1, encrypted_msg2);
             let decrypted_msg = encryption::decrypt(&params, added_encrypted_msg, &sk).unwrap();
 
-            assert_eq!(decrypted_msg, Polynomial(vec![4]));
+            assert_eq!(decrypted_msg, Polynomial(vec![4 % default_params().t]));
         }
     }
 }

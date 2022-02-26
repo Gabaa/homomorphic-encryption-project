@@ -48,9 +48,6 @@ pub fn encrypt(
     let e_prime = Polynomial(sample_from_gaussian(params.r, params.n));
     let e_prime_prime = Polynomial(sample_from_gaussian(params.r_prime, params.n));
 
-    println!("e_prime: {:?}", e_prime);
-    println!("e_prime_prime: {:?}", e_prime_prime);
-
     let a0_mul_v = rq.mul(&a0, &v);
     let t_mul_e_prime = rq.times(&e_prime, params.t);
     let a = rq.add(&a0_mul_v, &t_mul_e_prime);
