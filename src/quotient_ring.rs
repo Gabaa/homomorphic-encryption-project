@@ -11,6 +11,9 @@ impl Rq {
     }
 
     // Returns the remainder found by doing polynomial long division https://rosettacode.org/wiki/Polynomial_long_division
+    // Bug/missing: Reduce actually has a bug that does not impact our case of f(x) = 1 + x^n.
+    // The bug occurs when t is not an integer. In this case the algorithm does not terminate.
+    // This situation never arises due to the coefficients of f(x) all either being 1 or 0.
     pub fn reduce(&self, pol: &Polynomial) -> Polynomial {
         let mut r = pol.clone();
 
@@ -51,11 +54,59 @@ impl Rq {
 mod tests {
 
     use crate::poly::Polynomial;
-    use crate::quotient_ring;
+    use crate::quotient_ring::*;
 
     #[test]
-    fn test() {
-        assert_eq!(2 + 2, 4);
+    fn test_reduce() {
+        let fx = Polynomial(vec![1, 3]);
+        let quot_ring = Rq::new(32, fx);
+        let to_reduce = Polynomial(vec![5, 7, 3]);
+        assert_eq!(quot_ring.reduce(&to_reduce), Polynomial(vec![3]));
+
+        let fx_2 = Polynomial(vec![1, 0, 1]);
+        let quot_ring_2 = Rq::new(32, fx_2);
+        let to_reduce_2 = Polynomial(vec![-17, 38, -12, 1]);
+        assert_eq!(quot_ring_2.reduce(&to_reduce_2), Polynomial(vec![27, 5]));
+
+        let fx_3 = Polynomial(vec![1, 0, 0, 0, 0, 1]);
+        let quot_ring_3 = Rq::new(32, fx_3);
+        let to_reduce_3 = Polynomial(vec![13, 2, 5, -1]);
+        assert_eq!(quot_ring_3.reduce(&to_reduce_3), Polynomial(vec![13, 2, 5, 31]));
+    }
+
+    #[test]
+    fn test_add() {
+        let fx = Polynomial(vec![1, 0, 1]);
+        let quot_ring = Rq::new(32, fx);
+        let lhs = Polynomial(vec![3, 6, 4, 2, 1]);
+        let rhs = Polynomial(vec![-17, 38, -12, 1]);
+        assert_eq!(quot_ring.add(&lhs, &rhs), Polynomial(vec![27, 9]));
+    }
+
+    #[test]
+    fn test_mul() {
+        let fx = Polynomial(vec![1, 0, 1]);
+        let quot_ring = Rq::new(32, fx);
+        let lhs = Polynomial(vec![3, 5, 0, 8]);
+        let rhs = Polynomial(vec![1, 1, 5]);
+        assert_eq!(quot_ring.mul(&lhs, &rhs), Polynomial(vec![23, 15]));
+    }
+
+    #[test]
+    fn test_times() {
+        let fx = Polynomial(vec![1, 0, 1]);
+        let quot_ring = Rq::new(32, fx);
+        let lhs = Polynomial(vec![3, 17, 2, -3, 6]);
+        let rhs = 3;
+        assert_eq!(quot_ring.times(&lhs, rhs), Polynomial(vec![21, 28]));
+    }
+
+    #[test]
+    fn test_neg() {
+        let fx = Polynomial(vec![1, 0, 1]);
+        let quot_ring = Rq::new(32, fx);
+        let to_reduce = Polynomial(vec![-13, 4, -2, 6]);
+        assert_eq!(quot_ring.neg(&to_reduce), Polynomial(vec![11, 2]));
     }
 }
 
