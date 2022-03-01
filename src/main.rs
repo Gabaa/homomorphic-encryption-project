@@ -23,7 +23,6 @@ fn main() {
 
     let decrypted_noisy = encryption::decrypt(&params, noisy_ciphertext, &sk);
     println!("{:?}", decrypted_noisy)
-
 }
 
 fn default_params() -> Parameters {
