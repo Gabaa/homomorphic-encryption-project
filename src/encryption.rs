@@ -19,27 +19,31 @@ pub struct Parameters {
     pub q: i128,
 }
 
-pub fn new_params(q: i128, r: f64, r_prime: f64, n: usize, t: i128) -> Parameters {
-    let mut fx_vec = vec![0; n + 1];
-    fx_vec[0] = 1;
-    fx_vec[n] = 1;
-    let fx = Polynomial(fx_vec);
-    let quotient_ring = Rq::new(q, fx);
-    return Parameters {
-        quotient_ring,
-        r,
-        r_prime,
-        n,
-        q,
-        t,
-    };
+impl Parameters {
+    pub fn new(q: i128, r: f64, r_prime: f64, n: usize, t: i128) -> Parameters {
+        let mut fx_vec = vec![0; n + 1];
+        fx_vec[0] = 1;
+        fx_vec[n] = 1;
+        let fx = Polynomial(fx_vec);
+        let quotient_ring = Rq::new(q, fx);
+        return Parameters {
+            quotient_ring,
+            r,
+            r_prime,
+            n,
+            q,
+            t,
+        };
+    }
 }
 
-pub fn encrypt(
-    params: &Parameters,
-    m: Polynomial,
-    pk: &(Polynomial, Polynomial),
-) -> Ciphertext {
+impl Default for Parameters {
+    fn default() -> Self {
+        Parameters::new(65537, 1.0, 2.0, 4, 7)
+    }
+}
+
+pub fn encrypt(params: &Parameters, m: Polynomial, pk: &(Polynomial, Polynomial)) -> Ciphertext {
     let rq = &params.quotient_ring;
 
     let (a0, b0) = pk;
@@ -161,7 +165,12 @@ pub fn mul(params: &Parameters, c1: Ciphertext, c2: Ciphertext) -> Ciphertext {
 }
 
 // Drowns noise by adding an encryption of 0 with a large amount of noise
-pub fn drown_noise(params: &Parameters, params_noisy: &Parameters, c: Ciphertext, pk: (Polynomial, Polynomial)) -> Ciphertext {
+pub fn drown_noise(
+    params: &Parameters,
+    params_noisy: &Parameters,
+    c: Ciphertext,
+    pk: (Polynomial, Polynomial),
+) -> Ciphertext {
     let zero = Polynomial(vec![0]);
     let noisy_zero = encrypt(&params_noisy, zero, &pk);
     println!("Noisy zero: {:?}", noisy_zero);

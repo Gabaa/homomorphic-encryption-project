@@ -7,10 +7,10 @@ use crate::encryption::Parameters;
 use crate::poly::Polynomial;
 
 fn main() {
-    let params = default_params();
+    let params = Parameters::default();
 
     //Construct noisy params
-    let noisy_params = encryption::new_params(65537, (2 as i32).pow(2) as f64, (2 as i32).pow(20) as f64, 4, 7);
+    let noisy_params = Parameters::new(65537, 2_i32.pow(2) as f64, 2_i32.pow(20) as f64, 4, 7);
 
     let (pk, sk) = encryption::generate_key_pair(&params);
 
@@ -28,11 +28,6 @@ fn main() {
 
     let decrypted_noisy = encryption::decrypt(&params, noisy_ciphertext, &sk);
     println!("{:?}", decrypted_noisy)
-
-}
-
-fn default_params() -> Parameters {
-    return encryption::new_params(65537, 1.0, 2.0, 4, 7)
 }
 
 // Loosely based on http://homomorphicencryption.org/wp-content/uploads/2018/11/HomomorphicEncryptionStandardv1.1.pdf
@@ -43,18 +38,19 @@ fn default_params() -> Parameters {
 // r: 2 = w * sqrt(log2(1024)) = 0.632 * 3.162
 // r_prime: 80 >= 2^(0.632 * log2(1024)) = 2^(0.632 * 10)
 fn secure_params() -> Parameters {
-    return encryption::new_params(80708963, 2.0, 80.0, 1024, 2)
+    // TODO: Shouldn't hardcode `q`
+    return Parameters::new(80708963, 2.0, 80.0, 1024, 2);
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::poly::Polynomial;
+    use crate::{encryption::Parameters, poly::Polynomial};
 
-    use super::{default_params, encryption, prob};
+    use super::{encryption, prob};
 
     #[test]
     fn decrypt_and_encrypt_many_times() {
-        let params = default_params();
+        let params = Parameters::default();
 
         for _ in 0..1000 {
             let (pk, sk) = encryption::generate_key_pair(&params);
@@ -69,7 +65,7 @@ mod tests {
 
     #[test]
     fn decrypt_and_encrypt_random_messages() {
-        let params = default_params();
+        let params = Parameters::default();
 
         for _ in 0..1000 {
             let (pk, sk) = encryption::generate_key_pair(&params);
@@ -86,7 +82,7 @@ mod tests {
 
     #[test]
     fn add_ciphertexts() {
-        let params = default_params();
+        let params = Parameters::default();
 
         for _ in 0..1000 {
             let (pk, sk) = encryption::generate_key_pair(&params);
@@ -98,13 +94,19 @@ mod tests {
             let added_encrypted_msg = encryption::add(&params, encrypted_msg1, encrypted_msg2);
             let decrypted_msg = encryption::decrypt(&params, added_encrypted_msg, &sk).unwrap();
 
-            assert_eq!(decrypted_msg, Polynomial(vec![3 % default_params().t, 5 % default_params().t]));
+            assert_eq!(
+                decrypted_msg,
+                Polynomial(vec![
+                    3 % Parameters::default().t,
+                    5 % Parameters::default().t
+                ])
+            );
         }
     }
 
     #[test]
     fn mul_ciphertexts() {
-        let params = default_params();
+        let params = Parameters::default();
 
         for _ in 0..1000 {
             let (pk, sk) = encryption::generate_key_pair(&params);
@@ -116,7 +118,7 @@ mod tests {
             let added_encrypted_msg = encryption::mul(&params, encrypted_msg1, encrypted_msg2);
             let decrypted_msg = encryption::decrypt(&params, added_encrypted_msg, &sk).unwrap();
 
-            assert_eq!(decrypted_msg, Polynomial(vec![4 % default_params().t]));
+            assert_eq!(decrypted_msg, Polynomial(vec![4 % Parameters::default().t]));
         }
     }
 }
