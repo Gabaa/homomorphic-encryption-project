@@ -1,5 +1,5 @@
 /.vscode/
 /.idea/
 /target/
-/report/out/
+/report/**/out/
 .DS_Store
