@@ -19,7 +19,7 @@ impl Rq {
 
         while r != Polynomial(vec![0]) && r.degree() >= self.modulo.degree() {
             let t = r.0[r.degree()] / self.modulo.0[self.modulo.degree()];
-
+            
             let to_shift = -(self.modulo.clone() * t);
             let extra_zeros = vec![0; r.degree() - self.modulo.degree()];
             let shifted_vec = [extra_zeros.as_slice(), to_shift.0.as_slice()].concat();

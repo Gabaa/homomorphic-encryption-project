@@ -106,6 +106,7 @@ pub fn decrypt(
     )
     .trim_res();
 
+    println!("{:?}", msg_minus_q.l_inf_norm());
     if msg_minus_q.l_inf_norm() >= params.q / 2 {
         return Err(DecryptionError::LInfNormTooBig(msg_minus_q.l_inf_norm()));
     }
@@ -163,5 +164,6 @@ pub fn mul(params: &Parameters, c1: Ciphertext, c2: Ciphertext) -> Ciphertext {
 pub fn drown_noise(params: &Parameters, params_noisy: &Parameters, c: Ciphertext, pk: (Polynomial, Polynomial)) -> Ciphertext {
     let zero = Polynomial(vec![0]);
     let noisy_zero = encrypt(&params_noisy, zero, &pk);
+    println!("Noisy zero: {:?}", noisy_zero);
     add(params, c, noisy_zero)
 }
