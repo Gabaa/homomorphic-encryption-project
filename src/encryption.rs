@@ -44,6 +44,8 @@ impl Default for Parameters {
 }
 
 pub fn encrypt(params: &Parameters, m: Polynomial, pk: &(Polynomial, Polynomial)) -> Ciphertext {
+    debug_assert!(m.0.iter().all(|&c| c < params.t));
+
     let rq = &params.quotient_ring;
 
     let (a0, b0) = pk;
