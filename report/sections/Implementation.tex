@@ -46,8 +46,20 @@ It then calculates the public-key as $pk = (a_0, a_0 \cdot sk + e_0 \cdot t)$, a
 
 The \lstinline{encrypt} function takes a \lstinline{Parameters} instance, as described above, and additionally takes a polynomial $m$ and a public key $pk$.
 
+We extract the two polynomials of the public key, $a_0$ and $b_0$.
+
+First, we make sure that the message polynomial we are trying to encrypt is in $R_t$.
+Then, we sample polynomials $v$ and $e'$ from a Gaussian distribution with standard deviation $r$, and the polynomial $e''$ from a Gaussian distribution with standard deviation $r'$ (which is also defined in the \lstinline{Parameters} struct).
+
+We then calculate $a = a_0 \cdot v + e' \cdot t$ and $b = b_0 \cdot v + e'' \cdot t$.
+Finally, we create the ciphertext as a \lstinline{Vec} (a contiguous growable array type) $c = [b + m, a]$ and return it.
+
 \subsubsection{\lstinline{decrypt}}
 
+The \lstinline{decrypt} function takes a \lstinline{Parameters} instance, as well as a ciphertext $c$ and a secret key $sk$.
+
+% Spørgsmål: Der står i teksten at secret key vector altid er D+1 lang, men her laver vi den kun lige så lang som ciphertexten, som måske er kort. Kan det skabe problemer?
+We start by constructing the secret key vector from the secret key.
 
 \subsection{Evaluating functions on ciphertexts (\lstinline{encryption.rs})}
 
