@@ -25,7 +25,7 @@ impl Player {
 }
 
 // Function for functionality in Fkey_gen figure 2 of the MPC article.
-pub fn key_gen(params: &Parameters, mut players: Vec<Player>) -> Vec<Player> {
+pub fn key_gen_dec_start(params: &Parameters, mut players: Vec<Player>) -> Vec<Player> {
     // set sk and pk for the first n-1 players.
     let (pk, sk) = generate_key_pair(&params);
     for i in 0..players.len() - 1 {
@@ -44,23 +44,34 @@ pub fn key_gen(params: &Parameters, mut players: Vec<Player>) -> Vec<Player> {
     players
 }
 
+// Function for "dec" functionality in Fkey_gen_dec figure 3 of the MPC article.
+// The "start" part is in the key_gen function
+pub fn key_gen_dec_decrypt(params: &Parameters, players: Vec<Player>, c: Ciphertext) -> Polynomial {
+    let mut sk = Polynomial(vec![0]);
+    for i in 0..players.len() {
+        sk = sk + players[i].sk_i.clone();
+    }
+    let msg = decrypt(&params, c, &sk);
+    msg.unwrap()
+}
+
 #[cfg(test)]
 mod tests {
     use crate::encryption::*;
     use super::*; 
     
-    #[test]
+    /* #[test]
     fn mpc_example_with_5_players() {
         let mut player_array = vec![Player::new(); 5];
         let params = Parameters::default();
         key_gen(&params, player_array);
     }
-
+    */
     #[test]
     fn test_all_players_pk_are_equal() {
         let mut player_array = vec![Player::new(); 5];
         let params = Parameters::default();
-        player_array = key_gen(&params, player_array);
+        player_array = key_gen_dec_start(&params, player_array);
 
         let pk = player_array[0].pk.clone();
         for i in 1..5 {
@@ -72,17 +83,13 @@ mod tests {
     fn test_sk_shares_are_correct() {
         let mut player_array = vec![Player::new(); 5];
         let params = Parameters::default();
-        player_array = key_gen(&params, player_array);
+        player_array = key_gen_dec_start(&params, player_array);
 
-        let mut sk = Polynomial(vec![0]);
         let pk = player_array[0].pk.clone();
-        for i in 0..5 {
-            sk = sk + player_array[i].sk_i.clone();
-        }
 
         let msg = Polynomial(vec![0]);
         let cipher = encrypt(&params, msg, &pk);
-        let decrypted = decrypt(&params, cipher, &sk).unwrap();
+        let decrypted = key_gen_dec_decrypt(&params, player_array, cipher);
         
         assert_eq!(decrypted, Polynomial(vec![0]));
     }
@@ -91,7 +98,7 @@ mod tests {
     fn test_if_one_sk_i_is_missing_decryption_fails() {
         let mut player_array = vec![Player::new(); 5];
         let params = Parameters::default();
-        player_array = key_gen(&params, player_array);
+        player_array = key_gen_dec_start(&params, player_array);
 
         let mut sk = Polynomial(vec![0]);
         let pk = player_array[0].pk.clone();
