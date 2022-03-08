@@ -2,6 +2,7 @@ mod encryption;
 mod poly;
 mod prob;
 mod quotient_ring;
+mod mpc;
 
 use crate::encryption::Parameters;
 use crate::poly::Polynomial;

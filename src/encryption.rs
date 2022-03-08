@@ -6,9 +6,9 @@ use crate::{
 
 use std::cmp;
 
-type SecretKey = Polynomial;
-type PublicKey = (Polynomial, Polynomial);
-type Ciphertext = Vec<Polynomial>;
+pub type SecretKey = Polynomial;
+pub type PublicKey = (Polynomial, Polynomial);
+pub type Ciphertext = Vec<Polynomial>;
 
 pub struct Parameters {
     pub quotient_ring: Rq,
@@ -43,7 +43,7 @@ impl Default for Parameters {
     }
 }
 
-pub fn encrypt(params: &Parameters, m: Polynomial, pk: &(Polynomial, Polynomial)) -> Ciphertext {
+pub fn encrypt(params: &Parameters, m: Polynomial, pk: &PublicKey) -> Ciphertext {
     debug_assert!(m.0.iter().all(|&c| c < params.t));
 
     let rq = &params.quotient_ring;
@@ -75,7 +75,7 @@ pub enum DecryptionError {
 pub fn decrypt(
     params: &Parameters,
     c: Ciphertext,
-    sk: &Polynomial,
+    sk: &Polynomial
 ) -> Result<Polynomial, DecryptionError> {
     let rq = &params.quotient_ring;
 
@@ -171,8 +171,7 @@ pub fn drown_noise(
     params: &Parameters,
     params_noisy: &Parameters,
     c: Ciphertext,
-    pk: (Polynomial, Polynomial),
-) -> Ciphertext {
+    pk: PublicKey) -> Ciphertext {
     let zero = Polynomial(vec![0]);
     let noisy_zero = encrypt(&params_noisy, zero, &pk);
     println!("Noisy zero: {:?}", noisy_zero);
