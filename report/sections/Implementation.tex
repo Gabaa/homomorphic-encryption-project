@@ -1,0 +1,58 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{parskip}
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% Code environment (incomplete)
+\lstset{
+  basicstyle=\ttfamily,
+}
+
+\begin{document}
+
+\section{Implementation}
+
+% TODO: Dette skal nok opdateres når vi er færdige med implementationen. Skal inkludere det om MPC.
+We implemented a somewhat-homomorphic public-key encryption scheme in the Rust programming language, as well as functions for adding and multiplying ciphertexts for that encryption scheme.
+% TODO: Hvor meget skal forklares her? At det er Brakersky-Vaikuntanathan vi implementerede? At det er baseret på Ring-LWE? Eller bliver det alt sammen beskrevet et andet sted?
+
+\subsection{Polynomials (\lstinline{poly.rs})}
+
+Since our public-key encryption scheme uses polynomials to represent all of the values we work on (messages, ciphertexts, secret keys, and public keys), we made an implementa
+
+\subsection{Public-key encryption scheme (\lstinline{encryption.rs})}
+
+The encryption scheme, as usual, has three major components:
+
+\begin{itemize}
+  \item the \lstinline{generate_key_pair} function
+  \item the \lstinline{encrypt} function
+  \item and the \lstinline{decrypt} function
+\end{itemize}
+
+\subsubsection{\lstinline{generate_key_pair}}
+
+The \lstinline{generate_key_pair} function takes as input an instance of the \lstinline{Parameters} struct.
+This struct essentially just defines the parameters that nearly all functions in the encryption scheme use in some form or another.
+This includes $r$, $n$, $q$, $t$, and the quotient ring $R_q$, which are all relevant for the key generation function.
+
+The function starts by sampling polynomials $sk$ and $e_0$ from a Gaussian distribution with standard deviation $r$, and the polynomial $a_0$ uniformly from $\mathbb{Z}_q$.
+
+It then calculates the public-key as $pk = (a_0, a_0 \cdot sk + e_0 \cdot t)$, and finally returns the key pair $(pk, sk)$.
+
+\subsubsection{\lstinline{encrypt}}
+
+The \lstinline{encrypt} function takes a \lstinline{Parameters} instance, as described above, and additionally takes a polynomial $m$ and a public key $pk$.
+
+\subsubsection{\lstinline{decrypt}}
+
+
+\subsection{Evaluating functions on ciphertexts (\lstinline{encryption.rs})}
+
+Since this encryption scheme is somewhat-homomorphic, we have implemented functions for adding and multiplying ciphertexts (the functions \lstinline{add} and \lstinline{mul} respectively).
+
+\subsection{Choosing parameters for the encryption scheme}
+
+\end{document}
