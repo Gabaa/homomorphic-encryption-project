@@ -1,5 +1,7 @@
 /.vscode/
 /.idea/
+/.devcontainer/
+
 /target/
 /report/**/out/
 .DS_Store
