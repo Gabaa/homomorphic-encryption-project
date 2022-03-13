@@ -1,8 +1,8 @@
 mod encryption;
+mod mpc;
 mod poly;
 mod prob;
 mod quotient_ring;
-mod mpc;
 
 use crate::encryption::Parameters;
 use crate::poly::Polynomial;
@@ -38,9 +38,10 @@ fn main() {
 // t: 2
 // r: 2 = w * sqrt(log2(1024)) = 0.632 * 3.162
 // r_prime: 80 >= 2^(0.632 * log2(1024)) = 2^(0.632 * 10)
+#[allow(dead_code)]
 fn secure_params() -> Parameters {
     // TODO: Shouldn't hardcode `q`
-    return Parameters::new(80708963, 2.0, 80.0, 1024, 2);
+    Parameters::new(80708963, 2.0, 80.0, 1024, 2)
 }
 
 #[cfg(test)]

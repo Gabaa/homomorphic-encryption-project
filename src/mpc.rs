@@ -1,23 +1,23 @@
+use crate::encryption::*;
+use crate::poly::*;
 use crate::prob::sample_from_uniform;
 use crate::Parameters;
-use crate::poly::*;
-use crate::encryption::*;
 
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct Player {
     sk_i1: Polynomial,
     sk_i2: Polynomial,
-    pk: PublicKey
+    pk: PublicKey,
 }
 
 #[allow(dead_code)]
 impl Player {
     pub fn new() -> Player {
-        return Player {
+        Player {
             sk_i1: Polynomial(vec![0]),
             sk_i2: Polynomial(vec![0]),
-            pk: (Polynomial(vec![0]), Polynomial(vec![0]))
+            pk: (Polynomial(vec![0]), Polynomial(vec![0])),
         }
     }
 
@@ -27,12 +27,13 @@ impl Player {
 }
 
 // Function for functionality in Fkey_gen figure 2 of the MPC article.
+#[allow(dead_code)]
 pub fn distribute_keys(params: &Parameters, mut players: Vec<Player>) -> Vec<Player> {
     let rq = &params.quotient_ring;
-    let amount_of_players = players.len();
+    let n = players.len();
 
     // set sk and pk for the first n-1 players.
-    let (pk, sk) = generate_key_pair(&params);
+    let (pk, sk) = generate_key_pair(params);
     for i in 0..players.len() - 1 {
         players[i].sk_i1 = sample_from_uniform(params.q, params.n);
         players[i].sk_i2 = sample_from_uniform(params.q, params.n);
@@ -42,18 +43,20 @@ pub fn distribute_keys(params: &Parameters, mut players: Vec<Player>) -> Vec<Pla
     // set sk and pk for the n'th player.
     let mut sk_n2 = rq.mul(&sk, &sk);
     let mut sk_n1 = sk;
-    for i in 0..amount_of_players - 1 {
-        sk_n1 = rq.add(&sk_n1, &(rq.neg(&players[i].sk_i1.clone())));
-        sk_n2 = rq.add(&sk_n2, &(rq.neg(&players[i].sk_i2.clone())));
+    for player in players.iter().take(n - 1) {
+        sk_n1 = rq.add(&sk_n1, &(rq.neg(&player.sk_i1.clone())));
+        sk_n2 = rq.add(&sk_n2, &(rq.neg(&player.sk_i2.clone())));
     }
-    players[amount_of_players - 1].sk_i1 = sk_n1;
-    players[amount_of_players - 1].sk_i2 = sk_n2;
-    players[amount_of_players - 1].pk = pk.clone();
+
+    players[n - 1].sk_i1 = sk_n1;
+    players[n - 1].sk_i2 = sk_n2;
+    players[n - 1].pk = pk;
 
     players
 }
 
 // Function for "dec" functionality in Fkey_gen_dec figure 3 of the MPC article.
+#[allow(dead_code)]
 pub fn ddec(params: &Parameters, players: Vec<Player>, mut c: Ciphertext) -> Polynomial {
     let rq = &params.quotient_ring;
     let mut v: Vec<Polynomial> = vec![Polynomial(vec![0]); players.len()];
@@ -78,22 +81,28 @@ pub fn ddec(params: &Parameters, players: Vec<Player>, mut c: Ciphertext) -> Pol
     }
 
     //Random element does not currently have a bounded l_inf norm
-    let t: Vec<Polynomial> = v.iter()
-        .map(|v_i| rq.add(&v_i, &rq.times(&sample_from_uniform(1000, params.n), params.t))) // 1000 is placeholder, since q needs to be a lot higher for this to work properly
+    let t: Vec<Polynomial> = v
+        .iter()
+        .map(|v_i| {
+            rq.add(
+                v_i,
+                &rq.times(&sample_from_uniform(1000, params.n), params.t),
+            )
+        }) // 1000 is placeholder, since q needs to be a lot higher for this to work properly
         .collect();
 
     let mut t_prime = Polynomial(vec![0]);
     for i in 0..players.len() {
         t_prime = rq.add(&t_prime, &t[i])
     }
-    
+
     t_prime % params.t
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::encryption::*;
-    use super::*; 
 
     #[test]
     fn test_all_players_pk_are_equal() {
@@ -125,7 +134,7 @@ mod tests {
         let msg = Polynomial(vec![0]);
         let cipher = encrypt(&params, msg, &pk);
         let decrypted = decrypt(&params, cipher, &s);
-        
+
         assert_eq!(decrypted.unwrap(), Polynomial(vec![0]));
         // At this point we know that s = sk
 
@@ -150,7 +159,7 @@ mod tests {
         let msg = Polynomial(vec![0]);
         let cipher = encrypt(&params, msg, &pk);
         let decrypted = ddec(&params, player_array, cipher);
-        
+
         assert_eq!(decrypted, Polynomial(vec![0]));
     }
 }

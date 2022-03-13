@@ -1,13 +1,18 @@
+use num::BigInt;
+
 use crate::poly::Polynomial;
 
 pub struct Rq {
-    q: i128,
+    q: BigInt,
     modulo: Polynomial,
 }
 
 impl Rq {
-    pub fn new(q: i128, modulo: Polynomial) -> Rq {
-        Rq { q, modulo }
+    pub fn new<Int: Into<BigInt>>(q: Int, modulo: Polynomial) -> Rq {
+        Rq {
+            q: q.into(),
+            modulo,
+        }
     }
 
     // Returns the remainder found by doing polynomial long division https://rosettacode.org/wiki/Polynomial_long_division
@@ -19,7 +24,7 @@ impl Rq {
 
         while r != Polynomial(vec![0]) && r.degree() >= self.modulo.degree() {
             let t = r.0[r.degree()] / self.modulo.0[self.modulo.degree()];
-            
+
             let to_shift = -(self.modulo.clone() * t);
             let extra_zeros = vec![0; r.degree() - self.modulo.degree()];
             let shifted_vec = [extra_zeros.as_slice(), to_shift.0.as_slice()].concat();
@@ -34,8 +39,8 @@ impl Rq {
         self.reduce(&res)
     }
 
-    pub fn times(&self, pol: &Polynomial, t: i128) -> Polynomial {
-        let res = pol.clone() * t;
+    pub fn times<Int: Into<BigInt>>(&self, pol: &Polynomial, t: Int) -> Polynomial {
+        let res = pol.clone() * t.into();
         self.reduce(&res)
     }
 
@@ -71,7 +76,10 @@ mod tests {
         let fx_3 = Polynomial(vec![1, 0, 0, 0, 0, 1]);
         let quot_ring_3 = Rq::new(32, fx_3);
         let to_reduce_3 = Polynomial(vec![13, 2, 5, -1]);
-        assert_eq!(quot_ring_3.reduce(&to_reduce_3), Polynomial(vec![13, 2, 5, 31]));
+        assert_eq!(
+            quot_ring_3.reduce(&to_reduce_3),
+            Polynomial(vec![13, 2, 5, 31])
+        );
     }
 
     #[test]
@@ -109,4 +117,3 @@ mod tests {
         assert_eq!(quot_ring.neg(&to_reduce), Polynomial(vec![11, 2]));
     }
 }
-

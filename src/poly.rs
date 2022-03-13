@@ -4,26 +4,34 @@ use std::{
     ops::{Add, Mul, Neg, Rem},
 };
 
+use num::{bigint::ToBigInt, BigInt, Zero};
+
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Polynomial(pub Vec<i128>);
+pub struct Polynomial(pub Vec<BigInt>);
 
 impl Polynomial {
     pub fn degree(&self) -> usize {
-        return self.0.len() - 1;
+        self.0.len() - 1
     }
 
     pub fn trim_res(&self) -> Polynomial {
         let mut res = self.clone();
-        while let Some(true) = res.0.last().map(|x| *x == 0 && res.degree() > 0) {
+        while let Some(true) = res
+            .0
+            .last()
+            .map(|x| *x == BigInt::zero() && res.degree() > 0)
+        {
             res.0.pop();
         }
         res
     }
 
-    pub fn l_inf_norm(&self) -> i128 {
-        let mut norm = 0;
+    pub fn l_inf_norm(&self) -> BigInt {
+        let mut norm = BigInt::zero();
         for i in 0..self.degree() + 1 {
-            norm = cmp::max(norm, self.0[i].abs());
+            let (sign, data) = self.0[i].into_parts();
+            let abs_value = data.to_bigint().expect("unreachable");
+            norm = cmp::max(norm, abs_value);
         }
         norm
     }
@@ -34,7 +42,7 @@ impl Add for Polynomial {
 
     fn add(self, rhs: Self) -> Self::Output {
         let max = cmp::max(self.degree(), rhs.degree());
-        let mut res = vec![0; max + 1];
+        let mut res = vec![BigInt::zero(); max + 1];
 
         for i in 0..self.degree() + 1 {
             res[i] += self.0[i];
@@ -60,7 +68,7 @@ impl Mul for Polynomial {
     type Output = Polynomial;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        let mut res = vec![0; self.degree() + rhs.degree() + 1];
+        let mut res = vec![BigInt::zero(); self.degree() + rhs.degree() + 1];
 
         for i in 0..self.degree() + 1 {
             for j in 0..rhs.degree() + 1 {
@@ -73,19 +81,19 @@ impl Mul for Polynomial {
     }
 }
 
-impl Mul<i128> for Polynomial {
+impl Mul<BigInt> for Polynomial {
     type Output = Polynomial;
 
-    fn mul(self, rhs: i128) -> Self::Output {
+    fn mul(self, rhs: BigInt) -> Self::Output {
         let pol = Polynomial(self.0.iter().map(|x| x * rhs).collect());
         pol.trim_res()
     }
 }
 
-impl Rem<i128> for Polynomial {
+impl Rem<BigInt> for Polynomial {
     type Output = Polynomial;
 
-    fn rem(self, rhs: i128) -> Self::Output {
+    fn rem(self, rhs: BigInt) -> Self::Output {
         let mod_pol = Polynomial(self.0.iter().map(|x| x.rem_euclid(rhs)).collect());
         mod_pol.trim_res()
     }
@@ -144,7 +152,10 @@ mod tests {
     fn test_mul_scalar() {
         let poly = Polynomial(vec![42, 10, 30]);
         let scalar = 7;
-        assert_eq!(poly * scalar, Polynomial(vec![42 * scalar, 10 * scalar, 30 * scalar]));
+        assert_eq!(
+            poly * scalar,
+            Polynomial(vec![42 * scalar, 10 * scalar, 30 * scalar])
+        );
     }
 
     #[test]
