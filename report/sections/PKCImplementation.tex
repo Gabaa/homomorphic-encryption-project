@@ -72,10 +72,4 @@ Therefore, we iterate through all coefficients $x$ and map them to the new range
 
 Finally, we reduce the message modulo $t$ to remove the $e \cdot t$ part of the encryption, and return the result.
 
-\subsection{Evaluating functions on ciphertexts (\lstinline{encryption.rs})}
-
-Since this encryption scheme is somewhat-homomorphic, we have implemented functions for adding and multiplying ciphertexts (the functions \lstinline{add} and \lstinline{mul} respectively).
-
-\subsection{Choosing parameters for the encryption scheme}
-
 \end{document}
