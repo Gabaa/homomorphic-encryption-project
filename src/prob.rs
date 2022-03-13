@@ -1,5 +1,6 @@
 use probability::prelude::*;
 use rand::{distributions::Uniform, rngs::OsRng, Rng, RngCore};
+use crate::poly::Polynomial;
 
 /// Creating Source to use rand package as source of randomness
 struct Source<T>(T);
@@ -11,7 +12,7 @@ impl<T: RngCore> source::Source for Source<T> {
 }
 
 /// Returns sample from n-dimensional discrete Gaussian distribution with standard deviation sd.
-pub fn sample_from_gaussian(sd: f64, n: usize) -> Vec<i128> {
+pub fn sample_from_gaussian(sd: f64, n: usize) -> Polynomial {
     // Using OsRng which reads randomness from the source that the operating system provides, this makes it cryptographically secure
     let mut source = Source(OsRng);
 
@@ -21,14 +22,15 @@ pub fn sample_from_gaussian(sd: f64, n: usize) -> Vec<i128> {
     let samples = sampler.take(n).collect::<Vec<_>>();
 
     // Rounding to make samples discrete
-    samples.iter().map(|x| x.round() as i128).collect()
+    Polynomial(samples.iter().map(|x| x.round() as i128).collect())
 }
 
 /// Returns n samples from a Uniform distribution in the interval [0, q)
-pub fn sample_from_uniform(q: i128, n: usize) -> Vec<i128> {
+pub fn sample_from_uniform(q: i128, n: usize) -> Polynomial {
     let rng = OsRng;
     let range = Uniform::new(0.0, q as f64);
 
     let samples: Vec<f64> = rng.sample_iter(&range).take(n).collect();
-    samples.iter().map(|x| x.round() as i128).collect()
+
+    Polynomial(samples.iter().map(|x| x.round() as i128).collect())
 }

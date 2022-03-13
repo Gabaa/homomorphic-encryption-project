@@ -50,9 +50,9 @@ pub fn encrypt(params: &Parameters, m: Polynomial, pk: &PublicKey) -> Ciphertext
 
     let (a0, b0) = pk;
 
-    let v = Polynomial(sample_from_gaussian(params.r, params.n));
-    let e_prime = Polynomial(sample_from_gaussian(params.r, params.n));
-    let e_prime_prime = Polynomial(sample_from_gaussian(params.r_prime, params.n));
+    let v = sample_from_gaussian(params.r, params.n);
+    let e_prime = sample_from_gaussian(params.r, params.n);
+    let e_prime_prime = sample_from_gaussian(params.r_prime, params.n);
 
     let a0_mul_v = rq.mul(&a0, &v);
     let t_mul_e_prime = rq.times(&e_prime, params.t);
@@ -124,9 +124,9 @@ pub fn decrypt(
 pub fn generate_key_pair(params: &Parameters) -> (PublicKey, SecretKey) {
     let rq = &params.quotient_ring;
 
-    let sk = Polynomial(sample_from_gaussian(params.r, params.n));
-    let a0 = Polynomial(sample_from_uniform(params.q, params.n));
-    let e0 = Polynomial(sample_from_gaussian(params.r, params.n));
+    let sk = sample_from_gaussian(params.r, params.n);
+    let a0 = sample_from_uniform(params.q, params.n);
+    let e0 = sample_from_gaussian(params.r, params.n);
 
     let elem1 = rq.mul(&a0, &sk);
     let elem2 = rq.times(&e0, params.t);

@@ -71,7 +71,7 @@ mod tests {
         for _ in 0..1000 {
             let (pk, sk) = encryption::generate_key_pair(&params);
 
-            let msg = Polynomial(prob::sample_from_uniform(params.t - 1, params.n)).trim_res();
+            let msg = prob::sample_from_uniform(params.t - 1, params.n).trim_res();
             let expected = msg.clone();
 
             let encrypted_msg = encryption::encrypt(&params, msg, &pk);
