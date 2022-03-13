@@ -137,7 +137,7 @@ pub fn generate_key_pair(params: &Parameters) -> (PublicKey, SecretKey) {
 
 pub fn add(params: &Parameters, c1: Ciphertext, c2: Ciphertext) -> Ciphertext {
     let rq = &params.quotient_ring;
-
+    
     let max = cmp::max(c1.len(), c2.len());
     let mut res = vec![Polynomial(vec![0]); max];
 

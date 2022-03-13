@@ -11,7 +11,7 @@ fn main() {
     let params = Parameters::default();
 
     //Construct noisy params
-    let noisy_params = Parameters::new(65537, 2_i32.pow(2) as f64, 2_i32.pow(20) as f64, 4, 7);
+    let noisy_params = Parameters::new(65537, 2_i32.pow(2) as f64, 2_i32.pow(10) as f64, 4, 7);
 
     let (pk, sk) = encryption::generate_key_pair(&params);
 

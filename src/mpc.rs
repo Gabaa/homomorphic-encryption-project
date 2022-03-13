@@ -137,7 +137,6 @@ mod tests {
         }
 
         assert_eq!(s_mul_s, s_mul_s_from_players);
-
     }
 
     #[test]
@@ -154,5 +153,4 @@ mod tests {
         
         assert_eq!(decrypted, Polynomial(vec![0]));
     }
-
 }

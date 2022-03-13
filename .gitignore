@@ -5,3 +5,5 @@
 /target/
 /report/**/out/
 .DS_Store
+/report/sections/*.pdf
+/report/sections/*.gz
