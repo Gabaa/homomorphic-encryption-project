@@ -2,12 +2,13 @@ use std::{
     cmp,
     fmt::Display,
     ops::{Add, Mul, Neg, Rem},
+    slice::Iter,
 };
 
 use num::{bigint::ToBigInt, BigInt, Zero};
 
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Polynomial(pub Vec<BigInt>);
+pub struct Polynomial(Vec<BigInt>);
 
 impl Polynomial {
     pub fn degree(&self) -> usize {
@@ -35,11 +36,19 @@ impl Polynomial {
         }
         norm
     }
+
+    pub fn coefficients(&self) -> Iter<BigInt> {
+        self.0.iter()
+    }
+
+    pub fn coefficient(&self, index: usize) -> BigInt {
+        self.0[index]
+    }
 }
 
-impl From<Vec<i128>> for Polynomial {
-    fn from(val: Vec<i128>) -> Self {
-        Polynomial(val.iter().map(|&v| BigInt::from(v)).collect())
+impl<Int: Into<BigInt>> From<Vec<Int>> for Polynomial {
+    fn from(val: Vec<Int>) -> Self {
+        Polynomial(val.iter().map(|&v| v.into()).collect())
     }
 }
 
@@ -65,7 +74,7 @@ impl Neg for Polynomial {
     type Output = Polynomial;
 
     fn neg(self) -> Self::Output {
-        let negated = Polynomial(self.0.iter().map(|x| -x).collect());
+        let negated = Polynomial(self.coefficients().map(|x| -x).collect());
         negated.trim_res()
     }
 }
@@ -94,7 +103,7 @@ where
     type Output = Polynomial;
 
     fn mul(self, rhs: Int) -> Self::Output {
-        let pol = Polynomial(self.0.iter().map(|x| x * rhs.into()).collect());
+        let pol = Polynomial(self.coefficients().map(|x| x * rhs.into()).collect());
         pol.trim_res()
     }
 }
@@ -106,7 +115,7 @@ where
     type Output = Polynomial;
 
     fn rem(self, rhs: Int) -> Self::Output {
-        let mod_pol = Polynomial(self.0.iter().map(|x| x.rem_euclid(rhs.into())).collect());
+        let mod_pol = Polynomial(self.coefficients().map(|x| x % rhs.into()).collect());
         mod_pol.trim_res()
     }
 }

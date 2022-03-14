@@ -23,20 +23,20 @@ pub fn sample_from_gaussian(sd: f64, n: usize) -> Polynomial {
     let samples = sampler.take(n).collect::<Vec<_>>();
 
     // Rounding to make samples discrete
-    Polynomial(
+    Polynomial::from(
         samples
             .iter()
             .map(|x| BigInt::from(x.round() as i128))
-            .collect(),
+            .collect::<Vec<BigInt>>(),
     )
 }
 
 /// Returns n samples from a Uniform distribution in the interval [0, q)
-pub fn sample_from_uniform(q: BigInt, n: usize) -> Polynomial {
+pub fn sample_from_uniform(q: &BigInt, n: usize) -> Polynomial {
     let rng = OsRng;
     let range = Uniform::new(BigInt::zero(), q);
 
     let samples: Vec<BigInt> = rng.sample_iter(&range).take(n).collect();
 
-    Polynomial(samples)
+    Polynomial::from(samples)
 }

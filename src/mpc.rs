@@ -1,3 +1,5 @@
+use num::BigInt;
+
 use crate::encryption::*;
 use crate::poly::*;
 use crate::prob::sample_from_uniform;
@@ -15,9 +17,9 @@ pub struct Player {
 impl Player {
     pub fn new() -> Player {
         Player {
-            sk_i1: Polynomial(vec![0]),
-            sk_i2: Polynomial(vec![0]),
-            pk: (Polynomial(vec![0]), Polynomial(vec![0])),
+            sk_i1: Polynomial::from(vec![0]),
+            sk_i2: Polynomial::from(vec![0]),
+            pk: (Polynomial::from(vec![0]), Polynomial::from(vec![0])),
         }
     }
 
@@ -35,8 +37,8 @@ pub fn distribute_keys(params: &Parameters, mut players: Vec<Player>) -> Vec<Pla
     // set sk and pk for the first n-1 players.
     let (pk, sk) = generate_key_pair(params);
     for i in 0..players.len() - 1 {
-        players[i].sk_i1 = sample_from_uniform(params.q, params.n);
-        players[i].sk_i2 = sample_from_uniform(params.q, params.n);
+        players[i].sk_i1 = sample_from_uniform(&rq.q, params.n);
+        players[i].sk_i2 = sample_from_uniform(&rq.q, params.n);
         players[i].pk = pk.clone();
     }
 
@@ -59,11 +61,11 @@ pub fn distribute_keys(params: &Parameters, mut players: Vec<Player>) -> Vec<Pla
 #[allow(dead_code)]
 pub fn ddec(params: &Parameters, players: Vec<Player>, mut c: Ciphertext) -> Polynomial {
     let rq = &params.quotient_ring;
-    let mut v: Vec<Polynomial> = vec![Polynomial(vec![0]); players.len()];
+    let mut v = vec![Polynomial::from(vec![0]); players.len()];
 
     // Need to ensure that there are 3 elements (there can never be < 2)
     if c.len() == 2 {
-        c.push(Polynomial(vec![0]))
+        c.push(Polynomial::from(vec![0]))
     }
     c[1] = rq.neg(&c[1]); //Hvorfor er definitionen anderledes i IdealHom teksten og i 535 teksten?
 
@@ -86,12 +88,15 @@ pub fn ddec(params: &Parameters, players: Vec<Player>, mut c: Ciphertext) -> Pol
         .map(|v_i| {
             rq.add(
                 v_i,
-                &rq.times(&sample_from_uniform(1000, params.n), params.t),
+                &rq.times(
+                    &sample_from_uniform(&BigInt::from(1000), params.n),
+                    params.t,
+                ),
             )
         }) // 1000 is placeholder, since q needs to be a lot higher for this to work properly
         .collect();
 
-    let mut t_prime = Polynomial(vec![0]);
+    let mut t_prime = Polynomial::from(vec![0]);
     for i in 0..players.len() {
         t_prime = rq.add(&t_prime, &t[i])
     }
@@ -124,23 +129,23 @@ mod tests {
 
         players = distribute_keys(&params, players);
 
-        let mut s = Polynomial(vec![0]);
+        let mut s = Polynomial::from(vec![0]);
         for i in 0..players.len() {
             s = rq.add(&s, &players[i].sk_i1)
         }
 
         let pk = players[0].pk.clone();
 
-        let msg = Polynomial(vec![0]);
+        let msg = Polynomial::from(vec![0]);
         let cipher = encrypt(&params, msg, &pk);
         let decrypted = decrypt(&params, cipher, &s);
 
-        assert_eq!(decrypted.unwrap(), Polynomial(vec![0]));
+        assert_eq!(decrypted.unwrap(), Polynomial::from(vec![0]));
         // At this point we know that s = sk
 
         let s_mul_s = rq.mul(&s, &s);
 
-        let mut s_mul_s_from_players = Polynomial(vec![0]);
+        let mut s_mul_s_from_players = Polynomial::from(vec![0]);
         for i in 0..players.len() {
             s_mul_s_from_players = rq.add(&s_mul_s_from_players, &players[i].sk_i2)
         }
@@ -156,10 +161,10 @@ mod tests {
 
         let pk = player_array[0].pk.clone();
 
-        let msg = Polynomial(vec![0]);
+        let msg = Polynomial::from(vec![0]);
         let cipher = encrypt(&params, msg, &pk);
         let decrypted = ddec(&params, player_array, cipher);
 
-        assert_eq!(decrypted, Polynomial(vec![0]));
+        assert_eq!(decrypted, Polynomial::from(vec![0]));
     }
 }

@@ -18,7 +18,6 @@ pub struct Parameters {
     pub r: f64,
     pub r_prime: f64,
     pub n: usize,
-    pub q: BigInt,
 }
 
 impl Parameters {
@@ -32,7 +31,7 @@ impl Parameters {
         let mut fx_vec = vec![BigInt::zero(); n + 1];
         fx_vec[0] = BigInt::one();
         fx_vec[n] = BigInt::one();
-        let fx = Polynomial(fx_vec);
+        let fx = Polynomial::from(fx_vec);
         let quotient_ring = Rq::new(q, fx);
 
         Parameters {
@@ -40,7 +39,6 @@ impl Parameters {
             r,
             r_prime,
             n,
-            q,
             t,
         }
     }
@@ -53,7 +51,7 @@ impl Default for Parameters {
 }
 
 pub fn encrypt(params: &Parameters, m: Polynomial, pk: &PublicKey) -> Ciphertext {
-    debug_assert!(m.0.iter().all(|&c| c < params.t));
+    debug_assert!(m.coefficients().all(|&c| c < params.t));
 
     let rq = &params.quotient_ring;
 
@@ -78,7 +76,7 @@ pub fn encrypt(params: &Parameters, m: Polynomial, pk: &PublicKey) -> Ciphertext
 
 #[derive(Debug)]
 pub enum DecryptionError {
-    LInfNormTooBig(i128),
+    LInfNormTooBig(BigInt),
 }
 
 pub fn decrypt(
@@ -90,7 +88,7 @@ pub fn decrypt(
 
     // Construct secret key vector
     let mut sk_vec: Vec<Polynomial> = vec![];
-    let mut cur_vec_entry: Polynomial = Polynomial(vec![BigInt::one()]);
+    let mut cur_vec_entry = Polynomial::from(vec![1]);
     sk_vec.push(cur_vec_entry.clone());
 
     for _ in 1..c.len() {
@@ -99,7 +97,7 @@ pub fn decrypt(
     }
 
     // Compute plaintext using ciphertext and sk vector
-    let mut msg = Polynomial(vec![BigInt::zero()]);
+    let mut msg = Polynomial::from(vec![0]);
 
     for i in 0..c.len() {
         let ci_mul_sk_veci = rq.mul(&c[i], &sk_vec[i]);
@@ -107,22 +105,15 @@ pub fn decrypt(
     }
 
     // Compute msg minus q if x > q/2
-    let msg_minus_q = Polynomial(
-        msg.0
-            .iter()
-            .map(|x| {
-                if x > &(params.q / 2) {
-                    x - params.q
-                } else {
-                    *x
-                }
-            })
-            .collect(),
+    let msg_minus_q = Polynomial::from(
+        msg.coefficients()
+            .map(|x| if x > &(rq.q / 2) { x - rq.q } else { *x })
+            .collect::<Vec<BigInt>>(),
     )
     .trim_res();
 
     println!("{:?}", msg_minus_q.l_inf_norm());
-    if msg_minus_q.l_inf_norm() >= params.q / 2 {
+    if msg_minus_q.l_inf_norm() >= rq.q / 2 {
         return Err(DecryptionError::LInfNormTooBig(msg_minus_q.l_inf_norm()));
     }
 
@@ -134,7 +125,7 @@ pub fn generate_key_pair(params: &Parameters) -> (PublicKey, SecretKey) {
     let rq = &params.quotient_ring;
 
     let sk = sample_from_gaussian(params.r, params.n);
-    let a0 = sample_from_uniform(params.q, params.n);
+    let a0 = sample_from_uniform(&rq.q, params.n);
     let e0 = sample_from_gaussian(params.r, params.n);
 
     let elem1 = rq.mul(&a0, &sk);
@@ -148,7 +139,7 @@ pub fn add(params: &Parameters, c1: Ciphertext, c2: Ciphertext) -> Ciphertext {
     let rq = &params.quotient_ring;
 
     let max = cmp::max(c1.len(), c2.len());
-    let mut res = vec![Polynomial(vec![0]); max];
+    let mut res = vec![Polynomial::from(vec![0]); max];
 
     for i in 0..c1.len() {
         res[i] = rq.add(&res[i], &c1[i]);
@@ -163,7 +154,7 @@ pub fn add(params: &Parameters, c1: Ciphertext, c2: Ciphertext) -> Ciphertext {
 pub fn mul(params: &Parameters, c1: Ciphertext, c2: Ciphertext) -> Ciphertext {
     let rq = &params.quotient_ring;
 
-    let mut res = vec![Polynomial(vec![0]); c1.len() + c2.len() - 1];
+    let mut res = vec![Polynomial::from(vec![0]); c1.len() + c2.len() - 1];
 
     for i in 0..c1.len() {
         for j in 0..c2.len() {
@@ -182,7 +173,7 @@ pub fn drown_noise(
     c: Ciphertext,
     pk: PublicKey,
 ) -> Ciphertext {
-    let zero = Polynomial(vec![0]);
+    let zero = Polynomial::from(vec![0]);
     let noisy_zero = encrypt(params_noisy, zero, &pk);
     println!("Noisy zero: {:?}", noisy_zero);
     add(params, c, noisy_zero)
