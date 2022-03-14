@@ -1,6 +1,6 @@
 use crate::poly::Polynomial;
-use num::{BigInt, ToPrimitive};
-use probability::prelude::*;
+use num::{BigInt, Zero};
+use probability::prelude::{source, Gaussian, Independent};
 use rand::{distributions::Uniform, rngs::OsRng, Rng, RngCore};
 
 /// Creating Source to use rand package as source of randomness
@@ -10,10 +10,6 @@ impl<T: RngCore> source::Source for Source<T> {
     fn read_u64(&mut self) -> u64 {
         self.0.next_u64()
     }
-}
-
-pub enum RngError {
-    UpperBoundTooBig(BigInt),
 }
 
 /// Returns sample from n-dimensional discrete Gaussian distribution with standard deviation sd.
@@ -36,21 +32,11 @@ pub fn sample_from_gaussian(sd: f64, n: usize) -> Polynomial {
 }
 
 /// Returns n samples from a Uniform distribution in the interval [0, q)
-pub fn sample_from_uniform(q: BigInt, n: usize) -> Result<Polynomial, RngError> {
+pub fn sample_from_uniform(q: BigInt, n: usize) -> Polynomial {
     let rng = OsRng;
+    let range = Uniform::new(BigInt::zero(), q);
 
-    let q = match q.to_f64() {
-        Some(q) => q,
-        None => return Err(RngError::UpperBoundTooBig(q)),
-    };
-    let range = Uniform::new(0.0, q);
+    let samples: Vec<BigInt> = rng.sample_iter(&range).take(n).collect();
 
-    let samples: Vec<f64> = rng.sample_iter(&range).take(n).collect();
-
-    Ok(Polynomial(
-        samples
-            .iter()
-            .map(|x| BigInt::from(x.round() as i128))
-            .collect(),
-    ))
+    Polynomial(samples)
 }
