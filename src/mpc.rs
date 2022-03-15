@@ -96,10 +96,9 @@ pub fn ddec(params: &Parameters, players: Vec<Player>, mut c: Ciphertext) -> Pol
         }) // 1000 is placeholder, since q needs to be a lot higher for this to work properly
         .collect();
 
-    let mut t_prime = polynomial![0];
-    for i in 0..players.len() {
-        t_prime = rq.add(&t_prime, &t[i])
-    }
+    let t_prime = t
+        .iter()
+        .fold(polynomial![0], |acc, elem| rq.add(&acc, elem));
 
     t_prime.modulo(&params.t)
 }
@@ -116,8 +115,8 @@ mod tests {
         player_array = distribute_keys(&params, player_array);
 
         let pk = player_array[0].pk.clone();
-        for i in 1..5 {
-            assert_eq!(player_array[i].pk, pk);
+        for player in player_array {
+            assert_eq!(player.pk, pk);
         }
     }
 
@@ -130,8 +129,8 @@ mod tests {
         players = distribute_keys(&params, players);
 
         let mut s = polynomial![0];
-        for i in 0..players.len() {
-            s = rq.add(&s, &players[i].sk_i1)
+        for player in &players {
+            s = rq.add(&s, &player.sk_i1)
         }
 
         let pk = players[0].pk.clone();
@@ -146,8 +145,8 @@ mod tests {
         let s_mul_s = rq.mul(&s, &s);
 
         let mut s_mul_s_from_players = polynomial![0];
-        for i in 0..players.len() {
-            s_mul_s_from_players = rq.add(&s_mul_s_from_players, &players[i].sk_i2)
+        for player in players {
+            s_mul_s_from_players = rq.add(&s_mul_s_from_players, &player.sk_i2)
         }
 
         assert_eq!(s_mul_s, s_mul_s_from_players);
