@@ -1,6 +1,6 @@
 use num::{BigInt, Zero};
 
-use crate::poly::Polynomial;
+use crate::{poly::Polynomial, polynomial};
 
 pub struct Rq {
     pub q: BigInt,
@@ -22,7 +22,7 @@ impl Rq {
     pub fn reduce(&self, pol: &Polynomial) -> Polynomial {
         let mut r = pol.clone();
 
-        while r != Polynomial::from(vec![0]) && r.degree() >= self.modulo.degree() {
+        while r != polynomial![0; i32] && r.degree() >= self.modulo.degree() {
             let t = r.coefficient(r.degree()) / self.modulo.coefficient(self.modulo.degree());
 
             let to_shift = -(self.modulo.clone() * t);
@@ -31,7 +31,7 @@ impl Rq {
             r = r + Polynomial::from(shifted_vec);
         }
         // Reduce coefficients mod q
-        r % self.q.clone()
+        r.modulo(&self.q)
     }
 
     pub fn add(&self, a: &Polynomial, b: &Polynomial) -> Polynomial {
@@ -39,8 +39,12 @@ impl Rq {
         self.reduce(&res)
     }
 
-    pub fn times<Int: Into<BigInt>>(&self, pol: &Polynomial, t: Int) -> Polynomial {
-        let res = pol.clone() * t.into();
+    pub fn times<Int>(&self, pol: &Polynomial, t: &Int) -> Polynomial
+    where
+        Int: Into<BigInt> + Clone,
+    {
+        let into: BigInt = t.to_owned().into();
+        let res = pol.clone() * into;
         self.reduce(&res)
     }
 
@@ -63,60 +67,54 @@ mod tests {
 
     #[test]
     fn test_reduce() {
-        let fx = Polynomial::from(vec![1, 3]);
+        let fx = polynomial![1, 3];
         let quot_ring = Rq::new(32, fx);
-        let to_reduce = Polynomial::from(vec![5, 7, 3]);
-        assert_eq!(quot_ring.reduce(&to_reduce), Polynomial::from(vec![3]));
+        let to_reduce = polynomial![5, 7, 3];
+        assert_eq!(quot_ring.reduce(&to_reduce), polynomial![3]);
 
-        let fx_2 = Polynomial::from(vec![1, 0, 1]);
+        let fx_2 = polynomial![1, 0, 1];
         let quot_ring_2 = Rq::new(32, fx_2);
-        let to_reduce_2 = Polynomial::from(vec![-17, 38, -12, 1]);
-        assert_eq!(
-            quot_ring_2.reduce(&to_reduce_2),
-            Polynomial::from(vec![27, 5])
-        );
+        let to_reduce_2 = polynomial![-17, 38, -12, 1];
+        assert_eq!(quot_ring_2.reduce(&to_reduce_2), polynomial![27, 5]);
 
-        let fx_3 = Polynomial::from(vec![1, 0, 0, 0, 0, 1]);
+        let fx_3 = polynomial![1, 0, 0, 0, 0, 1];
         let quot_ring_3 = Rq::new(32, fx_3);
-        let to_reduce_3 = Polynomial::from(vec![13, 2, 5, -1]);
-        assert_eq!(
-            quot_ring_3.reduce(&to_reduce_3),
-            Polynomial::from(vec![13, 2, 5, 31])
-        );
+        let to_reduce_3 = polynomial![13, 2, 5, -1];
+        assert_eq!(quot_ring_3.reduce(&to_reduce_3), polynomial![13, 2, 5, 31]);
     }
 
     #[test]
     fn test_add() {
-        let fx = Polynomial::from(vec![1, 0, 1]);
+        let fx = polynomial![1, 0, 1];
         let quot_ring = Rq::new(32, fx);
-        let lhs = Polynomial::from(vec![3, 6, 4, 2, 1]);
-        let rhs = Polynomial::from(vec![-17, 38, -12, 1]);
-        assert_eq!(quot_ring.add(&lhs, &rhs), Polynomial::from(vec![27, 9]));
+        let lhs = polynomial![3, 6, 4, 2, 1];
+        let rhs = polynomial![-17, 38, -12, 1];
+        assert_eq!(quot_ring.add(&lhs, &rhs), polynomial![27, 9]);
     }
 
     #[test]
     fn test_mul() {
-        let fx = Polynomial::from(vec![1, 0, 1]);
+        let fx = polynomial![1, 0, 1];
         let quot_ring = Rq::new(32, fx);
-        let lhs = Polynomial::from(vec![3, 5, 0, 8]);
-        let rhs = Polynomial::from(vec![1, 1, 5]);
-        assert_eq!(quot_ring.mul(&lhs, &rhs), Polynomial::from(vec![23, 15]));
+        let lhs = polynomial![3, 5, 0, 8];
+        let rhs = polynomial![1, 1, 5];
+        assert_eq!(quot_ring.mul(&lhs, &rhs), polynomial![23, 15]);
     }
 
     #[test]
     fn test_times() {
-        let fx = Polynomial::from(vec![1, 0, 1]);
+        let fx = polynomial![1, 0, 1];
         let quot_ring = Rq::new(32, fx);
-        let lhs = Polynomial::from(vec![3, 17, 2, -3, 6]);
+        let lhs = polynomial![3, 17, 2, -3, 6];
         let rhs = 3;
-        assert_eq!(quot_ring.times(&lhs, rhs), Polynomial::from(vec![21, 28]));
+        assert_eq!(quot_ring.times(&lhs, &rhs), polynomial![21, 28]);
     }
 
     #[test]
     fn test_neg() {
-        let fx = Polynomial::from(vec![1, 0, 1]);
+        let fx = polynomial![1, 0, 1];
         let quot_ring = Rq::new(32, fx);
-        let to_reduce = Polynomial::from(vec![-13, 4, -2, 6]);
-        assert_eq!(quot_ring.neg(&to_reduce), Polynomial::from(vec![11, 2]));
+        let to_reduce = polynomial![-13, 4, -2, 6];
+        assert_eq!(quot_ring.neg(&to_reduce), polynomial![11, 2]);
     }
 }
