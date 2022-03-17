@@ -1,8 +1,8 @@
 mod encryption;
+mod mpc;
 mod poly;
 mod prob;
 mod quotient_ring;
-mod mpc;
 
 use crate::encryption::Parameters;
 use crate::poly::Polynomial;
@@ -11,12 +11,13 @@ fn main() {
     let params = Parameters::default();
 
     //Construct noisy params
-    let noisy_params = Parameters::new(65537, 2_i32.pow(2) as f64, 2_i32.pow(10) as f64, 4, 7);
+    let noisy_params =
+        Parameters::new::<i32>(65537, 2_u32.pow(2) as f64, 2_u32.pow(10) as f64, 4, 7);
 
     let (pk, sk) = encryption::generate_key_pair(&params);
 
-    let msg_bob = Polynomial(vec![1]);
-    let msg_alice = Polynomial(vec![1]);
+    let msg_bob = polynomial![1];
+    let msg_alice = polynomial![1];
 
     let encrypted_msg_bob = encryption::encrypt(&params, msg_bob, &pk);
     let encrypted_msg_alice = encryption::encrypt(&params, msg_alice, &pk);
@@ -38,14 +39,17 @@ fn main() {
 // t: 2
 // r: 2 = w * sqrt(log2(1024)) = 0.632 * 3.162
 // r_prime: 80 >= 2^(0.632 * log2(1024)) = 2^(0.632 * 10)
+#[allow(dead_code)]
 fn secure_params() -> Parameters {
     // TODO: Shouldn't hardcode `q`
-    return Parameters::new(80708963, 2.0, 80.0, 1024, 2);
+    Parameters::new(80708963, 2.0, 80.0, 1024, 2)
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{encryption::Parameters, poly::Polynomial};
+    use num::{BigInt, One};
+
+    use crate::{encryption::Parameters, poly::Polynomial, polynomial};
 
     use super::{encryption, prob};
 
@@ -56,11 +60,12 @@ mod tests {
         for _ in 0..1000 {
             let (pk, sk) = encryption::generate_key_pair(&params);
 
-            let msg = Polynomial(vec![1]);
+            let coefficients: Vec<u32> = vec![1];
+            let msg = Polynomial::from(coefficients);
             let encrypted_msg = encryption::encrypt(&params, msg, &pk);
             let decrypted_msg = encryption::decrypt(&params, encrypted_msg, &sk).unwrap();
 
-            assert_eq!(decrypted_msg, Polynomial(vec![1]));
+            assert_eq!(decrypted_msg, polynomial![1]);
         }
     }
 
@@ -71,7 +76,8 @@ mod tests {
         for _ in 0..1000 {
             let (pk, sk) = encryption::generate_key_pair(&params);
 
-            let msg = prob::sample_from_uniform(params.t - 1, params.n).trim_res();
+            let msg = prob::sample_from_uniform(&(params.t.to_owned() - BigInt::one()), params.n)
+                .trim_res();
             let expected = msg.clone();
 
             let encrypted_msg = encryption::encrypt(&params, msg, &pk);
@@ -88,8 +94,8 @@ mod tests {
         for _ in 0..1000 {
             let (pk, sk) = encryption::generate_key_pair(&params);
 
-            let msg1 = Polynomial(vec![1, 4]);
-            let msg2 = Polynomial(vec![2, 1]);
+            let msg1 = polynomial![1, 4];
+            let msg2 = polynomial![2, 1];
             let encrypted_msg1 = encryption::encrypt(&params, msg1, &pk);
             let encrypted_msg2 = encryption::encrypt(&params, msg2, &pk);
             let added_encrypted_msg = encryption::add(&params, encrypted_msg1, encrypted_msg2);
@@ -97,7 +103,7 @@ mod tests {
 
             assert_eq!(
                 decrypted_msg,
-                Polynomial(vec![
+                Polynomial::new(vec![
                     3 % Parameters::default().t,
                     5 % Parameters::default().t
                 ])
@@ -112,14 +118,17 @@ mod tests {
         for _ in 0..1000 {
             let (pk, sk) = encryption::generate_key_pair(&params);
 
-            let msg1 = Polynomial(vec![2]);
-            let msg2 = Polynomial(vec![2]);
+            let msg1 = polynomial![2];
+            let msg2 = polynomial![2];
             let encrypted_msg1 = encryption::encrypt(&params, msg1, &pk);
             let encrypted_msg2 = encryption::encrypt(&params, msg2, &pk);
             let added_encrypted_msg = encryption::mul(&params, encrypted_msg1, encrypted_msg2);
             let decrypted_msg = encryption::decrypt(&params, added_encrypted_msg, &sk).unwrap();
 
-            assert_eq!(decrypted_msg, Polynomial(vec![4 % Parameters::default().t]));
+            assert_eq!(
+                decrypted_msg,
+                Polynomial::new(vec![4 % Parameters::default().t])
+            );
         }
     }
 }

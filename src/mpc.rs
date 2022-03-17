@@ -1,23 +1,25 @@
+use num::BigInt;
+
+use crate::poly::*;
 use crate::prob::sample_from_uniform;
 use crate::Parameters;
-use crate::poly::*;
-use crate::encryption::*;
+use crate::{encryption::*, polynomial};
 
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct Player {
     sk_i1: Polynomial,
     sk_i2: Polynomial,
-    pk: PublicKey
+    pk: PublicKey,
 }
 
 #[allow(dead_code)]
 impl Player {
     pub fn new() -> Player {
-        return Player {
-            sk_i1: Polynomial(vec![0]),
-            sk_i2: Polynomial(vec![0]),
-            pk: (Polynomial(vec![0]), Polynomial(vec![0]))
+        Player {
+            sk_i1: polynomial![0],
+            sk_i2: polynomial![0],
+            pk: (polynomial![0], polynomial![0]),
         }
     }
 
@@ -27,40 +29,43 @@ impl Player {
 }
 
 // Function for functionality in Fkey_gen figure 2 of the MPC article.
+#[allow(dead_code)]
 pub fn distribute_keys(params: &Parameters, mut players: Vec<Player>) -> Vec<Player> {
     let rq = &params.quotient_ring;
-    let amount_of_players = players.len();
+    let n = players.len();
 
     // set sk and pk for the first n-1 players.
-    let (pk, sk) = generate_key_pair(&params);
+    let (pk, sk) = generate_key_pair(params);
     for i in 0..players.len() - 1 {
-        players[i].sk_i1 = sample_from_uniform(params.q, params.n);
-        players[i].sk_i2 = sample_from_uniform(params.q, params.n);
+        players[i].sk_i1 = sample_from_uniform(&rq.q, params.n);
+        players[i].sk_i2 = sample_from_uniform(&rq.q, params.n);
         players[i].pk = pk.clone();
     }
 
     // set sk and pk for the n'th player.
     let mut sk_n2 = rq.mul(&sk, &sk);
     let mut sk_n1 = sk;
-    for i in 0..amount_of_players - 1 {
-        sk_n1 = rq.add(&sk_n1, &(rq.neg(&players[i].sk_i1.clone())));
-        sk_n2 = rq.add(&sk_n2, &(rq.neg(&players[i].sk_i2.clone())));
+    for player in players.iter().take(n - 1) {
+        sk_n1 = rq.add(&sk_n1, &(rq.neg(&player.sk_i1.clone())));
+        sk_n2 = rq.add(&sk_n2, &(rq.neg(&player.sk_i2.clone())));
     }
-    players[amount_of_players - 1].sk_i1 = sk_n1;
-    players[amount_of_players - 1].sk_i2 = sk_n2;
-    players[amount_of_players - 1].pk = pk.clone();
+
+    players[n - 1].sk_i1 = sk_n1;
+    players[n - 1].sk_i2 = sk_n2;
+    players[n - 1].pk = pk;
 
     players
 }
 
 // Function for "dec" functionality in Fkey_gen_dec figure 3 of the MPC article.
+#[allow(dead_code)]
 pub fn ddec(params: &Parameters, players: Vec<Player>, mut c: Ciphertext) -> Polynomial {
     let rq = &params.quotient_ring;
-    let mut v: Vec<Polynomial> = vec![Polynomial(vec![0]); players.len()];
+    let mut v = vec![polynomial![0]; players.len()];
 
     // Need to ensure that there are 3 elements (there can never be < 2)
     if c.len() == 2 {
-        c.push(Polynomial(vec![0]))
+        c.push(polynomial![0])
     }
     c[1] = rq.neg(&c[1]); //Hvorfor er definitionen anderledes i IdealHom teksten og i 535 teksten?
 
@@ -78,22 +83,30 @@ pub fn ddec(params: &Parameters, players: Vec<Player>, mut c: Ciphertext) -> Pol
     }
 
     //Random element does not currently have a bounded l_inf norm
-    let t: Vec<Polynomial> = v.iter()
-        .map(|v_i| rq.add(&v_i, &rq.times(&sample_from_uniform(1000, params.n), params.t))) // 1000 is placeholder, since q needs to be a lot higher for this to work properly
+    let t: Vec<Polynomial> = v
+        .iter()
+        .map(|v_i| {
+            rq.add(
+                v_i,
+                &rq.times(
+                    &sample_from_uniform(&BigInt::from(1000_i32), params.n),
+                    &params.t,
+                ),
+            )
+        }) // 1000 is placeholder, since q needs to be a lot higher for this to work properly
         .collect();
 
-    let mut t_prime = Polynomial(vec![0]);
-    for i in 0..players.len() {
-        t_prime = rq.add(&t_prime, &t[i])
-    }
-    
-    t_prime % params.t
+    let t_prime = t
+        .iter()
+        .fold(polynomial![0], |acc, elem| rq.add(&acc, elem));
+
+    t_prime.modulo(&params.t)
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::encryption::*;
-    use super::*; 
 
     #[test]
     fn test_all_players_pk_are_equal() {
@@ -102,8 +115,8 @@ mod tests {
         player_array = distribute_keys(&params, player_array);
 
         let pk = player_array[0].pk.clone();
-        for i in 1..5 {
-            assert_eq!(player_array[i].pk, pk);
+        for player in player_array {
+            assert_eq!(player.pk, pk);
         }
     }
 
@@ -115,25 +128,25 @@ mod tests {
 
         players = distribute_keys(&params, players);
 
-        let mut s = Polynomial(vec![0]);
-        for i in 0..players.len() {
-            s = rq.add(&s, &players[i].sk_i1)
+        let mut s = polynomial![0];
+        for player in &players {
+            s = rq.add(&s, &player.sk_i1)
         }
 
         let pk = players[0].pk.clone();
 
-        let msg = Polynomial(vec![0]);
+        let msg = polynomial![0];
         let cipher = encrypt(&params, msg, &pk);
         let decrypted = decrypt(&params, cipher, &s);
-        
-        assert_eq!(decrypted.unwrap(), Polynomial(vec![0]));
+
+        assert_eq!(decrypted.unwrap(), polynomial![0]);
         // At this point we know that s = sk
 
         let s_mul_s = rq.mul(&s, &s);
 
-        let mut s_mul_s_from_players = Polynomial(vec![0]);
-        for i in 0..players.len() {
-            s_mul_s_from_players = rq.add(&s_mul_s_from_players, &players[i].sk_i2)
+        let mut s_mul_s_from_players = polynomial![0];
+        for player in players {
+            s_mul_s_from_players = rq.add(&s_mul_s_from_players, &player.sk_i2)
         }
 
         assert_eq!(s_mul_s, s_mul_s_from_players);
@@ -147,10 +160,10 @@ mod tests {
 
         let pk = player_array[0].pk.clone();
 
-        let msg = Polynomial(vec![0]);
+        let msg = polynomial![0];
         let cipher = encrypt(&params, msg, &pk);
         let decrypted = ddec(&params, player_array, cipher);
-        
-        assert_eq!(decrypted, Polynomial(vec![0]));
+
+        assert_eq!(decrypted, polynomial![0]);
     }
 }
