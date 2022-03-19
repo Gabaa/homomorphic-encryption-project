@@ -4,16 +4,12 @@
 % TODO: Måske der skal indsættes et eksempel af de her 2? Burde være ganske let at gøre, da vi kan bruge implementationen
 
 % Preamble
-\documentclass[11pt]{article}
-
-% Packages
-\usepackage{amsmath}
-\usepackage{amsfonts}
-\usepackage{mathtools}
+\documentclass[../main.tex]{subfiles}
+\graphicspath{{\subfix{../images/}}}
 
 % Document
 \begin{document}
-    \section*{Encoding messages as polynomials} \label{sec:encoding-messages-as-polynomials}
+    \section{Encoding messages as polynomials} \label{sec:encoding-messages-as-polynomials}
     Encoding messages as polynomials follows simply by the fact that a letter can be represented by a number.
     These numbers can then be combined into a vector which can be encoded as a polynomial.
     As an example take the message: ``CRYPTO'', using the ASCII table, this message can be represented by the
@@ -21,7 +17,7 @@
     This vector can be represented as a polynomial by $67 + 82x + 89x^2 + 80x^^ + 84x^4 + 79x^5$.
     Trivially we can also decode any polynomial into a message, by reverting these steps one by one.
 
-    \section*{Ring LWE - A somewhat homomorphic encryption scheme}
+    \section{Ring LWE - A somewhat homomorphic encryption scheme}
     In the paper ``Fully Homomorphic Encryption from Ring-LWE and Security for Key Dependent Messages'' written by
     Zvika Brakerski and Vinod Vaikuntanathan \cite{} % TODO: få lige indsat ref
     they describe a method for converting the Ring Learnig with errors (RingLWE) problem into an encryption scheme
@@ -29,18 +25,18 @@
     We'll shortly describe the encryption scheme here but will omit proofs and detailed discussions.
     Both system will be over the message space of $R_t = \mathbb{Z}_t[x] / \langle f(x) \rangle $.
 
-    \subsection*{Symmetric version}
+    \subsection{Symmetric version}
     Let $\kappa$ be the security parameter and let further q and t be prime numbers where $t \in \mathbb{Z}_n^*$.
     We also need a polynomial of degree n $f(x) \in \mathbb{Z}[x]$ and an error distribution $\chi$ over the ring
     $R_q = \mathbb{Z}_q[x] / \langle f(x) \rangle$.
 
 
-    \subsubsection*{Key-gen}
+    \subsubsection{Key-gen}
     Let our secret key be a randomly sampled element from the error distribution $s \leftarrow^\$ \chi$
     Then given the security parameter $\kappa$ sample a ring element s uniformly at random from $\kappa$ and define the
     secret key vector by $(s^0, s^1, s^2, \dots, s^D) \in R_q^{D+1}$.
 
-    \subsubsection*{Encryption}
+    \subsubsection{Encryption}
     Rememer that all messages are encodeable in our message space $R_t$, thus we will encode our message m as a n degree
     polynomium with coefficient mod t.
     To encrypt we sample $(a, b = a \cdot s + t \cdot e)$ where $a \leftarrow^\$ R_q$ and $e \leftarrow^\$ \chi$,
@@ -50,7 +46,7 @@
     \end{align*}
     and from this output the ciphertext \textbf{c} $\coloneqq (c_0, c_1) \in R_q^2$.
 
-    \subsubsection*{Decryption}
+    \subsubsection{Decryption}
     Note that a ciphertext is on the form $(c_0, c_1, \dots , C_{D}) \in R_q^{D+1}$.
     Define the inner product over $R_q$ as
     \begin{align*}
@@ -62,7 +58,7 @@
     \end{align*}
     m will then be the decrypted message.
 
-    \subsubsection*{Eval}
+    \subsubsection{Eval}
     To obtain the homomorphic abilities of the encryption scheme, Zvika Brakerski and Vinod Vaikuntanathan show
     how to obtain homomorphic addition and multiplication of ciphertexts.
     \\[2mm]
@@ -85,6 +81,6 @@
     \end{align*}
     The output of the multiplication operation will then be $c_{mul} = (\hat{c}_0, \hat{c}_1, \dots, \hat{c}_{D+D'})$
     
-    \subsection*{Public key version}
+    \subsection{Public key version}
 
 \end{document}

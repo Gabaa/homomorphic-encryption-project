@@ -1,12 +1,9 @@
 % Preamble
-\documentclass[11pt]{article}
-
-% Packages
-\usepackage{amsmath}
-\usepackage{amsfonts}
+\documentclass[../main.tex]{subfiles}
+\graphicspath{{\subfix{../images/}}}
 
 \begin{document}
-\section*{Circuit privacy}
+\section{Circuit privacy}
 Each time we add or multiply ciphertexts the error term grows.
 As a result of this the error term will be larger for a ciphertext output by a call to \textbf{eval}, than for a ciphertext output by \textbf{encrypt}.
 This poses a problem, as an adversary might be able to derive information about the function computed by looking at the ciphertexts produced.

@@ -16,14 +16,13 @@
 \usepackage{hyperref}
 \usepackage[useregional]{datetime2}
 \DTMlangsetup[en-US]{showdayofmonth=false}
-\usepackage{lipsum}
 \usepackage{listings}
 \usepackage{placeins}
 \usepackage{graphicx}
 \usepackage{subcaption}
-\usepackage{mwe}
-\usepackage{comment}
-\usepackage{needspace}
+\usepackage{mathtools}
+
+\usepackage{subfiles} % Best loaded last in the preamble
 	
 \renewcommand*\sfdefault{lmss}
 \renewcommand*\ttdefault{txtt}
@@ -37,11 +36,11 @@
 \pagestyle{empty} 
 \pagenumbering{roman} 
 \vspace*{\fill}\noindent{\rule{\linewidth}{1mm}\\[4ex]
-{\Huge\sf Title}\\[4ex]
+{\Huge\sf Multiparty Computation based on Ring-LWE}\\[4ex] %Bare midlertidig titel
 {\huge\sf Mikkel Gaba, Marcus Sellebjerg, Kasper Ils{\o}e}\\[2ex]
 \noindent\rule{\linewidth}{1mm}\\[4ex]
 \noindent{\Large\sf Project Report (10 ECTS) in Computer Science\\[1ex]
-Advisor: Ivan Damgård \\[1ex]
+Advisor: Ivan Damg{\aa}rd \\[1ex]
 Department of Computer Science, Aarhus University\\[1ex]  
 May 22th, 2022 \\[15ex]}\\[\fill]}
 \epsfig{file=logo.eps}\clearpage
@@ -108,24 +107,24 @@ placeholder
 \chapter{Review of literature}
 \label{ch:main1}
 
-placeholder
+\subfile{sections/RingLwePKSystem}
+
+\subfile{sections/CircuitPrivacy}
+
+\cite{guido2011cryptographic} % PLACEHOLDER
 
 
-\chapter{Implementation eller noget i guess}
+\chapter{Implementation}
 \label{ch:main2}
 
-placehodler
-
-\section{Testing eller noget i guess}
-
-placeholder
+\subfile{sections/PKCImplementation}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \chapter{Conclusion}
 \label{ch:conclusion}
 
-placeholder
+...
 
 \chapter*{Acknowledgments}
 \addcontentsline{toc}{chapter}{Acknowledgments}
