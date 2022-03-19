@@ -1,5 +1,8 @@
-\documentclass[../main.tex]{subfiles}
-\graphicspath{{\subfix{../images/}}}
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{listings}
 
 % Code environment (incomplete)
 \lstset{
@@ -8,18 +11,41 @@
 
 \begin{document}
 \section{Multiparty Computation}
-Multiparty Computation concerns itself with ...
+The Multiparty Computation (MPC) problem is the problem where $n$ players each with some private input $x_i$, want to compute some function $f$ on the input, without revealing anything but the result.
 \section{Security of MPC protocols}
 % Active vs passive
 % \section{Homomorphic Encryption} Antager at det her allerede er dækket
 \section{Bootstrapping}
 % Turns SHE into FHE
 \section{Protocol for MPC based on SHE}
-% Built MPC system based on an admissible cryptosystem which is SHE
-Bla bla bla based on \cite{damgaard2012multiparty}.
-\subsection{Preprocessing phase}
-\subsection{Online protocol}
-\subsection{Parameter setting}
+In [] the authors describe a protocol for MPC based on a SHE scheme. The protocol is able compute arithmetic formulas consisting of up to a single multiplication, along with a relatively large number of additions, while being statistically UC-secure against an active adversary and $n - 1$ corruptions.
 
+The protocol proceeds in two phases. In the first phase, preprocessing, a global key $[\![\alpha]\!]$, $n$ random values in two representations $[\![r]\!], \langle r \rangle$, and a number of multiplicative triples $\langle a \rangle, \langle b \rangle, \langle c \rangle$ satisfying $c = ab$ are generated. 
+
+In the second phase, the online phase, the players use the global key and random values generated in the preprocessing phase to do the actual computations, aswell as a multiplicative triple if a multiplication is to be performed.
+
+Thus the online phase only makes indirect use of the SHE scheme, as it is only used in the preprocessing phase to generate input for the online phase.
+
+These two phases are described in further detail in section \ref{Prep} \& \ref{Online}.
+
+\subsection{Abstract SHE scheme}
+The cryptosystem used as the SHE scheme in the protocol has to have certain properties. In particular, such a cryptosystem consists of the algorithms (ParamGen, KeyGen, KeyGen*, Enc, Dec) which behave as follows
+\paragraph{ParamGen}
+\paragraph{KeyGen}
+Outputs a keypair $pk, sk$.
+\paragraph{KeyGen*} 
+\paragraph{Enc}
+\paragraph{Dec}
+
+\subsection{Concrete instantiation of abstract SHE scheme}
+The authors also present a concrete instantiation of the abstract SHE scheme described, namely based on the Ring-LWE based public key encryption scheme by Zvika Brakerski and Vinod Vaikuntanathan [] described in section x.x. The \textbf{KeyGen}, \textbf{Enc}, and \textbf{Dec} algorithms of the scheme behave precisely as as the key-gen, encryption, and decryption algorithms described in section x.x. % Der er små afvigelser (enc kan tage randomness som input, mens enc og dec ikke bruger -a, men a som c1). Ved ikke lige hvad vi gør ved det
+The rest of the algorithms are then defined as follows
+\paragraph{ParamGen}
+\paragraph{KeyGen*} 
+
+\subsection{Preprocessing phase} \label{Prep}
+\subsection{Online phase} \label{Online}
+\subsection{Parameter setting}
+In section D of the paper the authors give example parameter sets and explain how to choose the parameters, s.t. the Ring-LWE public key encryption schemes meets the requirements of the MPC protocol.
 
 \end{document}
