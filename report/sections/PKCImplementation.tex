@@ -8,9 +8,9 @@
 
 \begin{document}
 
-\todo{Dette skal nok opdateres når vi er færdige med implementationen. Skal inkludere det om MPC.}
+\todo{Dette skal nok opdateres n{\aa}r vi er f{\ae}rdige med implementationen. Skal inkludere det om MPC.}
 We implemented a somewhat-homomorphic public-key encryption scheme in the Rust programming language, as well as functions for adding and multiplying ciphertexts for that encryption scheme.
-\todo{Hvor meget skal forklares her? At det er Brakersky-Vaikuntanathan vi implementerede? At det er baseret på Ring-LWE? Eller bliver det alt sammen beskrevet et andet sted?}
+\todo{Hvor meget skal forklares her? At det er Brakersky-Vaikuntanathan vi implementerede? At det er baseret p{\aa} Ring-LWE? Eller bliver det alt sammen beskrevet et andet sted?}
 
 \section{Polynomials (\lstinline{poly.rs})}
 
@@ -74,7 +74,7 @@ We only create the first $|c|$ entries of the secret key vector, as those are th
 We then initialize a polynomial $msg = 0$, which will become the decrypted message.
 Then, iterating over each element $c_i$ in the ciphertext, we add $c_i \cdot \mathbf{s}_i$ to $msg$, where $\mathbf{s}_i$ is the $i$'th entry (zero-indexed) in the secret key vector.
 
-\todo{Skal nok lige have nogle andre til at tilpasse denne - jeg har svært ved at finde ud af hvordan man forklarer det.}
+\todo{Skal nok lige have nogle andre til at tilpasse denne - jeg har sv{\ae}rt ved at finde ud af hvordan man forklarer det.}
 Currently, the message has coefficients in $\mathbb{Z}_q$, but we need them to be in the range $-\frac{q}{2}$ to $\frac{q}{2}$.
 \todo{Er det inklusive eller eksklusive i intervallet?}
 Therefore, we iterate through all coefficients $x$ and map them to the new range such that if $x > \frac{q}{2}$, then we let $x' = x - q$, and otherwise $x' = x$.

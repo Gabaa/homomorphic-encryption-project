@@ -21,13 +21,12 @@
 \usepackage{graphicx}
 \usepackage{subcaption}
 \usepackage{mathtools}
+\usepackage{todonotes}
 
 \usepackage{subfiles} % Best loaded last in the preamble
 	
 \renewcommand*\sfdefault{lmss}
 \renewcommand*\ttdefault{txtt}
-
-\newcommand{\todo}[1]{{\color[rgb]{.5,0,0}\textbf{$\blacktriangleright$#1$\blacktriangleleft$}}}
 
 \begin{document}
 
@@ -75,7 +74,7 @@ May 22th, 2022 \\[15ex]}\\[\fill]}
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
 
-placeholder
+\subfile{sections/Abstract}
 
 \vspace{2ex}
 \begin{flushright}
@@ -93,13 +92,7 @@ placeholder
 \chapter{Introduction}
 \label{ch:intro}
 
-%\todo{motivate and explain the problem to be addressed}
-
-%\todo{example of a citation: ...}
-%\todo{get your bibtex entries from \url{https://dblp.org/}}
-
-placeholder
-
+\subfile{sections/Introduction}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -111,7 +104,7 @@ placeholder
 
 \subfile{sections/CircuitPrivacy}
 
-\cite{guido2011cryptographic} % PLACEHOLDER
+\subfile{sections/MPCTheory}
 
 
 \chapter{Implementation}
@@ -124,12 +117,12 @@ placeholder
 \chapter{Conclusion}
 \label{ch:conclusion}
 
-...
+\subfile{sections/Conclusion}
 
 \chapter*{Acknowledgments}
 \addcontentsline{toc}{chapter}{Acknowledgments}
 
-We would like to thank no one.
+\subfile{sections/Acknowledgments}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -142,7 +135,7 @@ We would like to thank no one.
 
 \cleardoublepage
 \appendix
-\chapter{Placeholder}
+\chapter{First appendix}
 
 
 \end{document}

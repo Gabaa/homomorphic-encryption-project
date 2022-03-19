@@ -8,7 +8,7 @@ Each time we add or multiply ciphertexts the error term grows.
 As a result of this the error term will be larger for a ciphertext output by a call to \textbf{eval}, than for a ciphertext output by \textbf{encrypt}.
 This poses a problem, as an adversary might be able to derive information about the function computed by looking at the ciphertexts produced.
 To deal with this problem we would like the output distributions of the ciphertexts output by \textbf{eval} and \textbf{encrypt} to be identical, which is known as \textit{circuit privacy}.
-This property along with how to achieve it has been described in https://www.cs.cmu.edu/~odonnell/hits09/gentry-homomorphic-encryption.pdf. %Indsæt ref i stedet for.
+This property along with how to achieve it has been described in \cite{gentry2009fully}.
 
 To achieve \textit{circuit privacy} we can make an encryption of $0$ with a very large error term, and then add this ciphertext to the original ciphertext.
 By doing this we esentially drown out information about the error vector of the original ciphertext.
