@@ -5,7 +5,6 @@ use crate::prob::sample_from_uniform;
 use crate::Parameters;
 use crate::{encryption::*, polynomial};
 
-#[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct Player {
     sk_i1: Polynomial,
@@ -13,7 +12,6 @@ pub struct Player {
     pk: PublicKey,
 }
 
-#[allow(dead_code)]
 impl Player {
     pub fn new() -> Player {
         Player {
@@ -28,18 +26,17 @@ impl Player {
     }
 }
 
-// Function for functionality in Fkey_gen figure 2 of the MPC article.
-#[allow(dead_code)]
+/// Function for functionality in Fkey_gen figure 2 of the MPC article.
 pub fn distribute_keys(params: &Parameters, mut players: Vec<Player>) -> Vec<Player> {
     let rq = &params.quotient_ring;
     let n = players.len();
 
     // set sk and pk for the first n-1 players.
     let (pk, sk) = generate_key_pair(params);
-    for i in 0..players.len() - 1 {
-        players[i].sk_i1 = sample_from_uniform(&rq.q, params.n);
-        players[i].sk_i2 = sample_from_uniform(&rq.q, params.n);
-        players[i].pk = pk.clone();
+    for player in players.iter_mut().take(n - 1) {
+        player.sk_i1 = sample_from_uniform(&rq.q, params.n);
+        player.sk_i2 = sample_from_uniform(&rq.q, params.n);
+        player.pk = pk.clone();
     }
 
     // set sk and pk for the n'th player.
@@ -57,8 +54,7 @@ pub fn distribute_keys(params: &Parameters, mut players: Vec<Player>) -> Vec<Pla
     players
 }
 
-// Function for "dec" functionality in Fkey_gen_dec figure 3 of the MPC article.
-#[allow(dead_code)]
+/// Function for "dec" functionality in Fkey_gen_dec figure 3 of the MPC article.
 pub fn ddec(params: &Parameters, players: Vec<Player>, mut c: Ciphertext) -> Polynomial {
     let rq = &params.quotient_ring;
     let mut v = vec![polynomial![0]; players.len()];
