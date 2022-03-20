@@ -1,7 +1,7 @@
 use std::{
     cmp,
     fmt::Display,
-    ops::{Add, Mul, Neg},
+    ops::{Add, Mul, Neg, Sub},
     slice::Iter,
 };
 
@@ -93,6 +93,24 @@ impl Add for Polynomial {
         }
         for (i, coefficient) in rhs.coefficients().enumerate() {
             res[i] += coefficient;
+        }
+
+        Polynomial(res).trim_res()
+    }
+}
+
+impl Sub for Polynomial {
+    type Output = Polynomial;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        let max = cmp::max(self.degree(), rhs.degree());
+        let mut res = vec![BigInt::zero(); max + 1];
+
+        for (i, coefficient) in self.coefficients().enumerate() {
+            res[i] += coefficient;
+        }
+        for (i, coefficient) in rhs.coefficients().enumerate() {
+            res[i] -= coefficient;
         }
 
         Polynomial(res).trim_res()

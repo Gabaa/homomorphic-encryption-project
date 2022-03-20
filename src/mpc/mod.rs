@@ -13,6 +13,7 @@ pub struct Player {
     sk_i1: Polynomial,
     sk_i2: Polynomial,
     pk: PublicKey,
+    e_beta_is: Vec<Ciphertext>
 }
 
 impl Player {
@@ -21,6 +22,7 @@ impl Player {
             sk_i1: polynomial![0],
             sk_i2: polynomial![0],
             pk: (polynomial![0], polynomial![0]),
+            e_beta_is: vec![]
         }
     }
 
@@ -46,8 +48,8 @@ pub fn distribute_keys(params: &Parameters, mut players: Vec<Player>) -> Vec<Pla
     let mut sk_n2 = rq.mul(&sk, &sk);
     let mut sk_n1 = sk;
     for player in players.iter().take(n - 1) {
-        sk_n1 = rq.add(&sk_n1, &(rq.neg(&player.sk_i1.clone())));
-        sk_n2 = rq.add(&sk_n2, &(rq.neg(&player.sk_i2.clone())));
+        sk_n1 = rq.sub(&sk_n1, &player.sk_i1.clone());
+        sk_n2 = rq.sub(&sk_n2, &player.sk_i2.clone());
     }
 
     players[n - 1].sk_i1 = sk_n1;
@@ -72,7 +74,7 @@ pub fn ddec(params: &Parameters, players: &Vec<Player>, mut c: Ciphertext) -> Po
         let p = &players[i];
         let sk1i_mul_c1 = rq.mul(&p.sk_i1, &c[1]);
         let sk2i_mul_c2 = rq.mul(&p.sk_i2, &c[2]);
-        let sub = rq.add(&sk1i_mul_c1, &rq.neg(&sk2i_mul_c2));
+        let sub = rq.sub(&sk1i_mul_c1, &sk2i_mul_c2);
         let sub_neg = rq.neg(&sub);
         if i == 0 {
             v[i] = rq.add(&c[0], &sub_neg)

@@ -6,6 +6,7 @@ mod quotient_ring;
 
 use crate::encryption::Parameters;
 use crate::poly::Polynomial;
+use num::{BigInt, One, Zero};
 
 fn main() {
     let params = Parameters::default();
@@ -45,13 +46,18 @@ fn secure_params() -> Parameters {
     Parameters::new(80708963, 2.0, 80.0, 1024, 2)
 }
 
+fn mpc_secure_params() -> Parameters {
+    // q not accurate, still should reflect real performance
+    Parameters::new(80708963, 2.0, 80.0, 12900, 128)
+}
+
 #[cfg(test)]
 mod tests {
     use num::{BigInt, One};
 
     use crate::{encryption::Parameters, poly::Polynomial, polynomial};
 
-    use super::{encryption, prob};
+    use super::{encryption, prob, mpc_secure_params};
 
     #[test]
     fn decrypt_and_encrypt_many_times() {
