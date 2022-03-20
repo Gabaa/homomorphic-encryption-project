@@ -5,6 +5,9 @@ use crate::prob::sample_from_uniform;
 use crate::Parameters;
 use crate::{encryption::*, polynomial};
 
+mod online;
+mod prep;
+
 #[derive(Clone, Debug)]
 pub struct Player {
     sk_i1: Polynomial,
@@ -55,7 +58,7 @@ pub fn distribute_keys(params: &Parameters, mut players: Vec<Player>) -> Vec<Pla
 }
 
 /// Function for "dec" functionality in Fkey_gen_dec figure 3 of the MPC article.
-pub fn ddec(params: &Parameters, players: Vec<Player>, mut c: Ciphertext) -> Polynomial {
+pub fn ddec(params: &Parameters, players: &Vec<Player>, mut c: Ciphertext) -> Polynomial {
     let rq = &params.quotient_ring;
     let mut v = vec![polynomial![0]; players.len()];
 
@@ -158,7 +161,7 @@ mod tests {
 
         let msg = polynomial![0];
         let cipher = encrypt(&params, msg, &pk);
-        let decrypted = ddec(&params, player_array, cipher);
+        let decrypted = ddec(&params, &player_array, cipher);
 
         assert_eq!(decrypted, polynomial![0]);
     }
