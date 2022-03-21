@@ -23,7 +23,7 @@ fn main() {
     let encrypted_msg_bob = encryption::encrypt(&params, msg_bob, &pk);
     let encrypted_msg_alice = encryption::encrypt(&params, msg_alice, &pk);
 
-    let encrypted_res = encryption::mul(&params, encrypted_msg_bob, encrypted_msg_alice);
+    let encrypted_res = encryption::mul(&params, &encrypted_msg_bob, &encrypted_msg_alice);
     println!("{:?}", encrypted_res);
 
     let noisy_ciphertext = encryption::drown_noise(&params, &noisy_params, encrypted_res, pk);
@@ -104,7 +104,7 @@ mod tests {
             let msg2 = polynomial![2, 1];
             let encrypted_msg1 = encryption::encrypt(&params, msg1, &pk);
             let encrypted_msg2 = encryption::encrypt(&params, msg2, &pk);
-            let added_encrypted_msg = encryption::add(&params, encrypted_msg1, encrypted_msg2);
+            let added_encrypted_msg = encryption::add(&params, &encrypted_msg1, &encrypted_msg2);
             let decrypted_msg = encryption::decrypt(&params, added_encrypted_msg, &sk).unwrap();
 
             assert_eq!(
@@ -128,7 +128,7 @@ mod tests {
             let msg2 = polynomial![2];
             let encrypted_msg1 = encryption::encrypt(&params, msg1, &pk);
             let encrypted_msg2 = encryption::encrypt(&params, msg2, &pk);
-            let added_encrypted_msg = encryption::mul(&params, encrypted_msg1, encrypted_msg2);
+            let added_encrypted_msg = encryption::mul(&params, &encrypted_msg1, &encrypted_msg2);
             let decrypted_msg = encryption::decrypt(&params, added_encrypted_msg, &sk).unwrap();
 
             assert_eq!(

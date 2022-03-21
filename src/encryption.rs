@@ -142,7 +142,7 @@ pub fn generate_key_pair(params: &Parameters) -> (PublicKey, SecretKey) {
     (pk, sk)
 }
 
-pub fn add(params: &Parameters, c1: Ciphertext, c2: Ciphertext) -> Ciphertext {
+pub fn add(params: &Parameters, c1: &Ciphertext, c2: &Ciphertext) -> Ciphertext {
     let rq = &params.quotient_ring;
 
     let max = cmp::max(c1.len(), c2.len());
@@ -158,7 +158,7 @@ pub fn add(params: &Parameters, c1: Ciphertext, c2: Ciphertext) -> Ciphertext {
     res
 }
 
-pub fn mul(params: &Parameters, c1: Ciphertext, c2: Ciphertext) -> Ciphertext {
+pub fn mul(params: &Parameters, c1: &Ciphertext, c2: &Ciphertext) -> Ciphertext {
     let rq = &params.quotient_ring;
 
     let mut res = vec![polynomial![0]; c1.len() + c2.len() - 1];
@@ -183,5 +183,5 @@ pub fn drown_noise(
     let zero = polynomial![0];
     let noisy_zero = encrypt(params_noisy, zero, &pk);
     println!("Noisy zero: {:?}", noisy_zero);
-    add(params, c, noisy_zero)
+    add(params, &c, &noisy_zero)
 }
