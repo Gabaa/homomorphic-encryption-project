@@ -6,8 +6,9 @@ use std::{
 };
 
 use num::{bigint::ToBigInt, BigInt, One, Zero};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Polynomial(Vec<BigInt>);
 
 impl Polynomial {

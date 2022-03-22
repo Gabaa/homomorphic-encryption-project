@@ -1,44 +1,17 @@
-mod encryption;
-mod mpc;
-mod poly;
-mod prob;
-mod quotient_ring;
-
-use crate::encryption::Parameters;
-use crate::poly::Polynomial;
-use num::{BigInt, One, Zero};
-
-fn main() {
-    let params = Parameters::default();
-
-    //Construct noisy params
-    let noisy_params =
-        Parameters::new::<i32>(65537, 2_u32.pow(2) as f64, 2_u32.pow(10) as f64, 4, 7);
-
-    let (pk, sk) = encryption::generate_key_pair(&params);
-
-    let msg_bob = polynomial![1];
-    let msg_alice = polynomial![1];
-
-    let encrypted_msg_bob = encryption::encrypt(&params, msg_bob, &pk);
-    let encrypted_msg_alice = encryption::encrypt(&params, msg_alice, &pk);
-
-    let encrypted_res = encryption::mul(&params, &encrypted_msg_bob, &encrypted_msg_alice);
-    println!("{:?}", encrypted_res);
-
-    let noisy_ciphertext = encryption::drown_noise(&params, &noisy_params, encrypted_res, pk);
-    println!("{:?}", noisy_ciphertext);
-
-    let decrypted_noisy = encryption::decrypt(&params, noisy_ciphertext, &sk);
-    println!("{:?}", decrypted_noisy)
-}
+pub mod encryption;
+pub mod mpc;
+pub mod poly;
+pub mod prob;
+pub mod protocol;
+pub mod quotient_ring;
 
 #[cfg(test)]
 mod tests {
-
-    use num::{BigInt, One, Zero};
-    use crate::{encryption::*, poly::Polynomial, polynomial, prob::sample_from_uniform, quotient_ring::Rq};
     use super::{encryption, prob};
+    use crate::{
+        encryption::*, poly::Polynomial, polynomial, prob::sample_from_uniform, quotient_ring::Rq,
+    };
+    use num::{BigInt, One, Zero};
 
     #[test]
     fn decrypt_and_encrypt_many_times() {
@@ -89,13 +62,7 @@ mod tests {
             let added_encrypted_msg = encryption::add(&params, &encrypted_msg1, &encrypted_msg2);
             let decrypted_msg = encryption::decrypt(&params, added_encrypted_msg, &sk).unwrap();
 
-            assert_eq!(
-                decrypted_msg,
-                Polynomial::new(vec![
-                    3 % t,
-                    5 % t
-                ])
-            );
+            assert_eq!(decrypted_msg, Polynomial::new(vec![3 % t, 5 % t]));
         }
     }
 
@@ -114,10 +81,7 @@ mod tests {
             let added_encrypted_msg = encryption::mul(&params, &encrypted_msg1, &encrypted_msg2);
             let decrypted_msg = encryption::decrypt(&params, added_encrypted_msg, &sk).unwrap();
 
-            assert_eq!(
-                decrypted_msg,
-                Polynomial::new(vec![4 % t])
-            );
+            assert_eq!(decrypted_msg, Polynomial::new(vec![4 % t]));
         }
     }
 
@@ -136,7 +100,7 @@ mod tests {
         let a = sample_from_uniform(&params.t, params.n);
         let b = sample_from_uniform(&params.t, params.n);
         let ab = rt.mul(&a, &b);
-        
+
         let e_a = encrypt(&params, a.clone(), &pk);
         let e_b = encrypt(&params, b.clone(), &pk);
 

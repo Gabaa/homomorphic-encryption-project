@@ -1,10 +1,16 @@
 //! Preprocessing phase (Multiparty Computation from Somewhat Homomorphic Encryption, sec. 5)
 
-use num::One;
-use crate::mpc::add_encrypted_shares;
 use crate::mpc::zk::zkpopk;
 use crate::mpc::Angle;
-use crate::{encryption::*, mpc::{Player, ddec, distribute_keys, diag}, prob::*, polynomial, poly::Polynomial};
+use crate::{
+    encryption::*,
+    mpc::{ddec, diag, Player},
+    poly::Polynomial,
+    polynomial,
+    prob::*,
+};
+use crate::{mpc::add_encrypted_shares, protocol::Facilicator};
+use num::One;
 
 use num::{BigInt, Zero};
 
@@ -18,27 +24,28 @@ pub struct ProtocolPrep {}
 
 impl ProtocolPrep {
     /// Implements the Initialize step
-    pub fn initialize(params: &Parameters, players: &Vec<Player>) -> Vec<Player> {
+    pub fn initialize(params: &Parameters, facilitator: Facilicator) -> Vec<Player> {
         let amount_of_players = players.len();
-        let mut new_players = distribute_keys(params, players.clone());
+        let mut new_players = vec![]; // distribute_keys(params, players.clone());
 
         let mut e_alpha_is = vec![vec![]; amount_of_players];
-        let mut e_beta_is = vec![vec![]; amount_of_players];
 
         // Each player does the contents of the loop
         for i in 0..amount_of_players {
             new_players[i].alpha_i = sample_single(&params.t);
             new_players[i].beta_i = sample_single(&params.t);
 
-            e_alpha_is[i] = encrypt(params, encode(diag(params, new_players[i].alpha_i.clone())), &players[i].pk);
-            e_beta_is[i] = encrypt(params, encode(diag(params, players[i].beta_i.clone())), &players[i].pk);
+            e_alpha_is[i] = encrypt(
+                params,
+                encode(diag(params, new_players[i].alpha_i.clone())),
+                &players[i].pk,
+            );
         }
 
         let e_alpha = add_encrypted_shares(&params, e_alpha_is.clone(), amount_of_players);
 
         for i in 0..amount_of_players {
             new_players[i].e_alpha = e_alpha.clone();
-            new_players[i].e_beta_is = e_beta_is.clone();
         }
 
         // TODO: ZK proof faked for now
@@ -48,21 +55,16 @@ impl ProtocolPrep {
                 if !zkpopk(new_players[i].e_alpha.clone()) {
                     panic!("ZK proof failed!")
                 }
-    
-                if !zkpopk(new_players[i].e_beta_is[i].clone()) {
-                    panic!("ZK proof failed!")
-                }
             }
         }
 
         new_players
-
     }
 
     /// Implements the Pair step
     pub fn pair(params: &Parameters, players: &Vec<Player>) -> (Vec<BigInt>, Angle) {
         let amount_of_players = players.len();
-        
+
         let mut r_is = vec![BigInt::zero(); amount_of_players];
         for i in 0..amount_of_players {
             r_is[i] = sample_single(&params.t)
@@ -89,7 +91,7 @@ impl ProtocolPrep {
     /// Implements the Triple step
     pub fn triple(params: &Parameters, players: &Vec<Player>) -> (Angle, Angle, Angle) {
         let amount_of_players = players.len();
-        
+
         let mut a_is = vec![BigInt::zero(); amount_of_players];
         let mut b_is = vec![BigInt::zero(); amount_of_players];
         for i in 0..amount_of_players {
@@ -132,7 +134,12 @@ impl ProtocolPrep {
 }
 
 /// Implements Protocol Reshare (fig. 4)
-pub fn reshare(params: &Parameters, e_m: &Ciphertext, players: &Vec<Player>, enc: Enc) -> (Option<Ciphertext>, Vec<BigInt>) {
+pub fn reshare(
+    params: &Parameters,
+    e_m: &Ciphertext,
+    players: &Vec<Player>,
+    enc: Enc,
+) -> (Option<Ciphertext>, Vec<BigInt>) {
     let amount_of_players = players.len();
 
     // Each player samples vec from M (this is just from Rt for now)
@@ -169,22 +176,35 @@ pub fn reshare(params: &Parameters, e_m: &Ciphertext, players: &Vec<Player>, enc
     }
 
     if matches!(enc, Enc::NewCiphertext) {
-        let mut e_m_prime = encrypt_det(params, encode(m_plus_f), &players[0].pk, (polynomial![1], polynomial![1], polynomial![1])); //Hvilket randomness???
+        let mut e_m_prime = encrypt_det(
+            params,
+            encode(m_plus_f),
+            &players[0].pk,
+            (polynomial![1], polynomial![1], polynomial![1]),
+        ); //Hvilket randomness???
         for i in 0..amount_of_players {
-            e_m_prime = add(params, &e_m_prime, &(e_f_is[i].iter().map(|e| -(e.clone())).collect()));
+            e_m_prime = add(
+                params,
+                &e_m_prime,
+                &(e_f_is[i].iter().map(|e| -(e.clone())).collect()),
+            );
         }
-        return (Some(e_m_prime), m_is)
+        return (Some(e_m_prime), m_is);
     }
 
     // Player P_i is supposed to get m_is[i]
     (None, m_is)
-
 }
 
 /// Implements Protocol PAngle (fig. 6)
-pub fn p_angle(params: &Parameters, v_is: Vec<BigInt>, e_v: Ciphertext, players: &Vec<Player>) -> Angle {
+pub fn p_angle(
+    params: &Parameters,
+    v_is: Vec<BigInt>,
+    e_v: Ciphertext,
+    players: &Vec<Player>,
+) -> Angle {
     // Each player does the following:
-    let e_v_mul_alpha = mul(&params, &e_v, &players[0].e_alpha); 
+    let e_v_mul_alpha = mul(&params, &e_v, &players[0].e_alpha);
     let (_, gamma_is) = reshare(params, &e_v_mul_alpha, players, Enc::NoNewCiphertext); // each player Pi gets a share γi of α·v
     let v_angle = [v_is.as_slice(), gamma_is.as_slice()].concat();
     v_angle
@@ -192,7 +212,7 @@ pub fn p_angle(params: &Parameters, v_is: Vec<BigInt>, e_v: Ciphertext, players:
 
 #[cfg(test)]
 mod tests {
-    use crate::{mpc::*, mpc::prep::*, encryption::secure_params};
+    use crate::{encryption::secure_params, mpc::prep::*, mpc::*};
 
     #[test]
     fn test_mult_triple() {
@@ -212,9 +232,12 @@ mod tests {
             c = c + c_angle[i].clone()
         }
 
-        assert_eq!((a * b).modpow(&BigInt::one(), &params.t), c.modpow(&BigInt::one(), &params.t))
+        assert_eq!(
+            (a * b).modpow(&BigInt::one(), &params.t),
+            c.modpow(&BigInt::one(), &params.t)
+        )
     }
-    
+
     #[test]
     fn test_reshare() {
         let amount_of_players = 3;
@@ -238,7 +261,6 @@ mod tests {
         let reshared_opened = open_shares(&params, reshared, amount_of_players);
 
         assert_eq!(r, reshared_opened)
-
     }
 
     #[test]
@@ -250,7 +272,8 @@ mod tests {
         let (_, angle) = ProtocolPrep::pair(&params, &initialized_players);
         let mut sigma = BigInt::zero();
         for i in 0..amount_of_players {
-            sigma = (sigma + angle[amount_of_players + i].clone()).modpow(&BigInt::one(), &params.t);
+            sigma =
+                (sigma + angle[amount_of_players + i].clone()).modpow(&BigInt::one(), &params.t);
         }
         let a = open_shares(&params, angle, amount_of_players);
         let mut alpha_is = vec![BigInt::zero(); amount_of_players];
@@ -262,4 +285,3 @@ mod tests {
         assert_eq!(res, sigma)
     }
 }
-

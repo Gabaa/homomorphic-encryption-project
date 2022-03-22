@@ -1,36 +1,42 @@
 //! Online phase (Multiparty Computation from Somewhat Homomorphic Encryption, sec. 2)
 
-use rand::SeedableRng;
-use rand::rngs::StdRng;
-use rand::distributions::Uniform;
-use crate::mpc::commitment::open;
 use crate::mpc::commitment::commit;
-use rand::Rng;
-use crate::mpc::{MulTriple, Angle};
-use num::Zero;
-use num::One;
-use crate::BigInt;
+use crate::mpc::commitment::open;
 use crate::mpc::open_shares;
-use crate::{mpc::Player, encryption::Parameters};
+use crate::mpc::{Angle, MulTriple};
+use crate::{encryption::Parameters, protocol::Facilicator};
+use num::BigInt;
+use rand::distributions::Uniform;
+use rand::rngs::StdRng;
+use rand::Rng;
+use rand::SeedableRng;
+
+use super::PlayerState;
 
 pub struct ProtocolOnline {}
 
-impl ProtocolOnline {
-    pub fn input(params: &Parameters, x_i: BigInt, r_pair: (Vec<BigInt>, Angle), players: &Vec<Player>) -> Angle {
-        let amount_of_players = players.len();
+impl<F: Facilicator> ProtocolOnline {
+    pub fn input(
+        params: &Parameters,
+        x_i: BigInt,
+        r_pair: (Vec<BigInt>, Angle),
+        state: PlayerState<F>,
+    ) -> Angle {
+        let amount_of_players = state.facilitator.player_count();
         let (r_shares, r_angle) = r_pair;
-        
+
         // Open r_bracket to P_i
         let r = open_shares(&params, r_shares, amount_of_players);
 
         // P_i broadcasts this
         let eps = x_i - r;
-        
+
         // All parties compute
         let mut x_i_angle_shares = r_angle.clone();
         x_i_angle_shares[0] = r_angle[0].clone() + eps.clone();
         for i in 0..amount_of_players {
-            x_i_angle_shares[amount_of_players + i] = r_angle[amount_of_players + i].clone() + eps.clone() * players[i].alpha_i.clone();
+            x_i_angle_shares[amount_of_players + i] =
+                r_angle[amount_of_players + i].clone() + eps.clone() * players[i].alpha_i.clone();
         }
 
         x_i_angle_shares
@@ -45,15 +51,15 @@ impl ProtocolOnline {
         res
     }
 
-    pub fn multiply(params: &Parameters,
+    pub fn multiply(
+        params: &Parameters,
         x: Angle,
         y: Angle,
         abc_triple: MulTriple,
         fgh_triple: MulTriple,
         t_shares: Vec<BigInt>,
-        players: &Vec<Player>)
-    -> (Angle, Vec<Player>) {
-
+        players: &Vec<Player>,
+    ) -> (Angle, Vec<Player>) {
         let amount_of_players = players.len();
         let (a_angle, b_angle, c_angle) = abc_triple.clone();
         let (f_angle, g_angle, h_angle) = fgh_triple.clone();
@@ -67,7 +73,7 @@ impl ProtocolOnline {
         new_players[0].opened.push(f_angle.clone());
         new_players[0].opened.push(g_angle.clone());
         new_players[0].opened.push(h_angle.clone());
-        
+
         // Check if ab = c in first triple by using the second triple
 
         if !triple_check(&params, abc_triple, fgh_triple, t_shares, &players) {
@@ -91,13 +97,16 @@ impl ProtocolOnline {
         // Compute shares of result
         let mut z_shares = vec![BigInt::zero(); x.len()];
         for i in 0..x.len() {
-            z_shares[i] = c_angle[i].clone() + epsilon.clone() * b_angle[i].clone() + delta.clone() * a_angle[i].clone();
+            z_shares[i] = c_angle[i].clone()
+                + epsilon.clone() * b_angle[i].clone()
+                + delta.clone() * a_angle[i].clone();
         }
         z_shares[0] = z_shares[0].clone() + epsilon.clone() * delta.clone();
         for i in 0..amount_of_players {
-            z_shares[amount_of_players + i] = z_shares[amount_of_players + i].clone() + (epsilon.clone() * delta.clone()) * players[i].alpha_i.clone();
+            z_shares[amount_of_players + i] = z_shares[amount_of_players + i].clone()
+                + (epsilon.clone() * delta.clone()) * players[i].alpha_i.clone();
         }
-        
+
         (z_shares, new_players)
     }
 
@@ -106,7 +115,7 @@ impl ProtocolOnline {
 
         if !maccheck(params, players[0].opened.clone(), &players) {
             panic!("MACCheck did not succeed!")
-        } 
+        }
 
         if !maccheck(params, vec![y_angle.clone()], &players) {
             panic!("MACCheck did not succeed!")
@@ -123,7 +132,7 @@ pub fn maccheck(params: &Parameters, to_check: Vec<Angle>, players: &Vec<Player>
 
     let mut commitments: Vec<Vec<u8>> = vec![];
     // Storing o's here does not really make sense, but its fine for now, since we need to broadcast it normally
-    let mut o_is: Vec<Vec<u8>> = vec![]; 
+    let mut o_is: Vec<Vec<u8>> = vec![];
     for i in 0..amount_of_players {
         // Sample seed s_i and broadcast commitment generated using COMMIT func
         let mut s_i = rand::thread_rng().gen::<[u8; 32]>().to_vec();
@@ -146,7 +155,7 @@ pub fn maccheck(params: &Parameters, to_check: Vec<Angle>, players: &Vec<Player>
     for i in 1..amount_of_players {
         s = xor(s, seeds[i].clone());
     }
-    
+
     // Players sample random vector r using seed s (a vector of length n with elements generated uniformly modulo q)
     let rng_seed: [u8; 32] = s.as_slice().try_into().expect("Wrong length!");
     let range = Uniform::new(BigInt::zero(), &params.t);
@@ -160,21 +169,22 @@ pub fn maccheck(params: &Parameters, to_check: Vec<Angle>, players: &Vec<Player>
         a = (a + r[j].clone() * a_j.clone()).modpow(&BigInt::one(), &params.t);
     }
 
-
     // Player i computes gamma_i and sigma_i
     let mut sigma_is_nonshared = vec![BigInt::zero(); amount_of_players];
     for i in 0..amount_of_players {
         let mut gamma_i = BigInt::zero();
         for j in 0..t {
-            gamma_i = (gamma_i + r[j].clone() * to_check[j][amount_of_players + i].clone()).modpow(&BigInt::one(), &params.t);
+            gamma_i = (gamma_i + r[j].clone() * to_check[j][amount_of_players + i].clone())
+                .modpow(&BigInt::one(), &params.t);
         }
-        sigma_is_nonshared[i] = (gamma_i - players[i].alpha_i.clone() * a.clone()).modpow(&BigInt::one(), &params.t);
+        sigma_is_nonshared[i] =
+            (gamma_i - players[i].alpha_i.clone() * a.clone()).modpow(&BigInt::one(), &params.t);
     }
 
     // Commit to sigma_i and broadcast
     let mut sigma_commitments: Vec<Vec<u8>> = vec![];
     // Storing o's here does not really make sense, but its fine for now, since we need to broadcast it normally
-    let mut sigma_o_is: Vec<Vec<u8>> = vec![]; 
+    let mut sigma_o_is: Vec<Vec<u8>> = vec![];
     for i in 0..amount_of_players {
         // Sample seed s_i and broadcast commitment generated using COMMIT func
         let (_, sigma_i_bytes) = sigma_is_nonshared[i].to_bytes_be();
@@ -187,11 +197,19 @@ pub fn maccheck(params: &Parameters, to_check: Vec<Angle>, players: &Vec<Player>
     }
 
     // Players open commitments to get sigma_i's
-    let mut sigma_is  = vec![BigInt::zero(); amount_of_players];
+    let mut sigma_is = vec![BigInt::zero(); amount_of_players];
     for i in 0..amount_of_players {
         // Ask COMMIT func to open commitment
         let opened = open(sigma_commitments[i].clone(), sigma_o_is[i].clone()).unwrap();
-        sigma_is[i] = BigInt::from_bytes_be(num::bigint::Sign::NoSign, &opened.iter().take(32).cloned().collect::<Vec<u8>>().as_slice())
+        sigma_is[i] = BigInt::from_bytes_be(
+            num::bigint::Sign::NoSign,
+            &opened
+                .iter()
+                .take(32)
+                .cloned()
+                .collect::<Vec<u8>>()
+                .as_slice(),
+        )
     }
 
     // Sum sigma_i's and check that this equals 0
@@ -199,7 +217,7 @@ pub fn maccheck(params: &Parameters, to_check: Vec<Angle>, players: &Vec<Player>
     for i in 0..amount_of_players {
         sigma_sum = (sigma_sum + sigma_is[i].clone()).modpow(&BigInt::one(), &params.t);
     }
-    
+
     sigma_sum == BigInt::zero()
 }
 
@@ -207,7 +225,13 @@ pub fn xor(x: Vec<u8>, y: Vec<u8>) -> Vec<u8> {
     x.iter().zip(y.iter()).map(|(&x, &y)| x ^ y).collect()
 }
 
-pub fn triple_check(params: &Parameters, abc_triple: MulTriple, fgh_triple: MulTriple, t_shares: Vec<BigInt>, players: &Vec<Player>) -> bool {
+pub fn triple_check(
+    params: &Parameters,
+    abc_triple: MulTriple,
+    fgh_triple: MulTriple,
+    t_shares: Vec<BigInt>,
+    players: &Vec<Player>,
+) -> bool {
     let (a_angle, b_angle, c_angle) = abc_triple;
     let (f_angle, g_angle, h_angle) = fgh_triple;
     let amount_of_players = players.len();
@@ -220,15 +244,13 @@ pub fn triple_check(params: &Parameters, abc_triple: MulTriple, fgh_triple: MulT
         rho_shares[i] = t.clone() * a_angle[i].clone() - f_angle[i].clone();
     }
     let rho = open_shares(&params, rho_shares, amount_of_players);
-    
-    
+
     // Compute sigma
     let mut sigma_shares = vec![BigInt::zero(); amount_of_players];
     for i in 0..amount_of_players {
         sigma_shares[i] = b_angle[i].clone() - g_angle[i].clone();
     }
     let sigma = open_shares(&params, sigma_shares, amount_of_players);
-    
 
     // Evaluate formula and check if zero as expected. If zero, then ab = c.
     let mut zero_shares = vec![BigInt::zero(); amount_of_players];
@@ -250,7 +272,7 @@ pub fn triple_check(params: &Parameters, abc_triple: MulTriple, fgh_triple: MulT
 
 #[cfg(test)]
 mod tests {
-    use crate::{mpc::*, mpc::prep::*, encryption::secure_params};
+    use crate::{encryption::secure_params, mpc::prep::*, mpc::*};
 
     use super::*;
 
@@ -267,9 +289,8 @@ mod tests {
 
         let x = ProtocolOnline::input(&params, BigInt::from(2_i32), r1_pair, &initialized_players);
         let x_output = ProtocolOnline::output(&params, x, initialized_players);
-        
-        assert_eq!(BigInt::from(2_i32), x_output)
 
+        assert_eq!(BigInt::from(2_i32), x_output)
     }
 
     #[test]
@@ -307,10 +328,17 @@ mod tests {
         let x = ProtocolOnline::input(&params, BigInt::from(2_i32), r1_pair, &initialized_players);
         let y = ProtocolOnline::input(&params, BigInt::from(7_i32), r2_pair, &initialized_players);
 
-        let (res, new_players) = ProtocolOnline::multiply(&params, x, y, triple_1, triple_2, t_bracket, &initialized_players);
+        let (res, new_players) = ProtocolOnline::multiply(
+            &params,
+            x,
+            y,
+            triple_1,
+            triple_2,
+            t_bracket,
+            &initialized_players,
+        );
         let output = ProtocolOnline::output(&params, res, new_players);
 
         assert_eq!(BigInt::from(14_i32), output)
-
     }
 }
