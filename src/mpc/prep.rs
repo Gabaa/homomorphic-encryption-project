@@ -13,17 +13,46 @@ pub struct ProtocolPrep {}
 impl ProtocolPrep {
     /// Implements the Initialize step
     pub fn initialize(params: &Parameters, players: &Vec<Player>) {
-        todo!()
+        
     }
 
     /// Implements the Pair step
-    pub fn pair() {
-        todo!()
+    pub fn pair(params: &Parameters, players: &Vec<Player>) -> (Vec<Polynomial>, Vec<Polynomial>) {
+        let amount_of_players = players.len();
+        
+        let r_is = vec![sample_from_uniform(&params.t, params.n); amount_of_players];
+
+        let mut e_r = vec![polynomial![0]];
+        for i in 0..amount_of_players {
+            e_r = add(params, &e_r, &encrypt(params, r_is[i].clone(), &players[0].pk))
+        }
+        let r_bracket = p_bracket(params, r_is.clone(), e_r.clone(), players);
+        let r_angle = p_angle(params, r_is, e_r, players);
+        (r_bracket, r_angle)
     }
 
     /// Implements the Triple step
-    pub fn triple() {
-        todo!()
+    pub fn triple(params: &Parameters, players: &Vec<Player>) -> (Vec<Polynomial>, Vec<Polynomial>, Vec<Polynomial>) {
+        let amount_of_players = players.len();
+        
+        let a_is = vec![sample_from_uniform(&params.t, params.n); amount_of_players];
+        let b_is = vec![sample_from_uniform(&params.t, params.n); amount_of_players];
+
+        let mut e_a = vec![polynomial![0]];
+        let mut e_b = vec![polynomial![0]];
+        for i in 0..amount_of_players {
+            e_a = add(params, &e_a, &encrypt(params, a_is[i].clone(), &players[0].pk));
+            e_b = add(params, &e_b, &encrypt(params, b_is[i].clone(), &players[0].pk))
+        }
+
+        let a_angle = p_angle(params, a_is, e_a.clone(), players);
+        let b_angle = p_angle(params, b_is, e_b.clone(), players);
+
+        let e_c = mul(params, &e_a, &e_b);
+        let shared = reshare(params, &e_c, players, Enc::NewCiphertext);
+        let c_angle = p_angle(params, shared, e_c, players); // e_c should be e_c' (output of reshare    )
+
+        (a_angle, b_angle, c_angle)
     }
 }
 
