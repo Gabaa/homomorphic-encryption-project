@@ -46,7 +46,7 @@ impl Rq {
         Int: Into<BigInt> + Clone,
     {
         let into: BigInt = t.to_owned().into();
-        let res = pol.clone() * into.clone();
+        let res = pol.clone() * into;
         self.reduce(&res)
     }
 
