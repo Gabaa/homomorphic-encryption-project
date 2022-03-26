@@ -126,7 +126,7 @@ pub fn reshare(params: &Parameters, e_m: &Ciphertext, players: &Vec<Player>, enc
     if matches!(enc, Enc::NewCiphertext) {
         // TODO: Supposed to do an encryption with default randomness (requires refactoring)
         // Then the encryption should be returned instead of m_i's
-        let e_m_plus_f = encrypt_r(params, m_plus_f, &players[0].pk, (polynomial![0], polynomial![0], polynomial![0]));
+        let e_m_plus_f = encrypt_det(params, m_plus_f, &players[0].pk, (polynomial![0], polynomial![0], polynomial![0]));
         let mut e_m_prime = e_m_plus_f;
         for i in 0..amount_of_players {
             //e_m_prime = params.quotient_ring.sub(&e_m_prime, &e_f_is[i]);

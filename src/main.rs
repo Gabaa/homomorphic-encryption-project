@@ -57,7 +57,7 @@ mod tests {
 
     use crate::{encryption::Parameters, poly::Polynomial, polynomial};
 
-    use super::{encryption, prob, mpc_secure_params};
+    use super::{encryption, prob, mpc_secure_params, secure_params};
 
     #[test]
     fn decrypt_and_encrypt_many_times() {
@@ -96,6 +96,7 @@ mod tests {
     #[test]
     fn add_ciphertexts() {
         let params = Parameters::default();
+        let t = &params.t;
 
         for _ in 0..1000 {
             let (pk, sk) = encryption::generate_key_pair(&params);
@@ -110,8 +111,8 @@ mod tests {
             assert_eq!(
                 decrypted_msg,
                 Polynomial::new(vec![
-                    3 % Parameters::default().t,
-                    5 % Parameters::default().t
+                    3 % t,
+                    5 % t
                 ])
             );
         }
@@ -120,6 +121,7 @@ mod tests {
     #[test]
     fn mul_ciphertexts() {
         let params = Parameters::default();
+        let t = &params.t;
 
         for _ in 0..1000 {
             let (pk, sk) = encryption::generate_key_pair(&params);
@@ -133,8 +135,25 @@ mod tests {
 
             assert_eq!(
                 decrypted_msg,
-                Polynomial::new(vec![4 % Parameters::default().t])
+                Polynomial::new(vec![4 % t])
             );
         }
+    }
+
+    /* #[test]
+    fn bench_single_mpc_enc() {
+        let params = mpc_secure_params();
+
+        let (pk, _) = encryption::generate_key_pair(&params);
+        encryption::encrypt(&params, polynomial![2], &pk);
+    } */
+
+    #[test]
+    fn bench_single_rqmul() {
+        let params = mpc_secure_params();
+        let rq = &params.quotient_ring;
+        let op1 = prob::sample_from_uniform(&rq.q, params.n);
+        let op2 = prob::sample_from_uniform(&rq.q, params.n);
+        let test = rq.mul(&op1, &op2);
     }
 }

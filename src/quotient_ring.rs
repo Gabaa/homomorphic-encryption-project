@@ -24,11 +24,8 @@ impl Rq {
 
         while r != polynomial![0; i32] && r.degree() >= self.modulo.degree() {
             let t = r.coefficient(r.degree()) / self.modulo.coefficient(self.modulo.degree());
-
-            let to_shift = self.modulo.clone() * t;
-            let extra_zeros = vec![BigInt::zero(); r.degree() - self.modulo.degree()];
-            let shifted_vec = [extra_zeros.as_slice(), to_shift.coefficients().as_slice()].concat();
-            r = r - Polynomial::from(shifted_vec);
+            let shifted_pol = (self.modulo.clone() * t).shift_poly(r.degree() - self.modulo.degree());
+            r = r - shifted_pol;
         }
         // Reduce coefficients mod q
         r.modulo(&self.q)
@@ -49,7 +46,7 @@ impl Rq {
         Int: Into<BigInt> + Clone,
     {
         let into: BigInt = t.to_owned().into();
-        let res = pol.clone() * into;
+        let res = pol.clone() * into.clone();
         self.reduce(&res)
     }
 

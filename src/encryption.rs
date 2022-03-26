@@ -51,9 +51,8 @@ impl Default for Parameters {
     }
 }
 
-pub fn encrypt_r(params: &Parameters, m: Polynomial, pk: &PublicKey, r: (Polynomial, Polynomial, Polynomial)) -> Ciphertext {
-    debug_assert!(m.coefficients().all(|c| c < &params.t));
-    
+pub fn encrypt_det(params: &Parameters, m: Polynomial, pk: &PublicKey, r: (Polynomial, Polynomial, Polynomial)) -> Ciphertext {
+
     let rq = &params.quotient_ring;
 
     let (a0, b0) = pk;
@@ -77,7 +76,7 @@ pub fn encrypt(params: &Parameters, m: Polynomial, pk: &PublicKey) -> Ciphertext
     let e_prime = sample_from_gaussian(params.r, params.n);
     let e_prime_prime = sample_from_gaussian(params.r_prime, params.n);
 
-    encrypt_r(params, m, pk, (v, e_prime, e_prime_prime))
+    encrypt_det(params, m, pk, (v, e_prime, e_prime_prime))
 }
 
 #[derive(Debug)]
@@ -124,7 +123,6 @@ pub fn decrypt(
     )
     .trim_res();
 
-    println!("{:?}", msg_minus_q.l_inf_norm());
     if msg_minus_q.l_inf_norm() >= &rq.q / 2_i32 {
         return Err(DecryptionError::LInfNormTooBig(msg_minus_q.l_inf_norm()));
     }
@@ -187,6 +185,5 @@ pub fn drown_noise(
 ) -> Ciphertext {
     let zero = polynomial![0];
     let noisy_zero = encrypt(params_noisy, zero, &pk);
-    println!("Noisy zero: {:?}", noisy_zero);
     add(params, &c, &noisy_zero)
 }
