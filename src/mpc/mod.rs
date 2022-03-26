@@ -106,6 +106,10 @@ pub fn ddec(params: &Parameters, players: &Vec<Player>, mut c: Ciphertext) -> Po
     t_prime.modulo(&params.t)
 }
 
+pub fn diag(params: &Parameters, a: BigInt) -> Polynomial {
+    Polynomial::new(vec![a; params.n])
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

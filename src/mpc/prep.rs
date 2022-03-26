@@ -1,6 +1,6 @@
 //! Preprocessing phase (Multiparty Computation from Somewhat Homomorphic Encryption, sec. 5)
 
-use crate::{encryption::*, mpc::{Player, ddec}, prob::sample_from_uniform, polynomial, poly::Polynomial};
+use crate::{encryption::*, mpc::{Player, ddec, distribute_keys}, prob::*, polynomial, poly::Polynomial};
 
 pub enum Enc {
     NewCiphertext,
@@ -12,8 +12,21 @@ pub struct ProtocolPrep {}
 
 impl ProtocolPrep {
     /// Implements the Initialize step
-    pub fn initialize(params: &Parameters, players: &Vec<Player>) {
-        
+    pub fn initialize(params: &Parameters, players: &Vec<Player>) -> Vec<Player> {
+        let amount_of_players = players.len();
+        let new_players = distribute_keys(params, players.clone());
+
+        // Each player does the cocntents of the loop
+        for i in 0..amount_of_players {
+            let beta_i = sample_single(&params.t);
+            let alpha_i = sample_single(&params.t);
+            for i in 0..amount_of_players {
+
+            }
+        }
+
+        new_players
+
     }
 
     /// Implements the Pair step

@@ -40,3 +40,10 @@ pub fn sample_from_uniform(q: &BigInt, n: usize) -> Polynomial {
 
     Polynomial::from(samples)
 }
+
+pub fn sample_single(t: &BigInt) -> BigInt {
+    let range = Uniform::new(BigInt::zero(), t);
+
+    let sample: BigInt = OsRng.sample(&range);
+    sample
+}
