@@ -51,16 +51,13 @@ impl Default for Parameters {
     }
 }
 
-pub fn encrypt(params: &Parameters, m: Polynomial, pk: &PublicKey) -> Ciphertext {
+pub fn encrypt_r(params: &Parameters, m: Polynomial, pk: &PublicKey, r: (Polynomial, Polynomial, Polynomial)) -> Ciphertext {
     debug_assert!(m.coefficients().all(|c| c < &params.t));
-
+    
     let rq = &params.quotient_ring;
 
     let (a0, b0) = pk;
-
-    let v = sample_from_gaussian(params.r, params.n);
-    let e_prime = sample_from_gaussian(params.r, params.n);
-    let e_prime_prime = sample_from_gaussian(params.r_prime, params.n);
+    let (v, e_prime, e_prime_prime) = r;
 
     let a0_mul_v = rq.mul(a0, &v);
     let t_mul_e_prime = rq.times(&e_prime, &params.t);
@@ -73,6 +70,14 @@ pub fn encrypt(params: &Parameters, m: Polynomial, pk: &PublicKey) -> Ciphertext
     let c0 = rq.add(&b, &m);
     let c1 = rq.neg(&a);
     vec![c0, c1]
+}
+
+pub fn encrypt(params: &Parameters, m: Polynomial, pk: &PublicKey) -> Ciphertext {
+    let v = sample_from_gaussian(params.r, params.n);
+    let e_prime = sample_from_gaussian(params.r, params.n);
+    let e_prime_prime = sample_from_gaussian(params.r_prime, params.n);
+
+    encrypt_r(params, m, pk, (v, e_prime, e_prime_prime))
 }
 
 #[derive(Debug)]
