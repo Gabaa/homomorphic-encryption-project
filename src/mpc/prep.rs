@@ -124,12 +124,14 @@ pub fn reshare(params: &Parameters, e_m: &Ciphertext, players: &Vec<Player>, enc
     }
 
     if matches!(enc, Enc::NewCiphertext) {
-        let e_m_plus_f = encrypt_det(params, m_plus_f, &players[0].pk, (polynomial![0], polynomial![0], polynomial![0]));
+        let e_m_plus_f = encrypt_det(params, m_plus_f, &players[0].pk, (polynomial![1], polynomial![1], polynomial![1])); //Hvilket randomness???
         let mut e_m_prime = e_m_plus_f;
+
+        let mut negatede_e_f_is: Vec<Ciphertext> = vec![vec![]; amount_of_players];
         for i in 0..amount_of_players {
-            //e_m_prime = params.quotient_ring.sub(&e_m_prime, &e_f_is[i]); MISSING CORRECT BEHAVIOUR
+            e_m_prime = add(params, &e_m_prime, &(e_f_is[i].iter().map(|e| -(e.clone())).collect()));
         }
-        return (None, m_is)
+        return (Some(e_m_prime), m_is)
     }
 
     // Player P_i is supposed to get m_is[i]
