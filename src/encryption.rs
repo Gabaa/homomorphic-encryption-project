@@ -1,7 +1,5 @@
 use num::{BigInt, One, Zero};
 
-use num_primes::Generator;
-
 use crate::{
     poly::Polynomial,
     polynomial,
