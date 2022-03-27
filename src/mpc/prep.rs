@@ -68,8 +68,12 @@ impl ProtocolPrep {
     pub fn triple(params: &Parameters, players: &Vec<Player>) -> (Vec<Polynomial>, Vec<Polynomial>, Vec<Polynomial>) {
         let amount_of_players = players.len();
         
-        let a_is = vec![sample_from_uniform(&params.t, params.n); amount_of_players];
-        let b_is = vec![sample_from_uniform(&params.t, params.n); amount_of_players];
+        let mut a_is = vec![polynomial![0]; amount_of_players];
+        let mut b_is = vec![polynomial![0]; amount_of_players];
+        for i in 0..amount_of_players {
+            a_is[i] = sample_from_uniform(&params.t, params.n);
+            b_is[i] = sample_from_uniform(&params.t, params.n)
+        }
 
         let mut e_a = vec![polynomial![0]];
         let mut e_b = vec![polynomial![0]];
@@ -101,10 +105,13 @@ pub fn reshare(params: &Parameters, e_m: &Ciphertext, players: &Vec<Player>, enc
     let amount_of_players = players.len();
 
     // Each player samples vec from M (this is just from Rt for now)
-    let f_is = vec![sample_from_uniform(&rq.q, params.n); amount_of_players];
+    let mut f_is = vec![polynomial![0]; amount_of_players];
+    for i in 0..amount_of_players {
+        f_is[i] = sample_from_uniform(&params.t, params.n)
+    }
 
     // e_f_is[i] supposed to be computed by P_i and broadcast
-    let mut e_f_is = vec![vec![polynomial![0]]; amount_of_players];
+    let mut e_f_is = vec![vec![]; amount_of_players];
     for i in 0..amount_of_players {
         e_f_is[i] = encrypt(params, f_is[i].clone(), &players[i].pk)
     }
@@ -174,3 +181,37 @@ pub fn p_angle(params: &Parameters, v_is: Vec<Polynomial>, e_v: Ciphertext, play
     let v_angle = [[polynomial![0]].as_slice(), v_is.as_slice(), gamma_is.as_slice()].concat();
     v_angle
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{mpc::*, mpc::prep::*, encryption::secure_params};
+
+    use super::*;
+
+    #[test]
+    fn test_mult_triple() {
+        let amount_of_players = 3;
+        let players = vec![Player::new(); amount_of_players];
+        let params = secure_params();
+
+        let (initialized_players, _) = ProtocolPrep::initialize(&params, &players);
+        let (a_angle, b_angle, c_angle) = ProtocolPrep::triple(&params, &initialized_players);
+
+        println!("{:?}", a_angle);
+        println!("{:?}", b_angle);
+        println!("{:?}", c_angle);
+
+        let mut a = polynomial![0];
+        let mut b = polynomial![0];
+        let mut c = polynomial![0];
+        for i in 1..amount_of_players + 1 {
+            a = a + a_angle[i].clone();
+            b = b + b_angle[i].clone();
+            c = c + c_angle[i].clone()
+        }
+
+        let ab = a * b;
+        assert_eq!(ab.modulo(&params.t), c.modulo(&params.t))
+    }
+}
+
