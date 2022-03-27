@@ -16,7 +16,7 @@ impl ProtocolPrep {
     /// Implements the Initialize step
     pub fn initialize(params: &Parameters, players: &Vec<Player>) -> (Vec<Player>, Vec<Polynomial>) {
         let amount_of_players = players.len();
-        let new_players = distribute_keys(params, players.clone());
+        let mut new_players = distribute_keys(params, players.clone());
 
         let mut alpha_is = vec![BigInt::zero(); amount_of_players];
 
@@ -29,7 +29,12 @@ impl ProtocolPrep {
             let beta_i = sample_single(&params.t);
 
             e_alpha_is[i] = encrypt(params, diag(params, alpha_is[i].clone()), &players[i].pk);
-            e_beta_is[i] = encrypt(params, diag(params, beta_i), &players[i].pk)
+            e_beta_is[i] = encrypt(params, diag(params, beta_i), &players[i].pk);
+        }
+
+        for i in 0..amount_of_players {
+            new_players[i].e_alpha = e_alpha_is[i].clone();
+            new_players[i].e_beta_is = e_beta_is.clone();
         }
 
         let mut e_alpha = vec![polynomial![0]];
@@ -118,16 +123,15 @@ pub fn reshare(params: &Parameters, e_m: &Ciphertext, players: &Vec<Player>, enc
 
     // m_i computed by P_i
     let mut m_is = vec![polynomial![0]; amount_of_players];
-    m_is[0] = m_plus_f.clone() + -f_is[0].clone();
+    m_is[0] = (m_plus_f.clone() + -f_is[0].clone()).modulo(&params.t);
     for i in 1..amount_of_players {
-        m_is[i] = -f_is[i].clone()
+        m_is[i] = (-f_is[i].clone()).modulo(&params.t)
     }
 
     if matches!(enc, Enc::NewCiphertext) {
         let e_m_plus_f = encrypt_det(params, m_plus_f, &players[0].pk, (polynomial![1], polynomial![1], polynomial![1])); //Hvilket randomness???
         let mut e_m_prime = e_m_plus_f;
 
-        let mut negatede_e_f_is: Vec<Ciphertext> = vec![vec![]; amount_of_players];
         for i in 0..amount_of_players {
             e_m_prime = add(params, &e_m_prime, &(e_f_is[i].iter().map(|e| -(e.clone())).collect()));
         }

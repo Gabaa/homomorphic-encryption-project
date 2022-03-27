@@ -103,7 +103,21 @@ pub fn ddec(params: &Parameters, players: &Vec<Player>, mut c: Ciphertext) -> Po
         .iter()
         .fold(polynomial![0], |acc, elem| rq.add(&acc, elem));
 
-    t_prime.modulo(&params.t)
+    // Compute msg minus q if x > q/2
+    let msg_minus_q = Polynomial::from(
+        t_prime.coefficients()
+            .map(|x| {
+                if x > &(&rq.q / 2_i32) {
+                    x - &rq.q
+                } else {
+                    x.to_owned()
+                }
+            })
+            .collect::<Vec<BigInt>>(),
+    )
+    .trim_res();
+
+    msg_minus_q.modulo(&params.t)
 }
 
 pub fn diag(params: &Parameters, a: BigInt) -> Polynomial {
@@ -172,5 +186,11 @@ mod tests {
         let decrypted = ddec(&params, &player_array, cipher);
 
         assert_eq!(decrypted, polynomial![0]);
+
+        let msg2 = polynomial![5];
+        let cipher = encrypt(&params, msg2, &pk);
+        let decrypted = ddec(&params, &player_array, cipher);
+
+        assert_eq!(decrypted, polynomial![5]);
     }
 }

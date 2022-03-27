@@ -1,5 +1,7 @@
 use num::{BigInt, One, Zero};
 
+use num_primes::Generator;
+
 use crate::{
     poly::Polynomial,
     polynomial,
@@ -49,6 +51,24 @@ impl Default for Parameters {
     fn default() -> Self {
         Parameters::new(65537, 1.0, 2.0, 4, 7)
     }
+}
+
+// Loosely based on http://homomorphicencryption.org/wp-content/uploads/2018/11/HomomorphicEncryptionStandardv1.1.pdf
+// security level (quantum): 128 bits
+// q: 27 bit prime
+// n: 1024
+// t: 2
+// r: 2 = w * sqrt(log2(1024)) = 0.632 * 3.162
+// r_prime: 80 >= 2^(0.632 * log2(1024)) = 2^(0.632 * 10)
+#[allow(dead_code)]
+pub fn secure_params() -> Parameters {
+    // TODO: Shouldn't hardcode `q`
+    Parameters::new(80708963, 2.0, 80.0, 7, 127)
+}
+
+pub fn mpc_secure_params() -> Parameters {
+    // q not accurate, still should reflect real performance
+    Parameters::new(80708963, 2.0, 80.0, 12900, 127)
 }
 
 pub fn encrypt_det(params: &Parameters, m: Polynomial, pk: &PublicKey, r: (Polynomial, Polynomial, Polynomial)) -> Ciphertext {
