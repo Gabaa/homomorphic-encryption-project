@@ -1,5 +1,7 @@
 //! Preprocessing phase (Multiparty Computation from Somewhat Homomorphic Encryption, sec. 5)
 
+use num::One;
+use crate::quotient_ring::Rq;
 use crate::{encryption::*, mpc::{Player, ddec, distribute_keys, diag}, prob::*, polynomial, poly::Polynomial};
 
 use num::{BigInt, Zero};
@@ -75,8 +77,8 @@ impl ProtocolPrep {
             b_is[i] = sample_from_uniform(&params.t, params.n)
         }
 
-        let mut e_a = vec![polynomial![0]];
-        let mut e_b = vec![polynomial![0]];
+        let mut e_a = vec![];
+        let mut e_b = vec![];
         for i in 0..amount_of_players {
             e_a = add(params, &e_a, &encrypt(params, a_is[i].clone(), &players[0].pk));
             e_b = add(params, &e_b, &encrypt(params, b_is[i].clone(), &players[0].pk))
@@ -85,13 +87,6 @@ impl ProtocolPrep {
         let a_angle = p_angle(params, a_is, e_a.clone(), players);
         let b_angle = p_angle(params, b_is, e_b.clone(), players);
         let e_c = mul(params, &e_a, &e_b);
-
-        let a = ddec(params, players, e_a);
-        let b = ddec(params, players, e_b);
-        let c = ddec(params, players, e_c.clone());
-
-        let ab = params.quotient_ring.mul(&a, &b);
-        assert_eq!(ab.modulo(&params.t), c.modulo(&params.t));
 
         let (e_c_prime_opt, reshared) = reshare(params, &e_c, players, Enc::NewCiphertext);
         let e_c_prime: Ciphertext;
@@ -143,9 +138,7 @@ pub fn reshare(params: &Parameters, e_m: &Ciphertext, players: &Vec<Player>, enc
     }
 
     if matches!(enc, Enc::NewCiphertext) {
-        let e_m_plus_f = encrypt_det(params, m_plus_f, &players[0].pk, (polynomial![1], polynomial![1], polynomial![1])); //Hvilket randomness???
-        let mut e_m_prime = e_m_plus_f;
-
+        let mut e_m_prime = encrypt_det(params, m_plus_f, &players[0].pk, (polynomial![1], polynomial![1], polynomial![1])); //Hvilket randomness???
         for i in 0..amount_of_players {
             e_m_prime = add(params, &e_m_prime, &(e_f_is[i].iter().map(|e| -(e.clone())).collect()));
         }
@@ -191,15 +184,20 @@ pub fn p_angle(params: &Parameters, v_is: Vec<Polynomial>, e_v: Ciphertext, play
 
 #[cfg(test)]
 mod tests {
+    use num::One;
+    use crate::quotient_ring::Rq;
     use crate::{mpc::*, mpc::prep::*, encryption::secure_params};
-
-    use super::*;
 
     #[test]
     fn test_mult_triple() {
         let amount_of_players = 3;
         let players = vec![Player::new(); amount_of_players];
         let params = secure_params();
+        let mut fx_vec = vec![BigInt::zero(); params.n + 1];
+        fx_vec[0] = BigInt::one();
+        fx_vec[params.n] = BigInt::one();
+        let fx = Polynomial::from(fx_vec);
+        let rt = Rq::new(params.t.clone(), fx);
         let rq = &params.quotient_ring;
 
         let (initialized_players, _) = ProtocolPrep::initialize(&params, &players);
@@ -218,7 +216,7 @@ mod tests {
             c = c + c_angle[i].clone()
         }
 
-        let ab = rq.mul(&a, &b);
+        let ab = rt.mul(&a, &b);
         assert_eq!(ab.modulo(&params.t), c.modulo(&params.t))
     }
 }

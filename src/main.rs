@@ -35,10 +35,9 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use num::{BigInt, One};
 
-    use crate::{encryption::*, poly::Polynomial, polynomial};
-
+    use num::{BigInt, One, Zero};
+    use crate::{encryption::*, poly::Polynomial, polynomial, prob::sample_from_uniform, quotient_ring::Rq};
     use super::{encryption, prob};
 
     #[test]
@@ -120,6 +119,31 @@ mod tests {
                 Polynomial::new(vec![4 % t])
             );
         }
+    }
+
+    // A little unsure about this one, is this intended behaviour?
+    #[test]
+    fn mul_with_overflow() {
+        let params = secure_params();
+        let mut fx_vec = vec![BigInt::zero(); params.n + 1];
+        fx_vec[0] = BigInt::one();
+        fx_vec[params.n] = BigInt::one();
+        let fx = Polynomial::from(fx_vec);
+        let rt = Rq::new(params.t.clone(), fx);
+
+        let (pk, sk) = encryption::generate_key_pair(&params);
+
+        let a = sample_from_uniform(&params.t, params.n);
+        let b = sample_from_uniform(&params.t, params.n);
+        let ab = rt.mul(&a, &b);
+        
+        let e_a = encrypt(&params, a.clone(), &pk);
+        let e_b = encrypt(&params, b.clone(), &pk);
+
+        let e_c = mul(&params, &e_a, &e_b);
+
+        let c = decrypt(&params, e_c, &sk).unwrap();
+        assert_eq!(c, ab);
     }
 
     /* #[test]

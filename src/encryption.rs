@@ -53,7 +53,7 @@ impl Default for Parameters {
 
 // Loosely based on http://homomorphicencryption.org/wp-content/uploads/2018/11/HomomorphicEncryptionStandardv1.1.pdf
 // security level (quantum): 128 bits
-// q: 27 bit prime
+// q: 27 bit prime, ex. 80708963
 // n: 1024
 // t: 2
 // r: 2 = w * sqrt(log2(1024)) = 0.632 * 3.162
@@ -63,7 +63,7 @@ pub fn secure_params() -> Parameters {
     // TODO: Shouldn't hardcode `q`
     let c = "7491009436045135886698181243708504421607358929720206973094758479498049015628852031735169966277519969".parse::<BigInt>().unwrap();
     let t2 = "127".parse::<BigInt>().unwrap();
-    Parameters::new(c, 2.0, 80.0, 7, t2)
+    Parameters::new(c, 3.2, 100.0, 7, t2)
 }
 
 pub fn mpc_secure_params() -> Parameters {

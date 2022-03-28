@@ -70,33 +70,33 @@ pub fn ddec(params: &Parameters, players: &Vec<Player>, mut c: Ciphertext) -> Po
     if c.len() == 2 {
         c.push(polynomial![0])
     }
-    c[1] = rq.neg(&c[1]); //Hvorfor er definitionen anderledes i IdealHom teksten og i 535 teksten?
+    //c[1] = rq.neg(&c[1]); //Hvorfor er definitionen anderledes i IdealHom teksten og i 535 teksten?
 
     for i in 0..players.len() {
         let p = &players[i];
-        let sk1i_mul_c1 = rq.mul(&p.sk_i1, &c[1]);
-        let sk2i_mul_c2 = rq.mul(&p.sk_i2, &c[2]);
-        let sub = rq.sub(&sk1i_mul_c1, &sk2i_mul_c2);
-        let sub_neg = rq.neg(&sub);
+        let si1_ci1 = rq.mul(&p.sk_i1, &c[1]);
+        let si2_ci2 = rq.mul(&p.sk_i2, &c[2]);
+        let sum = rq.add(&si1_ci1, &si2_ci2);
         if i == 0 {
-            v[i] = rq.add(&c[0], &sub_neg)
+            v[i] = rq.add(&c[0], &sum)
         } else {
-            v[i] = sub_neg
+            v[i] = sum
         }
     }
 
     //Random element does not currently have a bounded l_inf norm
+    let norm_bound: BigInt = BigInt::from(2_i32) ^ &BigInt::from(256_i32);
     let t: Vec<Polynomial> = v
         .iter()
         .map(|v_i| {
             rq.add(
                 v_i,
                 &rq.times(
-                    &sample_from_uniform(&BigInt::from(1000_i32), params.n),
+                    &sample_from_uniform(&norm_bound, params.n),
                     &params.t,
                 ),
             )
-        }) // 1000 is placeholder, since q needs to be a lot higher for this to work properly
+        }) // norm_bound is placeholder, since q needs to be a lot higher for this to work properly
         .collect();
 
     let t_prime = t
@@ -176,7 +176,7 @@ mod tests {
     #[test]
     fn test_distributed_decryption_works() {
         let mut player_array = vec![Player::new(); 5];
-        let params = Parameters::default();
+        let params = secure_params();
         player_array = distribute_keys(&params, player_array);
 
         let pk = player_array[0].pk.clone();
@@ -187,10 +187,10 @@ mod tests {
 
         assert_eq!(decrypted, polynomial![0]);
 
-        let msg2 = polynomial![5];
-        let cipher = encrypt(&params, msg2, &pk);
-        let decrypted = ddec(&params, &player_array, cipher);
+        let msg2 = polynomial![5, 7, 3];
+        let cipher2 = encrypt(&params, msg2, &pk);
+        let decrypted2 = ddec(&params, &player_array, cipher2);
 
-        assert_eq!(decrypted, polynomial![5]);
+        assert_eq!(decrypted2, polynomial![5, 7, 3]);
     }
 }
