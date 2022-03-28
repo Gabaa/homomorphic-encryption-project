@@ -1,6 +1,13 @@
 //! Online phase (Multiparty Computation from Somewhat Homomorphic Encryption, sec. 2)
 
+use num::Zero;
+use num::One;
+use crate::BigInt;
+use crate::quotient_ring::Rq;
+use crate::mpc::open_shares;
 use crate::{polynomial, poly::Polynomial, mpc::Player, encryption::Parameters};
+
+pub type MulTriple = (Vec<Polynomial>, Vec<Polynomial>, Vec<Polynomial>);
 
 pub struct ProtocolOnline {}
 
@@ -10,20 +17,17 @@ impl ProtocolOnline {
         let amount_of_players = players.len();
         let (r_bracket, r_angle) = r_pair;
         
-
         // Open r_bracket to P_i
-        let mut r = polynomial![0];
-        for i in 0..amount_of_players {
-            r = (r + r_bracket[i].clone()).modulo(&params.t);
-        }
+        let shares = r_bracket.iter().take(amount_of_players).cloned().collect::<Vec<Polynomial>>();
+        let r = open_shares(&params, shares);
 
         // P_i broadcasts this
-        let eps = (x_i - r).modulo(&params.t);
+        let eps = (x_i - r);
         
         // All parties compute
         let mut x_i_angle_shares = r_angle.clone();
-        x_i_angle_shares[0] = (r_angle[0].clone() - eps.clone()).modulo(&params.t);
-        x_i_angle_shares[1] = (r_angle[1].clone() + eps).modulo(&params.t);
+        x_i_angle_shares[0] = r_angle[0].clone() - eps.clone();
+        x_i_angle_shares[1] = r_angle[1].clone() + eps;
 
         x_i_angle_shares
     }
@@ -32,55 +36,73 @@ impl ProtocolOnline {
         // Players just add shares locally
         let mut res = vec![polynomial![0]; x.len()];
         for i in 0..x.len() {
-            res[i] = (x[i].clone() + y[i].clone()).modulo(&params.t);
+            res[i] = x[i].clone() + y[i].clone();
         }
         res
     }
 
-    pub fn multiply() -> Vec<Polynomial> {
-        todo!()
+    // SKAL DE ANDRE VÆRDIER OGSÅ REGNES PÅ NÅR VI REGNER PÅ ANGLE REPR.?
+    pub fn multiply(params: &Parameters,
+        x: Vec<Polynomial>,
+        y: Vec<Polynomial>,
+        abc_triple: MulTriple,
+        fgh_triple: MulTriple,
+        t_bracket: Vec<Polynomial>,
+        players: &Vec<Player>)
+    -> Vec<Polynomial> {
+
+        let amount_of_players = players.len();
+        let (a_angle, b_angle, c_angle) = abc_triple;
+        let (f_angle, g_angle, h_angle) = fgh_triple;
+
+        //CODE FOR ACTIVE SEC MISSING HERE
+
+        let mut epsilon_shares = vec![polynomial![]; players.len()];
+        for i in 0..amount_of_players {
+            epsilon_shares[i] = x[i + 1].clone() - a_angle[i + 1].clone();
+        }
+        let epsilon = open_shares(&params, epsilon_shares);
+
+        let mut delta_shares = vec![polynomial![]; players.len()];
+        for i in 0..amount_of_players {
+            delta_shares[i] = y[i + 1].clone() - b_angle[i + 1].clone();
+        }
+        let delta = open_shares(&params, delta_shares);
+
+        let mut z_shares = vec![polynomial![]; x.len()];
+        for i in 0..x.len() {
+            z_shares[i] = c_angle[i].clone() + epsilon.clone() * b_angle[i].clone() + delta.clone() * a_angle[i].clone();
+        }
+        z_shares[0] = z_shares[0].clone() - epsilon.clone() * delta.clone();
+        z_shares[1] = z_shares[1].clone() + epsilon.clone() * delta.clone();
+
+        z_shares
     }
 
-    pub fn output(params: &Parameters, y_angle: Vec<Polynomial>, e_bracket: Vec<Polynomial>, opened: Vec<Polynomial>, shared_sk: Vec<Polynomial>, players: Vec<Player>) -> Polynomial {
+    pub fn output(params: &Parameters,
+        y_angle: Vec<Polynomial>,
+        e_bracket: Vec<Polynomial>,
+        opened: Vec<Polynomial>,
+        shared_sk: Vec<Polynomial>,
+        players: Vec<Player>)
+    -> Polynomial {
+
+        let mut fx_vec = vec![BigInt::zero(); params.n + 1];
+        fx_vec[0] = BigInt::one();
+        fx_vec[params.n] = BigInt::one();
+        let fx = Polynomial::from(fx_vec);
+        let rt = Rq::new(params.t.clone(), fx);
+
         let amount_opened = opened.len();
         let amount_of_players = players.len();
 
-        /* // ALL OF THIS IS ONLY FOR ACTIVE SEC
-        // Open e_bracket
-        let mut e = polynomial![0];
-        for i in 0..e_bracket.len() {
-            e = e + e_bracket[i].clone()
-        }
-
-        // Compute e_i's
-        let mut e_is = vec![polynomial![0]; amount_opened];
-        e_is[0] = e.clone();
-        for i in 1..amount_opened {
-            e_is[i] = e_is[i-1].clone() * e.clone()
-        }
-
-        let mut a = polynomial![0];
-        for j in 0..amount_opened {
-            a = a + (e_is[j].clone() * opened[j].clone())
-        }
-
-        // USE COMMITMENT SCHEME
-
-        // Open shared sk alpha
-        let mut alpha = polynomial![0];
-        for i in 0..shared_sk.len() {
-            alpha = alpha + shared_sk[i].clone()
-        }
-
-        // OPEN COMMITMENT */
+        //CODE FOR ACTIVE SEC MISSING HERE
 
         // CALCULATE y
-        let mut y = polynomial![0];
-        for i in 1..amount_of_players + 1 {
-            y = (y + y_angle[i].clone()).modulo(&params.t);
-        }
-        
-        y
+        // Open r_bracket to P_i
+        let shares = y_angle.iter().skip(1).take(amount_of_players).cloned().collect::<Vec<Polynomial>>();
+        let y = open_shares(&params, shares);
+        rt.reduce(&y)
     }
 }
 
@@ -130,25 +152,28 @@ mod tests {
         assert_eq!(polynomial![9], output)
     }
 
-    /* #[test]
+    #[test]
     fn test_multiply() {
         let players = vec![Player::new(); 3];
 
         let params = secure_params();
 
         let (initialized_players, global_key) = ProtocolPrep::initialize(&params, &players);
+        let triple_1 = ProtocolPrep::triple(&params, &initialized_players);
+        let triple_2 = ProtocolPrep::triple(&params, &initialized_players);
         let r1_pair = ProtocolPrep::pair(&params, &initialized_players);
         let r2_pair = ProtocolPrep::pair(&params, &initialized_players);
+        let (t_bracket, _) = ProtocolPrep::pair(&params, &initialized_players);
 
         let x = ProtocolOnline::input(&params, polynomial![2], r1_pair, &initialized_players);
         let y = ProtocolOnline::input(&params, polynomial![7], r2_pair, &initialized_players);
 
         let (e_bracket, _) = ProtocolPrep::pair(&params, &initialized_players);
 
-        let res = ProtocolOnline::multiply();
+        let res = ProtocolOnline::multiply(&params, x, y, triple_1, triple_2, t_bracket, &initialized_players);
         let output = ProtocolOnline::output(&params, res, e_bracket, vec![], global_key, initialized_players);
 
         assert_eq!(polynomial![14], output)
 
-    } */
+    }
 }

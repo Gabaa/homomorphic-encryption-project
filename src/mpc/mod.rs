@@ -85,7 +85,7 @@ pub fn ddec(params: &Parameters, players: &Vec<Player>, mut c: Ciphertext) -> Po
     }
 
     //Random element does not currently have a bounded l_inf norm
-    let norm_bound: BigInt = BigInt::from(2_i32) ^ &BigInt::from(256_i32);
+    let norm_bound: BigInt = BigInt::from(2_i32) ^ &BigInt::from(32_i32);
     let t: Vec<Polynomial> = v
         .iter()
         .map(|v_i| {
@@ -118,6 +118,16 @@ pub fn ddec(params: &Parameters, players: &Vec<Player>, mut c: Ciphertext) -> Po
     .trim_res();
 
     msg_minus_q.modulo(&params.t)
+}
+
+// Opens additively shared secret
+// Should addition be done in Rt?
+pub fn open_shares(params: &Parameters, shares: Vec<Polynomial>) -> Polynomial {
+    let mut r = polynomial![0];
+    for i in 0..shares.len() {
+        r = (r + shares[i].clone()).modulo(&params.t);
+    }
+    r
 }
 
 pub fn diag(params: &Parameters, a: BigInt) -> Polynomial {

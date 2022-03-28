@@ -103,7 +103,6 @@ impl ProtocolPrep {
 
 /// Implements Protocol Reshare (fig. 4)
 pub fn reshare(params: &Parameters, e_m: &Ciphertext, players: &Vec<Player>, enc: Enc) -> (Option<Ciphertext>, Vec<Polynomial>) {
-    let rq = &params.quotient_ring;
     let amount_of_players = players.len();
 
     // Each player samples vec from M (this is just from Rt for now)
@@ -202,10 +201,6 @@ mod tests {
 
         let (initialized_players, _) = ProtocolPrep::initialize(&params, &players);
         let (a_angle, b_angle, c_angle) = ProtocolPrep::triple(&params, &initialized_players);
-
-        println!("{:?}", a_angle);
-        println!("{:?}", b_angle);
-        println!("{:?}", c_angle);
 
         let mut a = polynomial![0];
         let mut b = polynomial![0];
