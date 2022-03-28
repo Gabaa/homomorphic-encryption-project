@@ -86,6 +86,13 @@ impl ProtocolPrep {
         let b_angle = p_angle(params, b_is, e_b.clone(), players);
         let e_c = mul(params, &e_a, &e_b);
 
+        let a = ddec(params, players, e_a);
+        let b = ddec(params, players, e_b);
+        let c = ddec(params, players, e_c.clone());
+
+        let ab = params.quotient_ring.mul(&a, &b);
+        assert_eq!(ab.modulo(&params.t), c.modulo(&params.t));
+
         let (e_c_prime_opt, reshared) = reshare(params, &e_c, players, Enc::NewCiphertext);
         let e_c_prime: Ciphertext;
         match e_c_prime_opt {
@@ -193,6 +200,7 @@ mod tests {
         let amount_of_players = 3;
         let players = vec![Player::new(); amount_of_players];
         let params = secure_params();
+        let rq = &params.quotient_ring;
 
         let (initialized_players, _) = ProtocolPrep::initialize(&params, &players);
         let (a_angle, b_angle, c_angle) = ProtocolPrep::triple(&params, &initialized_players);
@@ -210,7 +218,7 @@ mod tests {
             c = c + c_angle[i].clone()
         }
 
-        let ab = a * b;
+        let ab = rq.mul(&a, &b);
         assert_eq!(ab.modulo(&params.t), c.modulo(&params.t))
     }
 }

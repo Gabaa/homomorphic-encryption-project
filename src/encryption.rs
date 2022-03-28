@@ -61,7 +61,9 @@ impl Default for Parameters {
 #[allow(dead_code)]
 pub fn secure_params() -> Parameters {
     // TODO: Shouldn't hardcode `q`
-    Parameters::new(80708963, 2.0, 80.0, 7, 127)
+    let c = "7491009436045135886698181243708504421607358929720206973094758479498049015628852031735169966277519969".parse::<BigInt>().unwrap();
+    let t2 = "127".parse::<BigInt>().unwrap();
+    Parameters::new(c, 2.0, 80.0, 7, t2)
 }
 
 pub fn mpc_secure_params() -> Parameters {
