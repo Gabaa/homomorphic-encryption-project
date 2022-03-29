@@ -7,6 +7,7 @@ use crate::{encryption::*, polynomial};
 
 mod online;
 mod prep;
+mod commitment;
 
 #[derive(Clone, Debug)]
 pub struct Player {

@@ -59,18 +59,21 @@ impl ProtocolOnline {
         
         // Check if ab = c in first triple by using the second triple
 
+        // Compute epsilon
         let mut epsilon_shares = vec![polynomial![]; players.len()];
         for i in 0..amount_of_players {
             epsilon_shares[i] = x[i + 1].clone() - a_angle[i + 1].clone();
         }
         let epsilon = open_shares(&params, epsilon_shares);
 
+        // Compute delta
         let mut delta_shares = vec![polynomial![]; players.len()];
         for i in 0..amount_of_players {
             delta_shares[i] = y[i + 1].clone() - b_angle[i + 1].clone();
         }
         let delta = open_shares(&params, delta_shares);
 
+        // Compute shares of result
         let mut z_shares = vec![polynomial![]; x.len()];
         for i in 0..x.len() {
             z_shares[i] = c_angle[i].clone() + epsilon.clone() * b_angle[i].clone() + delta.clone() * a_angle[i].clone();
@@ -100,13 +103,15 @@ impl ProtocolOnline {
 
         // CODE FOR ACTIVE SEC MISSING HERE
 
+        // Open e_bracket to get e
+
         // Gen e_i's
 
         // Commit to MAC's + yi
 
         // Open global key alpha
 
-        // Open commitmenets and compute y_i's
+        // Open commitments and compute y_i's
 
         // CALCULATE y
         let shares = y_angle.iter().skip(1).take(amount_of_players).cloned().collect::<Vec<Polynomial>>();
