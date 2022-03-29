@@ -14,7 +14,8 @@ pub struct Player {
     sk_i2: Polynomial,
     pk: PublicKey,
     e_beta_is: Vec<Ciphertext>,
-    e_alpha: Ciphertext
+    e_alpha: Ciphertext,
+    opened: Vec<Polynomial>
 }
 
 impl Player {
@@ -24,7 +25,8 @@ impl Player {
             sk_i2: polynomial![0],
             pk: (polynomial![0], polynomial![0]),
             e_beta_is: vec![],
-            e_alpha: vec![polynomial![0]]
+            e_alpha: vec![],
+            opened: vec![]
         }
     }
 

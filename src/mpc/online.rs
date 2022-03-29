@@ -56,6 +56,8 @@ impl ProtocolOnline {
         let (f_angle, g_angle, h_angle) = fgh_triple;
 
         //CODE FOR ACTIVE SEC MISSING HERE
+        
+        // Check if ab = c in first triple by using the second triple
 
         let mut epsilon_shares = vec![polynomial![]; players.len()];
         for i in 0..amount_of_players {
@@ -82,7 +84,6 @@ impl ProtocolOnline {
     pub fn output(params: &Parameters,
         y_angle: Vec<Polynomial>,
         e_bracket: Vec<Polynomial>,
-        opened: Vec<Polynomial>,
         shared_sk: Vec<Polynomial>,
         players: Vec<Player>)
     -> Polynomial {
@@ -93,13 +94,21 @@ impl ProtocolOnline {
         let fx = Polynomial::from(fx_vec);
         let rt = Rq::new(params.t.clone(), fx);
 
-        let amount_opened = opened.len();
+        // Should get own opened instead of just getting 1'st players
+        let amount_opened = players[0].opened.len();
         let amount_of_players = players.len();
 
-        //CODE FOR ACTIVE SEC MISSING HERE
+        // CODE FOR ACTIVE SEC MISSING HERE
+
+        // Gen e_i's
+
+        // Commit to MAC's + yi
+
+        // Open global key alpha
+
+        // Open commitmenets and compute y_i's
 
         // CALCULATE y
-        // Open r_bracket to P_i
         let shares = y_angle.iter().skip(1).take(amount_of_players).cloned().collect::<Vec<Polynomial>>();
         let y = open_shares(&params, shares);
         rt.reduce(&y)
@@ -125,7 +134,7 @@ mod tests {
 
         let x = ProtocolOnline::input(&params, polynomial![2], r1_pair, &initialized_players);
         let (e_bracket, _) = ProtocolPrep::pair(&params, &initialized_players);
-        let x_output = ProtocolOnline::output(&params, x, e_bracket, vec![], global_key, initialized_players);
+        let x_output = ProtocolOnline::output(&params, x, e_bracket, global_key, initialized_players);
         
         assert_eq!(polynomial![2], x_output)
 
@@ -147,7 +156,7 @@ mod tests {
         let (e_bracket, _) = ProtocolPrep::pair(&params, &initialized_players);
 
         let res = ProtocolOnline::add(&params, x, y);
-        let output = ProtocolOnline::output(&params, res, e_bracket, vec![], global_key, initialized_players);
+        let output = ProtocolOnline::output(&params, res, e_bracket, global_key, initialized_players);
 
         assert_eq!(polynomial![9], output)
     }
@@ -171,7 +180,7 @@ mod tests {
         let (e_bracket, _) = ProtocolPrep::pair(&params, &initialized_players);
 
         let res = ProtocolOnline::multiply(&params, x, y, triple_1, triple_2, t_bracket, &initialized_players);
-        let output = ProtocolOnline::output(&params, res, e_bracket, vec![], global_key, initialized_players);
+        let output = ProtocolOnline::output(&params, res, e_bracket, global_key, initialized_players);
 
         assert_eq!(polynomial![14], output)
 
