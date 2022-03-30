@@ -161,10 +161,7 @@ pub fn reshare(params: &Parameters, e_m: &Ciphertext, players: &Vec<Player>, enc
     }
 
     // This is done by each player
-    let mut e_f = vec![polynomial![0]];
-    for i in 0..amount_of_players {
-        e_f = add(params, &e_f, &e_f_is[i])
-    }
+    let e_f = add_encrypted_shares(params, e_f_is.clone(), amount_of_players);
     let e_m_plus_f = add(params, e_m, &e_f);
 
     // Done by each player
