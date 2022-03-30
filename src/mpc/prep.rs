@@ -1,7 +1,9 @@
 //! Preprocessing phase (Multiparty Computation from Somewhat Homomorphic Encryption, sec. 5)
 
-use num::One;
-use crate::quotient_ring::Rq;
+use crate::mpc::add_encrypted_shares;
+use crate::mpc::zk::zkpopk;
+use crate::mpc::Angle;
+use crate::mpc::Bracket;
 use crate::{encryption::*, mpc::{Player, ddec, distribute_keys, diag}, prob::*, polynomial, poly::Polynomial};
 
 use num::{BigInt, Zero};
@@ -16,7 +18,7 @@ pub struct ProtocolPrep {}
 
 impl ProtocolPrep {
     /// Implements the Initialize step
-    pub fn initialize(params: &Parameters, players: &Vec<Player>) -> (Vec<Player>, Vec<Polynomial>) {
+    pub fn initialize(params: &Parameters, players: &Vec<Player>) -> (Vec<Player>, Bracket) {
         let amount_of_players = players.len();
         let mut new_players = distribute_keys(params, players.clone());
 
@@ -25,7 +27,7 @@ impl ProtocolPrep {
         let mut e_alpha_is = vec![vec![]; amount_of_players];
         let mut e_beta_is = vec![vec![]; amount_of_players];
 
-        // Each player does the cocntents of the loop
+        // Each player does the contents of the loop
         for i in 0..amount_of_players {
             alpha_is[i] = sample_single(&params.t);
             let beta_i = sample_single(&params.t);
@@ -39,10 +41,21 @@ impl ProtocolPrep {
             new_players[i].e_beta_is = e_beta_is.clone();
         }
 
-        let mut e_alpha = vec![polynomial![0]];
+        // TODO: ZK proof faked for now
+        let sec = 40; //sec hardcoded for now common values are 40, 80
         for i in 0..amount_of_players {
-            e_alpha = add(params, &e_alpha, &e_alpha_is[i])
+            for _ in 0..sec {
+                if !zkpopk(new_players[i].e_alpha.clone()) {
+                    panic!("ZK proof failed!")
+                }
+    
+                if !zkpopk(new_players[i].e_beta_is[i].clone()) {
+                    panic!("ZK proof failed!")
+                }
+            }
         }
+
+        let e_alpha = add_encrypted_shares(params, e_alpha_is.clone(), amount_of_players);
 
         let diag_alpha_is = alpha_is.iter().map(|a| diag(params, a.clone())).collect();
         let diag_alpha_share = p_bracket(params, diag_alpha_is, e_alpha, &new_players);
@@ -52,22 +65,35 @@ impl ProtocolPrep {
     }
 
     /// Implements the Pair step
-    pub fn pair(params: &Parameters, players: &Vec<Player>) -> (Vec<Polynomial>, Vec<Polynomial>) {
+    pub fn pair(params: &Parameters, players: &Vec<Player>) -> (Bracket, Angle) {
         let amount_of_players = players.len();
         
-        let r_is = vec![sample_from_uniform(&params.t, params.n); amount_of_players];
-
-        let mut e_r = vec![polynomial![0]];
+        let mut r_is = vec![polynomial![0]; amount_of_players];
         for i in 0..amount_of_players {
-            e_r = add(params, &e_r, &encrypt(params, r_is[i].clone(), &players[0].pk))
+            r_is[i] = sample_from_uniform(&params.t, params.n)
         }
+
+        let mut e_r_is = vec![vec![]; amount_of_players];
+        for i in 0..amount_of_players {
+            e_r_is[i] = encrypt(params, r_is[i].clone(), &players[0].pk)
+        }
+
+        let e_r = add_encrypted_shares(params, e_r_is.clone(), amount_of_players);
+
+        // TODO: ZK proof faked for now
+        for i in 0..amount_of_players {
+            if !zkpopk(e_r_is[i].clone()) {
+                panic!("ZK proof failed!")
+            }
+        }
+
         let r_bracket = p_bracket(params, r_is.clone(), e_r.clone(), players);
         let r_angle = p_angle(params, r_is, e_r, players);
         (r_bracket, r_angle)
     }
 
     /// Implements the Triple step
-    pub fn triple(params: &Parameters, players: &Vec<Player>) -> (Vec<Polynomial>, Vec<Polynomial>, Vec<Polynomial>) {
+    pub fn triple(params: &Parameters, players: &Vec<Player>) -> (Angle, Angle, Angle) {
         let amount_of_players = players.len();
         
         let mut a_is = vec![polynomial![0]; amount_of_players];
@@ -77,23 +103,33 @@ impl ProtocolPrep {
             b_is[i] = sample_from_uniform(&params.t, params.n)
         }
 
-        let mut e_a = vec![];
-        let mut e_b = vec![];
+        let mut e_a_is = vec![vec![]; amount_of_players];
+        let mut e_b_is = vec![vec![]; amount_of_players];
+
         for i in 0..amount_of_players {
-            e_a = add(params, &e_a, &encrypt(params, a_is[i].clone(), &players[0].pk));
-            e_b = add(params, &e_b, &encrypt(params, b_is[i].clone(), &players[0].pk))
+            e_a_is[i] = encrypt(params, a_is[i].clone(), &players[0].pk);
+            e_b_is[i] = encrypt(params, b_is[i].clone(), &players[0].pk)
         }
+
+        // TODO: ZK proof faked for now
+        for i in 0..amount_of_players {
+            if !zkpopk(e_a_is[i].clone()) {
+                panic!("ZK proof failed!")
+            }
+            if !zkpopk(e_b_is[i].clone()) {
+                panic!("ZK proof failed!")
+            }
+        }
+
+        let e_a = add_encrypted_shares(params, e_a_is, amount_of_players);
+        let e_b = add_encrypted_shares(params, e_b_is, amount_of_players);
 
         let a_angle = p_angle(params, a_is, e_a.clone(), players);
         let b_angle = p_angle(params, b_is, e_b.clone(), players);
         let e_c = mul(params, &e_a, &e_b);
 
         let (e_c_prime_opt, reshared) = reshare(params, &e_c, players, Enc::NewCiphertext);
-        let e_c_prime: Ciphertext;
-        match e_c_prime_opt {
-            Some(enc) => e_c_prime = enc,
-            None => todo!()
-        }
+        let e_c_prime: Ciphertext = e_c_prime_opt.unwrap();
 
         let c_angle = p_angle(params, reshared, e_c_prime, players);
 
@@ -117,14 +153,19 @@ pub fn reshare(params: &Parameters, e_m: &Ciphertext, players: &Vec<Player>, enc
         e_f_is[i] = encrypt(params, f_is[i].clone(), &players[i].pk)
     }
 
+    // ZK proof faked for now
+    for i in 0..amount_of_players {
+        if !zkpopk(e_f_is[i].clone()) {
+            panic!("ZK proof failed!")
+        }
+    }
+
     // This is done by each player
     let mut e_f = vec![polynomial![0]];
     for i in 0..amount_of_players {
         e_f = add(params, &e_f, &e_f_is[i])
     }
     let e_m_plus_f = add(params, e_m, &e_f);
-
-    // TODO: No ZK proof (only passive sec. for now)
 
     // Done by each player
     let m_plus_f = ddec(params, players, e_m_plus_f);
@@ -150,7 +191,7 @@ pub fn reshare(params: &Parameters, e_m: &Ciphertext, players: &Vec<Player>, enc
 }
 
 /// Implements Protocol PBracket (fig. 5)
-pub fn p_bracket(params: &Parameters, v_is: Vec<Polynomial>, e_v: Ciphertext, players: &Vec<Player>) -> Vec<Polynomial> {
+pub fn p_bracket(params: &Parameters, v_is: Vec<Polynomial>, e_v: Ciphertext, players: &Vec<Player>) -> Bracket {
     let amount_of_players = players.len();
 
     let mut e_gamma_is = vec![vec![polynomial![0]]; amount_of_players];
@@ -173,7 +214,7 @@ pub fn p_bracket(params: &Parameters, v_is: Vec<Polynomial>, e_v: Ciphertext, pl
 }
 
 /// Implements Protocol PAngle (fig. 6)
-pub fn p_angle(params: &Parameters, v_is: Vec<Polynomial>, e_v: Ciphertext, players: &Vec<Player>) -> Vec<Polynomial> {
+pub fn p_angle(params: &Parameters, v_is: Vec<Polynomial>, e_v: Ciphertext, players: &Vec<Player>) -> Angle {
     // Each player does the following:
     let e_v_mul_alpha = mul(&params, &e_v, &players[0].e_alpha); 
     let (_, gamma_is) = reshare(params, &e_v_mul_alpha, players, Enc::NoNewCiphertext); // each player Pi gets a share γi of α·v
@@ -183,7 +224,6 @@ pub fn p_angle(params: &Parameters, v_is: Vec<Polynomial>, e_v: Ciphertext, play
 
 #[cfg(test)]
 mod tests {
-    use num::One;
     use crate::quotient_ring::Rq;
     use crate::{mpc::*, mpc::prep::*, encryption::secure_params};
 
@@ -192,12 +232,7 @@ mod tests {
         let amount_of_players = 3;
         let players = vec![Player::new(); amount_of_players];
         let params = secure_params();
-        let mut fx_vec = vec![BigInt::zero(); params.n + 1];
-        fx_vec[0] = BigInt::one();
-        fx_vec[params.n] = BigInt::one();
-        let fx = Polynomial::from(fx_vec);
-        let rt = Rq::new(params.t.clone(), fx);
-        let rq = &params.quotient_ring;
+        let rt = Rq::new(params.t.clone(), params.quotient_ring.modulo.clone());
 
         let (initialized_players, _) = ProtocolPrep::initialize(&params, &players);
         let (a_angle, b_angle, c_angle) = ProtocolPrep::triple(&params, &initialized_players);
@@ -212,7 +247,12 @@ mod tests {
         }
 
         let ab = rt.mul(&a, &b);
-        assert_eq!(ab.modulo(&params.t), c.modulo(&params.t))
+        assert_eq!(ab, c.modulo(&params.t))
+    }
+
+    #[test]
+    fn test_p_bracket() {
+        
     }
 }
 

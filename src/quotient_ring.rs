@@ -4,7 +4,7 @@ use crate::{poly::Polynomial, polynomial};
 
 pub struct Rq {
     pub q: BigInt,
-    modulo: Polynomial,
+    pub modulo: Polynomial,
 }
 
 impl Rq {

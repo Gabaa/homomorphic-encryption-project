@@ -8,15 +8,20 @@ use crate::{encryption::*, polynomial};
 mod online;
 mod prep;
 mod commitment;
+mod zk;
+
+pub type MulTriple = (Vec<Polynomial>, Vec<Polynomial>, Vec<Polynomial>);
+pub type Angle = Vec<Polynomial>;
+pub type Bracket = Vec<Polynomial>;
 
 #[derive(Clone, Debug)]
 pub struct Player {
-    sk_i1: Polynomial,
-    sk_i2: Polynomial,
+    sk_i1: Polynomial,                  // Additive shares of sk
+    sk_i2: Polynomial,                  // Additive shares of sk^2
     pk: PublicKey,
-    e_beta_is: Vec<Ciphertext>,
-    e_alpha: Ciphertext,
-    opened: Vec<Polynomial>
+    e_beta_is: Vec<Ciphertext>,         // Encrypted personal keys
+    e_alpha: Ciphertext,                // Encrypted global key
+    opened: Vec<Angle>
 }
 
 impl Player {
@@ -123,14 +128,36 @@ pub fn ddec(params: &Parameters, players: &Vec<Player>, mut c: Ciphertext) -> Po
     msg_minus_q.modulo(&params.t)
 }
 
-// Opens additively shared secret
-// Should addition be done in Rt?
 pub fn open_shares(params: &Parameters, shares: Vec<Polynomial>) -> Polynomial {
     let mut r = polynomial![0];
     for i in 0..shares.len() {
         r = (r + shares[i].clone()).modulo(&params.t);
     }
     r
+}
+
+pub fn open_bracket(params: &Parameters, bracket: Bracket, n: usize, player: Player) -> Polynomial {
+    
+    // Perform check
+    /* for i in 0..n {
+
+    } */
+
+    // Compute result
+    let mut r = polynomial![0];
+    let additive_shares = bracket.iter().take(n).cloned().collect::<Vec<Polynomial>>();
+    for i in 0..n {
+        r = (r + additive_shares[i].clone()).modulo(&params.t);
+    }
+    r
+}
+
+pub fn add_encrypted_shares(params: &Parameters, enc_shares: Vec<Ciphertext>, amount_of_players: usize) -> Ciphertext {
+    let mut res = vec![polynomial![0]];
+    for i in 0..amount_of_players {
+        res = add(params, &res, &enc_shares[i])
+    }
+    res
 }
 
 pub fn diag(params: &Parameters, a: BigInt) -> Polynomial {

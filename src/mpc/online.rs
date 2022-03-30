@@ -1,5 +1,6 @@
 //! Online phase (Multiparty Computation from Somewhat Homomorphic Encryption, sec. 2)
 
+use crate::mpc::{MulTriple, Angle, Bracket};
 use num::Zero;
 use num::One;
 use crate::BigInt;
@@ -7,13 +8,10 @@ use crate::quotient_ring::Rq;
 use crate::mpc::open_shares;
 use crate::{polynomial, poly::Polynomial, mpc::Player, encryption::Parameters};
 
-pub type MulTriple = (Vec<Polynomial>, Vec<Polynomial>, Vec<Polynomial>);
-
 pub struct ProtocolOnline {}
 
 impl ProtocolOnline {
-    pub fn input(params: &Parameters, x_i: Polynomial, r_pair: (Vec<Polynomial>, Vec<Polynomial>), players: &Vec<Player>) -> Vec<Polynomial> {
-        let rq = &params.quotient_ring;
+    pub fn input(params: &Parameters, x_i: Polynomial, r_pair: (Bracket, Angle), players: &Vec<Player>) -> Angle {
         let amount_of_players = players.len();
         let (r_bracket, r_angle) = r_pair;
         
@@ -22,7 +20,7 @@ impl ProtocolOnline {
         let r = open_shares(&params, shares);
 
         // P_i broadcasts this
-        let eps = (x_i - r);
+        let eps = x_i - r;
         
         // All parties compute
         let mut x_i_angle_shares = r_angle.clone();
@@ -32,7 +30,7 @@ impl ProtocolOnline {
         x_i_angle_shares
     }
 
-    pub fn add(params: &Parameters, x: Vec<Polynomial>, y: Vec<Polynomial>) -> Vec<Polynomial> {
+    pub fn add(params: &Parameters, x: Angle, y: Angle) -> Angle {
         // Players just add shares locally
         let mut res = vec![polynomial![0]; x.len()];
         for i in 0..x.len() {
@@ -43,21 +41,24 @@ impl ProtocolOnline {
 
     // SKAL DE ANDRE VÆRDIER OGSÅ REGNES PÅ NÅR VI REGNER PÅ ANGLE REPR.?
     pub fn multiply(params: &Parameters,
-        x: Vec<Polynomial>,
-        y: Vec<Polynomial>,
+        x: Angle,
+        y: Angle,
         abc_triple: MulTriple,
         fgh_triple: MulTriple,
-        t_bracket: Vec<Polynomial>,
+        t_bracket: Bracket,
         players: &Vec<Player>)
-    -> Vec<Polynomial> {
+    -> Angle {
 
         let amount_of_players = players.len();
         let (a_angle, b_angle, c_angle) = abc_triple;
         let (f_angle, g_angle, h_angle) = fgh_triple;
 
-        //CODE FOR ACTIVE SEC MISSING HERE
         
         // Check if ab = c in first triple by using the second triple
+
+        // Open t_bracket
+        let t_shares = t_bracket.iter().take(amount_of_players).cloned().collect::<Vec<Polynomial>>();
+        let t = open_shares(&params, t_shares);
 
         // Compute epsilon
         let mut epsilon_shares = vec![polynomial![]; players.len()];
@@ -91,11 +92,7 @@ impl ProtocolOnline {
         players: Vec<Player>)
     -> Polynomial {
 
-        let mut fx_vec = vec![BigInt::zero(); params.n + 1];
-        fx_vec[0] = BigInt::one();
-        fx_vec[params.n] = BigInt::one();
-        let fx = Polynomial::from(fx_vec);
-        let rt = Rq::new(params.t.clone(), fx);
+        let rt = Rq::new(params.t.clone(), params.quotient_ring.modulo.clone());
 
         // Should get own opened instead of just getting 1'st players
         let amount_opened = players[0].opened.len();
@@ -104,18 +101,40 @@ impl ProtocolOnline {
         // CODE FOR ACTIVE SEC MISSING HERE
 
         // Open e_bracket to get e
+        let e_shares = e_bracket.iter().take(amount_of_players).cloned().collect::<Vec<Polynomial>>();
+        let e = open_shares(&params, e_shares);
 
-        // Gen e_i's
+        // All players compute a
+        let mut a = polynomial![0];
+        let mut e_is = vec![polynomial![0]; amount_opened];
+        if amount_opened > 0 {
+            e_is[0] = e.clone();
+            for j in 0..amount_opened {
+                // Compute a_j's
+                let a_j_shares = players[0].opened[j].iter().skip(1).take(amount_of_players).cloned().collect::<Vec<Polynomial>>();
+                let a_j = open_shares(&params, a_j_shares);
 
-        // Commit to MAC's + yi
+                // Gen e_i's
+                e_is[j] = e_is[j-1].clone() * e.clone();
 
-        // Open global key alpha
+                // Compute a
+                a = a + e_is[j].clone() * a_j
+            }
+        }
+
+        // Commit to gamma_i + yi + MAC
+
+        let alpha_shares = shared_sk.iter().take(amount_of_players).cloned().collect::<Vec<Polynomial>>();
+        let alpha = open_shares(&params, alpha_shares);
 
         // Open commitments and compute y_i's
 
+        /* for i in 0..amount_of_players {
+            players[i].opened.push(y_angle)
+        } */
         // CALCULATE y
-        let shares = y_angle.iter().skip(1).take(amount_of_players).cloned().collect::<Vec<Polynomial>>();
-        let y = open_shares(&params, shares);
+        let y_shares = y_angle.iter().skip(1).take(amount_of_players).cloned().collect::<Vec<Polynomial>>();
+        let y = open_shares(&params, y_shares);
         rt.reduce(&y)
     }
 }
