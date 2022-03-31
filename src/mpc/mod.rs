@@ -1,3 +1,5 @@
+use num::One;
+use num::Zero;
 use num::BigInt;
 
 use crate::poly::*;
@@ -10,15 +12,17 @@ mod prep;
 mod commitment;
 mod zk;
 
-pub type MulTriple = (Vec<Polynomial>, Vec<Polynomial>, Vec<Polynomial>);
-pub type Angle = Vec<Polynomial>;
-pub type Bracket = Vec<Polynomial>;
+pub type Angle = Vec<BigInt>;
+pub type Bracket = Vec<BigInt>;
+pub type MulTriple = (Angle, Angle, Angle);
+
 
 #[derive(Clone, Debug)]
 pub struct Player {
     sk_i1: Polynomial,                  // Additive shares of sk
     sk_i2: Polynomial,                  // Additive shares of sk^2
     pk: PublicKey,
+    beta_i: BigInt,
     e_beta_is: Vec<Ciphertext>,         // Encrypted personal keys
     e_alpha: Ciphertext,                // Encrypted global key
     opened: Vec<Angle>
@@ -30,6 +34,7 @@ impl Player {
             sk_i1: polynomial![0],
             sk_i2: polynomial![0],
             pk: (polynomial![0], polynomial![0]),
+            beta_i: BigInt::zero(),
             e_beta_is: vec![],
             e_alpha: vec![],
             opened: vec![]
@@ -70,7 +75,7 @@ pub fn distribute_keys(params: &Parameters, mut players: Vec<Player>) -> Vec<Pla
 }
 
 /// Function for "dec" functionality in Fkey_gen_dec figure 3 of the MPC article.
-pub fn ddec(params: &Parameters, players: &Vec<Player>, mut c: Ciphertext) -> Polynomial {
+pub fn ddec(params: &Parameters, players: &Vec<Player>, mut c: Ciphertext) -> BigInt {
     let rq = &params.quotient_ring;
     let mut v = vec![polynomial![0]; players.len()];
 
@@ -125,18 +130,18 @@ pub fn ddec(params: &Parameters, players: &Vec<Player>, mut c: Ciphertext) -> Po
     )
     .trim_res();
 
-    msg_minus_q.modulo(&params.t)
+    decode(msg_minus_q.modulo(&params.t))
 }
 
-pub fn open_shares(params: &Parameters, shares: Vec<Polynomial>) -> Polynomial {
-    let mut r = polynomial![0];
+pub fn open_shares(params: &Parameters, shares: Vec<BigInt>) -> BigInt {
+    let mut r = BigInt::zero();
     for i in 0..shares.len() {
-        r = (r + shares[i].clone()).modulo(&params.t);
+        r = (r + shares[i].clone()).modpow(&BigInt::one(), &params.t);
     }
     r
 }
 
-pub fn open_bracket(params: &Parameters, bracket: Bracket, n: usize, player: Player) -> Polynomial {
+pub fn open_bracket(params: &Parameters, bracket: Bracket, n: usize, player: Player) -> BigInt {
     
     // Perform check
     /* for i in 0..n {
@@ -144,10 +149,10 @@ pub fn open_bracket(params: &Parameters, bracket: Bracket, n: usize, player: Pla
     } */
 
     // Compute result
-    let mut r = polynomial![0];
-    let additive_shares = bracket.iter().take(n).cloned().collect::<Vec<Polynomial>>();
+    let mut r = BigInt::zero();
+    let additive_shares = bracket.iter().take(n).cloned().collect::<Vec<BigInt>>();
     for i in 0..n {
-        r = (r + additive_shares[i].clone()).modulo(&params.t);
+        r = (r + additive_shares[i].clone()).modpow(&BigInt::one(), &params.t);
     }
     r
 }
@@ -160,8 +165,9 @@ pub fn add_encrypted_shares(params: &Parameters, enc_shares: Vec<Ciphertext>, am
     res
 }
 
-pub fn diag(params: &Parameters, a: BigInt) -> Polynomial {
-    Polynomial::new(vec![a; params.n])
+pub fn diag(params: &Parameters, a: BigInt) -> BigInt {
+    //vec![a; params.n]
+    a
 }
 
 #[cfg(test)]
@@ -225,12 +231,12 @@ mod tests {
         let cipher = encrypt(&params, msg, &pk);
         let decrypted = ddec(&params, &player_array, cipher);
 
-        assert_eq!(decrypted, polynomial![0]);
+        assert_eq!(decrypted, decode(polynomial![0]));
 
         let msg2 = polynomial![5, 7, 3];
         let cipher2 = encrypt(&params, msg2, &pk);
         let decrypted2 = ddec(&params, &player_array, cipher2);
 
-        assert_eq!(decrypted2, polynomial![5, 7, 3]);
+        assert_eq!(decrypted2, decode(polynomial![5, 7, 3]));
     }
 }
