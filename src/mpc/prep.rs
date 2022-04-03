@@ -4,7 +4,6 @@ use num::One;
 use crate::mpc::add_encrypted_shares;
 use crate::mpc::zk::zkpopk;
 use crate::mpc::Angle;
-use crate::mpc::Bracket;
 use crate::{encryption::*, mpc::{Player, ddec, distribute_keys, diag}, prob::*, polynomial, poly::Polynomial};
 
 use num::{BigInt, Zero};
@@ -19,26 +18,26 @@ pub struct ProtocolPrep {}
 
 impl ProtocolPrep {
     /// Implements the Initialize step
-    pub fn initialize(params: &Parameters, players: &Vec<Player>) -> (Vec<Player>, Bracket) {
+    pub fn initialize(params: &Parameters, players: &Vec<Player>) -> Vec<Player> {
         let amount_of_players = players.len();
         let mut new_players = distribute_keys(params, players.clone());
-
-        let mut alpha_is = vec![BigInt::zero(); amount_of_players];
 
         let mut e_alpha_is = vec![vec![]; amount_of_players];
         let mut e_beta_is = vec![vec![]; amount_of_players];
 
         // Each player does the contents of the loop
         for i in 0..amount_of_players {
-            alpha_is[i] = sample_single(&params.t);
+            new_players[i].alpha_i = sample_single(&params.t);
             new_players[i].beta_i = sample_single(&params.t);
 
-            e_alpha_is[i] = encrypt(params, encode(diag(params, alpha_is[i].clone())), &players[i].pk);
+            e_alpha_is[i] = encrypt(params, encode(diag(params, new_players[i].alpha_i.clone())), &players[i].pk);
             e_beta_is[i] = encrypt(params, encode(diag(params, players[i].beta_i.clone())), &players[i].pk);
         }
 
+        let e_alpha = add_encrypted_shares(&params, e_alpha_is.clone(), amount_of_players);
+
         for i in 0..amount_of_players {
-            new_players[i].e_alpha = e_alpha_is[i].clone();
+            new_players[i].e_alpha = e_alpha.clone();
             new_players[i].e_beta_is = e_beta_is.clone();
         }
 
@@ -56,17 +55,12 @@ impl ProtocolPrep {
             }
         }
 
-        let e_alpha = add_encrypted_shares(params, e_alpha_is.clone(), amount_of_players);
-
-        let diag_alpha_is = alpha_is.iter().map(|a| diag(params, a.clone())).collect();
-        let diag_alpha_share = p_bracket(params, diag_alpha_is, e_alpha, &new_players);
-
-        (new_players, diag_alpha_share)
+        new_players
 
     }
 
     /// Implements the Pair step
-    pub fn pair(params: &Parameters, players: &Vec<Player>) -> (Bracket, Angle) {
+    pub fn pair(params: &Parameters, players: &Vec<Player>) -> (Vec<BigInt>, Angle) {
         let amount_of_players = players.len();
         
         let mut r_is = vec![BigInt::zero(); amount_of_players];
@@ -88,9 +82,8 @@ impl ProtocolPrep {
             }
         }
 
-        let r_bracket = p_bracket(params, r_is.clone(), e_r.clone(), players);
-        let r_angle = p_angle(params, r_is, e_r, players);
-        (r_bracket, r_angle)
+        let r_angle = p_angle(params, r_is.clone(), e_r, players);
+        (r_is, r_angle)
     }
 
     /// Implements the Triple step
@@ -170,7 +163,7 @@ pub fn reshare(params: &Parameters, e_m: &Ciphertext, players: &Vec<Player>, enc
 
     // m_i computed by P_i
     let mut m_is = vec![BigInt::zero(); amount_of_players];
-    m_is[0] = (m_plus_f.clone() + -f_is[0].clone()).modpow(&BigInt::one(), &params.t);
+    m_is[0] = (m_plus_f.clone() - f_is[0].clone()).modpow(&BigInt::one(), &params.t);
     for i in 1..amount_of_players {
         m_is[i] = (-f_is[i].clone()).modpow(&BigInt::one(), &params.t)
     }
@@ -188,35 +181,12 @@ pub fn reshare(params: &Parameters, e_m: &Ciphertext, players: &Vec<Player>, enc
 
 }
 
-/// Implements Protocol PBracket (fig. 5)
-pub fn p_bracket(params: &Parameters, v_is: Vec<BigInt>, e_v: Ciphertext, players: &Vec<Player>) -> Bracket {
-    let amount_of_players = players.len();
-
-    let mut e_gamma_is = vec![vec![polynomial![0]]; amount_of_players];
-    let mut v_bracket = v_is;
-
-    for i in 0..amount_of_players {
-        // All players do this
-        e_gamma_is[i] = mul(params, &players[i].e_beta_is[i], &e_v);
-
-        let (_, reshared) = reshare(params, &e_gamma_is[i], players, Enc::NoNewCiphertext);
-
-        // Each player gets a share
-        v_bracket = [
-            v_bracket.as_slice(),
-            &[players[i].beta_i.clone()],
-            reshared.as_slice()
-        ].concat();
-    }
-    v_bracket
-}
-
 /// Implements Protocol PAngle (fig. 6)
 pub fn p_angle(params: &Parameters, v_is: Vec<BigInt>, e_v: Ciphertext, players: &Vec<Player>) -> Angle {
     // Each player does the following:
     let e_v_mul_alpha = mul(&params, &e_v, &players[0].e_alpha); 
     let (_, gamma_is) = reshare(params, &e_v_mul_alpha, players, Enc::NoNewCiphertext); // each player Pi gets a share γi of α·v
-    let v_angle = [[BigInt::zero()].as_slice(), v_is.as_slice(), gamma_is.as_slice()].concat();
+    let v_angle = [v_is.as_slice(), gamma_is.as_slice()].concat();
     v_angle
 }
 
@@ -230,13 +200,13 @@ mod tests {
         let players = vec![Player::new(); amount_of_players];
         let params = secure_params();
 
-        let (initialized_players, _) = ProtocolPrep::initialize(&params, &players);
+        let initialized_players = ProtocolPrep::initialize(&params, &players);
         let (a_angle, b_angle, c_angle) = ProtocolPrep::triple(&params, &initialized_players);
 
         let mut a = BigInt::zero();
         let mut b = BigInt::zero();
         let mut c = BigInt::zero();
-        for i in 1..amount_of_players + 1 {
+        for i in 0..amount_of_players {
             a = a + a_angle[i].clone();
             b = b + b_angle[i].clone();
             c = c + c_angle[i].clone()
@@ -244,10 +214,52 @@ mod tests {
 
         assert_eq!((a * b).modpow(&BigInt::one(), &params.t), c.modpow(&BigInt::one(), &params.t))
     }
+    
+    #[test]
+    fn test_reshare() {
+        let amount_of_players = 3;
+        let players = vec![Player::new(); amount_of_players];
+        let params = secure_params();
+
+        let initialized_players = ProtocolPrep::initialize(&params, &players);
+
+        let mut r_is = vec![BigInt::zero(); amount_of_players];
+        for i in 0..amount_of_players {
+            r_is[i] = sample_single(&params.t)
+        }
+        let mut e_r_is = vec![vec![]; amount_of_players];
+        for i in 0..amount_of_players {
+            e_r_is[i] = encrypt(&params, encode(r_is[i].clone()), &initialized_players[0].pk)
+        }
+        let e_r = add_encrypted_shares(&params, e_r_is.clone(), amount_of_players);
+        let (_, reshared) = reshare(&params, &e_r, &initialized_players, Enc::NoNewCiphertext);
+
+        let r = open_shares(&params, r_is, amount_of_players);
+        let reshared_opened = open_shares(&params, reshared, amount_of_players);
+
+        assert_eq!(r, reshared_opened)
+
+    }
 
     #[test]
-    fn test_p_bracket() {
-        
+    fn test_angle_mac() {
+        let amount_of_players = 3;
+        let players = vec![Player::new(); amount_of_players];
+        let params = secure_params();
+        let initialized_players = ProtocolPrep::initialize(&params, &players);
+        let (_, angle) = ProtocolPrep::pair(&params, &initialized_players);
+        let mut sigma = BigInt::zero();
+        for i in 0..amount_of_players {
+            sigma = (sigma + angle[amount_of_players + i].clone()).modpow(&BigInt::one(), &params.t);
+        }
+        let a = open_shares(&params, angle, amount_of_players);
+        let mut alpha_is = vec![BigInt::zero(); amount_of_players];
+        for i in 0..amount_of_players {
+            alpha_is[i] = initialized_players[i].alpha_i.clone();
+        }
+        let alpha = open_shares(&params, alpha_is, amount_of_players);
+        let res = (alpha * a).modpow(&BigInt::one(), &params.t);
+        assert_eq!(res, sigma)
     }
 }
 

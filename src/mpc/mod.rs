@@ -13,7 +13,6 @@ mod commitment;
 mod zk;
 
 pub type Angle = Vec<BigInt>;
-pub type Bracket = Vec<BigInt>;
 pub type MulTriple = (Angle, Angle, Angle);
 
 
@@ -22,7 +21,8 @@ pub struct Player {
     sk_i1: Polynomial,                  // Additive shares of sk
     sk_i2: Polynomial,                  // Additive shares of sk^2
     pk: PublicKey,
-    beta_i: BigInt,
+    beta_i: BigInt,                     // Personal key
+    alpha_i: BigInt,                     // global key share
     e_beta_is: Vec<Ciphertext>,         // Encrypted personal keys
     e_alpha: Ciphertext,                // Encrypted global key
     opened: Vec<Angle>
@@ -35,6 +35,7 @@ impl Player {
             sk_i2: polynomial![0],
             pk: (polynomial![0], polynomial![0]),
             beta_i: BigInt::zero(),
+            alpha_i: BigInt::zero(),
             e_beta_is: vec![],
             e_alpha: vec![],
             opened: vec![]
@@ -133,26 +134,11 @@ pub fn ddec(params: &Parameters, players: &Vec<Player>, mut c: Ciphertext) -> Bi
     decode(msg_minus_q.modulo(&params.t))
 }
 
-pub fn open_shares(params: &Parameters, shares: Vec<BigInt>) -> BigInt {
+pub fn open_shares(params: &Parameters, repr: Vec<BigInt>, amount_of_players: usize) -> BigInt {
     let mut r = BigInt::zero();
+    let shares = repr.iter().take(amount_of_players).cloned().collect::<Vec<BigInt>>();
     for i in 0..shares.len() {
         r = (r + shares[i].clone()).modpow(&BigInt::one(), &params.t);
-    }
-    r
-}
-
-pub fn open_bracket(params: &Parameters, bracket: Bracket, n: usize, player: Player) -> BigInt {
-    
-    // Perform check
-    /* for i in 0..n {
-
-    } */
-
-    // Compute result
-    let mut r = BigInt::zero();
-    let additive_shares = bracket.iter().take(n).cloned().collect::<Vec<BigInt>>();
-    for i in 0..n {
-        r = (r + additive_shares[i].clone()).modpow(&BigInt::one(), &params.t);
     }
     r
 }
