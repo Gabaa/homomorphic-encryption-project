@@ -33,31 +33,12 @@ fn main() {
     println!("{:?}", decrypted_noisy)
 }
 
-// Loosely based on http://homomorphicencryption.org/wp-content/uploads/2018/11/HomomorphicEncryptionStandardv1.1.pdf
-// security level (quantum): 128 bits
-// q: 27 bit prime
-// n: 1024
-// t: 2
-// r: 2 = w * sqrt(log2(1024)) = 0.632 * 3.162
-// r_prime: 80 >= 2^(0.632 * log2(1024)) = 2^(0.632 * 10)
-#[allow(dead_code)]
-fn secure_params() -> Parameters {
-    // TODO: Shouldn't hardcode `q`
-    Parameters::new(80708963, 2.0, 80.0, 1024, 2)
-}
-
-fn mpc_secure_params() -> Parameters {
-    // q not accurate, still should reflect real performance
-    Parameters::new(80708963, 2.0, 80.0, 12900, 128)
-}
-
 #[cfg(test)]
 mod tests {
-    use num::{BigInt, One};
 
-    use crate::{encryption::Parameters, poly::Polynomial, polynomial};
-
-    use super::{encryption, prob, mpc_secure_params};
+    use num::{BigInt, One, Zero};
+    use crate::{encryption::*, poly::Polynomial, polynomial, prob::sample_from_uniform, quotient_ring::Rq};
+    use super::{encryption, prob};
 
     #[test]
     fn decrypt_and_encrypt_many_times() {
@@ -96,6 +77,7 @@ mod tests {
     #[test]
     fn add_ciphertexts() {
         let params = Parameters::default();
+        let t = &params.t;
 
         for _ in 0..1000 {
             let (pk, sk) = encryption::generate_key_pair(&params);
@@ -110,8 +92,8 @@ mod tests {
             assert_eq!(
                 decrypted_msg,
                 Polynomial::new(vec![
-                    3 % Parameters::default().t,
-                    5 % Parameters::default().t
+                    3 % t,
+                    5 % t
                 ])
             );
         }
@@ -120,6 +102,7 @@ mod tests {
     #[test]
     fn mul_ciphertexts() {
         let params = Parameters::default();
+        let t = &params.t;
 
         for _ in 0..1000 {
             let (pk, sk) = encryption::generate_key_pair(&params);
@@ -133,8 +116,50 @@ mod tests {
 
             assert_eq!(
                 decrypted_msg,
-                Polynomial::new(vec![4 % Parameters::default().t])
+                Polynomial::new(vec![4 % t])
             );
         }
     }
+
+    // A little unsure about this one, is this intended behaviour?
+    #[test]
+    fn mul_with_overflow() {
+        let params = secure_params();
+        let mut fx_vec = vec![BigInt::zero(); params.n + 1];
+        fx_vec[0] = BigInt::one();
+        fx_vec[params.n] = BigInt::one();
+        let fx = Polynomial::from(fx_vec);
+        let rt = Rq::new(params.t.clone(), fx);
+
+        let (pk, sk) = encryption::generate_key_pair(&params);
+
+        let a = sample_from_uniform(&params.t, params.n);
+        let b = sample_from_uniform(&params.t, params.n);
+        let ab = rt.mul(&a, &b);
+        
+        let e_a = encrypt(&params, a.clone(), &pk);
+        let e_b = encrypt(&params, b.clone(), &pk);
+
+        let e_c = mul(&params, &e_a, &e_b);
+
+        let c = decrypt(&params, e_c, &sk).unwrap();
+        assert_eq!(c, ab);
+    }
+
+    /* #[test]
+    fn bench_single_mpc_enc() {
+        let params = mpc_secure_params();
+
+        let (pk, _) = encryption::generate_key_pair(&params);
+        encryption::encrypt(&params, polynomial![2], &pk);
+    } */
+
+    /* #[test]
+    fn bench_single_rqmul() {
+        let params = mpc_secure_params();
+        let rq = &params.quotient_ring;
+        let op1 = prob::sample_from_uniform(&rq.q, params.n);
+        let op2 = prob::sample_from_uniform(&rq.q, params.n);
+        let test = rq.mul(&op1, &op2);
+    } */
 }

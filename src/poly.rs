@@ -31,6 +31,12 @@ impl Polynomial {
         res
     }
 
+    pub fn shift_poly(&self, n: usize) -> Polynomial {
+        let mut vec = vec![BigInt::zero(); n];
+        vec.extend(self.0.clone());
+        Polynomial::new(vec)
+    }
+
     pub fn l_inf_norm(&self) -> BigInt {
         let mut norm = BigInt::zero();
         for i in 0..self.degree() + 1 {

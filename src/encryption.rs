@@ -51,16 +51,32 @@ impl Default for Parameters {
     }
 }
 
-pub fn encrypt(params: &Parameters, m: Polynomial, pk: &PublicKey) -> Ciphertext {
-    debug_assert!(m.coefficients().all(|c| c < &params.t));
+// Loosely based on http://homomorphicencryption.org/wp-content/uploads/2018/11/HomomorphicEncryptionStandardv1.1.pdf
+// security level (quantum): 128 bits
+// q: 27 bit prime, ex. 80708963
+// n: 1024
+// t: 2
+// r: 2 = w * sqrt(log2(1024)) = 0.632 * 3.162
+// r_prime: 80 >= 2^(0.632 * log2(1024)) = 2^(0.632 * 10)
+#[allow(dead_code)]
+pub fn secure_params() -> Parameters {
+    // TODO: Shouldn't hardcode `q`
+    let c = "7491009436045135886698181243708504421607358929720206973094758479498049015628852031735169966277519969".parse::<BigInt>().unwrap();
+    let t2 = "127".parse::<BigInt>().unwrap();
+    Parameters::new(c, 3.2, 100.0, 7, t2)
+}
+
+pub fn mpc_secure_params() -> Parameters {
+    // q not accurate, still should reflect real performance
+    Parameters::new(80708963, 2.0, 80.0, 12900, 127)
+}
+
+pub fn encrypt_det(params: &Parameters, m: Polynomial, pk: &PublicKey, r: (Polynomial, Polynomial, Polynomial)) -> Ciphertext {
 
     let rq = &params.quotient_ring;
 
     let (a0, b0) = pk;
-
-    let v = sample_from_gaussian(params.r, params.n);
-    let e_prime = sample_from_gaussian(params.r, params.n);
-    let e_prime_prime = sample_from_gaussian(params.r_prime, params.n);
+    let (v, e_prime, e_prime_prime) = r;
 
     let a0_mul_v = rq.mul(a0, &v);
     let t_mul_e_prime = rq.times(&e_prime, &params.t);
@@ -73,6 +89,14 @@ pub fn encrypt(params: &Parameters, m: Polynomial, pk: &PublicKey) -> Ciphertext
     let c0 = rq.add(&b, &m);
     let c1 = rq.neg(&a);
     vec![c0, c1]
+}
+
+pub fn encrypt(params: &Parameters, m: Polynomial, pk: &PublicKey) -> Ciphertext {
+    let v = sample_from_gaussian(params.r, params.n);
+    let e_prime = sample_from_gaussian(params.r, params.n);
+    let e_prime_prime = sample_from_gaussian(params.r_prime, params.n);
+
+    encrypt_det(params, m, pk, (v, e_prime, e_prime_prime))
 }
 
 #[derive(Debug)]
@@ -119,7 +143,6 @@ pub fn decrypt(
     )
     .trim_res();
 
-    println!("{:?}", msg_minus_q.l_inf_norm());
     if msg_minus_q.l_inf_norm() >= &rq.q / 2_i32 {
         return Err(DecryptionError::LInfNormTooBig(msg_minus_q.l_inf_norm()));
     }
@@ -182,6 +205,5 @@ pub fn drown_noise(
 ) -> Ciphertext {
     let zero = polynomial![0];
     let noisy_zero = encrypt(params_noisy, zero, &pk);
-    println!("Noisy zero: {:?}", noisy_zero);
     add(params, &c, &noisy_zero)
 }

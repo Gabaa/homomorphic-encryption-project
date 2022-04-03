@@ -7,14 +7,21 @@ use crate::{encryption::*, polynomial};
 
 mod online;
 mod prep;
+mod commitment;
+mod zk;
+
+pub type MulTriple = (Vec<Polynomial>, Vec<Polynomial>, Vec<Polynomial>);
+pub type Angle = Vec<Polynomial>;
+pub type Bracket = Vec<Polynomial>;
 
 #[derive(Clone, Debug)]
 pub struct Player {
-    sk_i1: Polynomial,
-    sk_i2: Polynomial,
+    sk_i1: Polynomial,                  // Additive shares of sk
+    sk_i2: Polynomial,                  // Additive shares of sk^2
     pk: PublicKey,
-    e_beta_is: Vec<Ciphertext>,
-    e_alpha: Ciphertext
+    e_beta_is: Vec<Ciphertext>,         // Encrypted personal keys
+    e_alpha: Ciphertext,                // Encrypted global key
+    opened: Vec<Angle>
 }
 
 impl Player {
@@ -24,7 +31,8 @@ impl Player {
             sk_i2: polynomial![0],
             pk: (polynomial![0], polynomial![0]),
             e_beta_is: vec![],
-            e_alpha: vec![polynomial![0]]
+            e_alpha: vec![],
+            opened: vec![]
         }
     }
 
@@ -70,40 +78,90 @@ pub fn ddec(params: &Parameters, players: &Vec<Player>, mut c: Ciphertext) -> Po
     if c.len() == 2 {
         c.push(polynomial![0])
     }
-    c[1] = rq.neg(&c[1]); //Hvorfor er definitionen anderledes i IdealHom teksten og i 535 teksten?
+    //c[1] = rq.neg(&c[1]); //Hvorfor er definitionen anderledes i IdealHom teksten og i 535 teksten?
 
     for i in 0..players.len() {
         let p = &players[i];
-        let sk1i_mul_c1 = rq.mul(&p.sk_i1, &c[1]);
-        let sk2i_mul_c2 = rq.mul(&p.sk_i2, &c[2]);
-        let sub = rq.sub(&sk1i_mul_c1, &sk2i_mul_c2);
-        let sub_neg = rq.neg(&sub);
+        let si1_ci1 = rq.mul(&p.sk_i1, &c[1]);
+        let si2_ci2 = rq.mul(&p.sk_i2, &c[2]);
+        let sum = rq.add(&si1_ci1, &si2_ci2);
         if i == 0 {
-            v[i] = rq.add(&c[0], &sub_neg)
+            v[i] = rq.add(&c[0], &sum)
         } else {
-            v[i] = sub_neg
+            v[i] = sum
         }
     }
 
     //Random element does not currently have a bounded l_inf norm
+    let norm_bound: BigInt = BigInt::from(2_i32) ^ &BigInt::from(32_i32);
     let t: Vec<Polynomial> = v
         .iter()
         .map(|v_i| {
             rq.add(
                 v_i,
                 &rq.times(
-                    &sample_from_uniform(&BigInt::from(1000_i32), params.n),
+                    &sample_from_uniform(&norm_bound, params.n),
                     &params.t,
                 ),
             )
-        }) // 1000 is placeholder, since q needs to be a lot higher for this to work properly
+        }) // norm_bound is placeholder, since q needs to be a lot higher for this to work properly
         .collect();
 
     let t_prime = t
         .iter()
         .fold(polynomial![0], |acc, elem| rq.add(&acc, elem));
 
-    t_prime.modulo(&params.t)
+    // Compute msg minus q if x > q/2
+    let msg_minus_q = Polynomial::from(
+        t_prime.coefficients()
+            .map(|x| {
+                if x > &(&rq.q / 2_i32) {
+                    x - &rq.q
+                } else {
+                    x.to_owned()
+                }
+            })
+            .collect::<Vec<BigInt>>(),
+    )
+    .trim_res();
+
+    msg_minus_q.modulo(&params.t)
+}
+
+pub fn open_shares(params: &Parameters, shares: Vec<Polynomial>) -> Polynomial {
+    let mut r = polynomial![0];
+    for i in 0..shares.len() {
+        r = (r + shares[i].clone()).modulo(&params.t);
+    }
+    r
+}
+
+pub fn open_bracket(params: &Parameters, bracket: Bracket, n: usize, player: Player) -> Polynomial {
+    
+    // Perform check
+    /* for i in 0..n {
+
+    } */
+
+    // Compute result
+    let mut r = polynomial![0];
+    let additive_shares = bracket.iter().take(n).cloned().collect::<Vec<Polynomial>>();
+    for i in 0..n {
+        r = (r + additive_shares[i].clone()).modulo(&params.t);
+    }
+    r
+}
+
+pub fn add_encrypted_shares(params: &Parameters, enc_shares: Vec<Ciphertext>, amount_of_players: usize) -> Ciphertext {
+    let mut res = vec![polynomial![0]];
+    for i in 0..amount_of_players {
+        res = add(params, &res, &enc_shares[i])
+    }
+    res
+}
+
+pub fn diag(params: &Parameters, a: BigInt) -> Polynomial {
+    Polynomial::new(vec![a; params.n])
 }
 
 #[cfg(test)]
@@ -158,7 +216,7 @@ mod tests {
     #[test]
     fn test_distributed_decryption_works() {
         let mut player_array = vec![Player::new(); 5];
-        let params = Parameters::default();
+        let params = secure_params();
         player_array = distribute_keys(&params, player_array);
 
         let pk = player_array[0].pk.clone();
@@ -168,5 +226,11 @@ mod tests {
         let decrypted = ddec(&params, &player_array, cipher);
 
         assert_eq!(decrypted, polynomial![0]);
+
+        let msg2 = polynomial![5, 7, 3];
+        let cipher2 = encrypt(&params, msg2, &pk);
+        let decrypted2 = ddec(&params, &player_array, cipher2);
+
+        assert_eq!(decrypted2, polynomial![5, 7, 3]);
     }
 }
