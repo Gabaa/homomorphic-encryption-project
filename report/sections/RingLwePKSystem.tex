@@ -6,13 +6,6 @@
 
 % Document
 \begin{document}
-    \section{Encoding messages as polynomials} \label{sec:encoding-messages-as-polynomials}
-    Encoding messages as polynomials follows simply by the fact that a letter can be represented by a number.
-    These numbers can then be combined into a vector which can be encoded as a polynomial.
-    As an example take the message: ``CRYPTO'', using the ASCII table, this message can be represented by the
-    vector $[67, 82, 89, 80, 84, 79]$.
-    This vector can be represented as a polynomial by $67 + 82x + 89x^2 + 80x^^ + 84x^4 + 79x^5$.
-    Trivially we can also decode any polynomial into a message, by reverting these steps one by one.
 
     \section{Ring LWE - A somewhat homomorphic encryption scheme}
     In the paper ``Fully Homomorphic Encryption from Ring-LWE and Security for Key Dependent Messages'' written by
@@ -22,11 +15,26 @@
     We'll shortly describe the encryption scheme here but will omit proofs and detailed discussions.
     Both system will be over the message space of $R_t = \mathbb{Z}_t[x] / \langle f(x) \rangle $.
 
+    \subsection{Polynomial learning with errors}
+    The polynomial learning with errors problem is made as a decision problem
+    and is defined by in the Hermite normal form as the following.
+    \\[2mm]
+    \textbf{The PLWE Assumption - Hermite Normal Form.}
+    for all $\kappa \in \mathbb{N}$, let $f(x) = f_{\kappa}(x) \in \mathbb{Z}[x]$
+    be a polynomial of degree n = n($\kappa$), let $q = q(\kappa) \in \mathbb{Z}$
+    be a prime integer, let the ring $R = \mathbb{Z}[x] / \langle f(x) \rangle$
+    and $R_q = R / qR$ with $\chi$ denoting a distribution over the ring R. 
+    Then the Polynomial learning with error ($PLWE_{f,q,\chi}$) assumption can be defined as
+    $$
+        \{ (a_i, a_i \cdot s + e_i) \}_{i \in [l]} \approx^{c} \{(a_i, u_i) \}_{i \in [l]}\}
+    $$
+    where s is sampled from $\chi$, $a_i$ is uniform in $R_q$, the error polynomials
+    $e_i$ are sampled from $\chi$ and $u_i$ are random ring elements from $R_q$.
+
     \subsection{Symmetric version}
     Let $\kappa$ be the security parameter and let further q and t be prime numbers where $t \in \mathbb{Z}_n^*$.
     We also need a polynomial of degree n $f(x) \in \mathbb{Z}[x]$ and an error distribution $\chi$ over the ring
-    $R_q = \mathbb{Z}_q[x] / \langle f(x) \rangle$.
-
+    $R_q = \mathbb{Z}_q[x] / \langle f(x) \rangle$, then we can define the following operations.
 
     \subsubsection{Key-gen}
     Let our secret key be a randomly sampled element from the error distribution $s \leftarrow^\$ \chi$
@@ -87,25 +95,7 @@
         $(a_0 \cdot v + t \cdot e', b_0 \cdot v + t \cdot e'')$ where
         $v, e' \leftarrow^{\$} \chi$ and $e'' \leftarrow^{\$} \chi '$.
 	\end{itemize}
-
-    \subsection{PLWE assumption}
-    \textbf{The RLWE-decision problem}
+    where we have then obtained a public key $pk = (a_0, a_0 \cdot s + t \cdot e_0)$
+    corresponding to the secret key $sk = $.
     
-    \\[2mm]
-    \textbf{The RLWE-seach problem}
-    \\[2mm]
-    \textbf{The PLWE Assumption - Hermite Normal Form.}
-    for all $\kappa \in \mathbb{N}$, let $f(x) = f_{\kappa}(x) \in \mathbb{Z}[x]$
-    be a polynomial of degree n = n($\kappa$), let $q = q(\kappa) \in \mathbb{Z}$
-    be a prime integer, let the ring $R = \mathbb{Z}[x] / \langle f(x) \rangle$
-    and $R_q = R / qR$ with $\chi$ denoting a distribution over the ring R. 
-    Then the Polynomial leaning with error ($PLWE_{f,q,\chi}$) assumption can be defined as
-    $$
-        \{ (a_i, a_i \cdot s + e_i) \}_{i \in [l]} \approx^{c} \{(a_i, u_i) \}_{i \in [l]}\}
-    $$
-    where s is sampled from $\chi$, $a_i$ is uniform in $R_q$, the error polynomials
-    $e_i$ are sampled from $\chi$ and $u_i$ are random ring elements from $R_q$.
-
-    \subsection{choice of parameters in RLWE}
-
 \end{document}
