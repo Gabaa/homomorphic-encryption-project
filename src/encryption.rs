@@ -207,3 +207,12 @@ pub fn drown_noise(
     let noisy_zero = encrypt(params_noisy, zero, &pk);
     add(params, &c, &noisy_zero)
 }
+
+pub fn encode(coef: BigInt) -> Polynomial {
+    let coefficients = vec![coef];
+    Polynomial::new(coefficients)
+}
+
+pub fn decode(pol: Polynomial) -> BigInt {
+    pol.coefficient(0).clone()
+}
