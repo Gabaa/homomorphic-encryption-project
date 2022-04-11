@@ -2,76 +2,71 @@
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
 \usepackage{amssymb}
-\usepackage{listings}
-
-% Code environment (incomplete)
-\lstset{
-  basicstyle=\ttfamily,
-}
 
 \begin{document}
-\section{Multiparty Computation}
-The Multiparty Computation (MPC) problem is the problem where $n$ players each with some private input $x_i$, want to compute some function $f$ on the input, without revealing anything but the result.
+%\section{Multiparty Computation}
 %\section{Security of MPC protocols}
 % Active vs passive
 % \section{Homomorphic Encryption} Antager at det her allerede er dækket
-\section{Protocol for MPC based on SHE}
+\section{Protocol for Multiparty Computation based on SHE}
+The Multiparty Computation (MPC) problem is the problem where $n$ players each with some private input $x_i$, want to compute some function $f$ on the input, without revealing anything but the result.
+
 In [] the authors describe a protocol for MPC based on a SHE scheme. The protocol is able compute arithmetic formulas consisting of up to a single multiplication, along with a relatively large number of additions, while being statistically UC-secure against an active adversary and $n - 1$ corruptions.
 
-The protocol proceeds in two phases. In the first phase, preprocessing, a global key $[\![\alpha]\!]$, random values in two representations $[\![r]\!], \langle r \rangle$, and a number of multiplicative triples $\langle a \rangle, \langle b \rangle, \langle c \rangle$ satisfying $c = ab$ are generated. 
+The protocol proceeds in two phases. In the first phase, preprocessing, a global key $[\![\alpha]\!]$, random values in two representations $[\![r]\!], \langle r \rangle$, and a number of multiplicative triples $\langle a \rangle, \langle b \rangle, \langle c \rangle$ satisfying $c = ab$ are generated.
 
-In the second phase, the online phase, the players use the global key and random values generated in the preprocessing phase to do the actual computations, aswell as multiplicative triples if a multiplication is to be performed.
+In the second phase, the online phase, the players use the global key and secret-shared data generated in the preprocessing phase to do the actual computations.
 
-Thus the online phase only makes indirect use of the SHE scheme, as it is only used in the preprocessing phase to generate input for the online phase.
+The online phase therefore only makes indirect use of the SHE scheme, as it is only used in the preprocessing phase to generate input for the online phase.
 
 These two phases are described in further detail in section \ref{Prep} \& \ref{Online}.
 
-\subsubsection{Representations of shared values}
+\paragraph{Representations of shared values}
 The protocol makes use of two different representations of shared values $[\![ \cdot ]\!], \langle \cdot \rangle$. For a shared value $a \in F_{p^k}$ the $\langle \cdot \rangle$ representation is defined as follows:
 $$\langle a \rangle := (\delta, (a_1, ..., a_n), (\gamma(a)_1, ..., \gamma(a)_n))$$
 where $a = \sum_i a_i$ and $\alpha (\delta + a) = \sum_i \gamma(a)_i$. The $\gamma(a)_i$ values are thus MAC values used to authenticate $a$. Such a value is shared s.t. each party $P_i$ has access to the global value $\delta$ along with shares $(a_i, \gamma(a)_i)$.
 
 The second representation used for the protocol, $[\![ \cdot ]\!]$, is defined in the following way:
 $$[\![ a ]\!] = ((a_1, ..., a_n), (\beta_i, \gamma(a)^i_1, ..., \gamma(a)^i_n)_{i = 1, ..., n})$$
-where $a = \sum_i a_i$ and $a\beta_i = \sum_j \gamma(a)^j_i$. Thus the $\gamma(a)^j_i$ values are used to authenticate $a$ under $P_i$'s personal key $\beta_i$. Each player $P_i$ then has the shares $(a_i, \beta_i, \gamma(a)^i_1, ..., \gamma(a)^i_n)$. To open a $[\![ \cdot ]\!]$ value a player ...
+where $a = \sum_i a_i$ and $a\beta_i = \sum_j \gamma(a)^j_i$. Thus the $\gamma(a)^j_i$ values are used to authenticate $a$ under $P_i$'s personal key $\beta_i$. Each player $P_i$ then has the shares $(a_i, \beta_i, \gamma(a)^i_1, ..., \gamma(a)^i_n)$. To open a $[\![ \cdot ]\!]$ value each player $P_j$ sends $a_j, \gamma(a)^j_i$ to $P_i$, who checks that $a\beta_i = \sum_j \gamma(a)^j_i$. Afterwards $P_i$ can compute $a = \sum_i a_i$.
 
-\subsection{Abstract SHE scheme}
-The cryptosystem used as the SHE scheme in the protocol has to have certain properties. In particular, such a cryptosystem consists of the algorithms (ParamGen, KeyGen, KeyGen*, Enc, Dec) which behave as follows
-\paragraph{ParamGen} Parameter generation algorithm.
-\paragraph{KeyGen}
-Outputs a keypair $pk, sk$.
-\paragraph{KeyGen*} Randomized algorithm outputting a public key $\widehat{pk}$, s.t. an encryption of any message is statistically indistinguishable from an encryption of 0. Additionally, we want a public key generated using \textbf{KeyGen} to be statistically indistinguishable from $\widehat{pk}$. This implies IND-CPA security.
-\paragraph{Enc} 
-\paragraph{Dec}
+\subsection{Abstract SHE scheme and instantiation}
+The cryptosystem used as the SHE scheme in the protocol has to have certain properties. The authors of the protocol present a concrete instantiation of such an abstract SHE scheme, using the Ring-LWE based public key encryption scheme by Zvika Brakerski and Vinod Vaikuntanathan [] described in section x.x...
 
-\subsection{Concrete instantiation of abstract SHE scheme}
-The authors also present a concrete instantiation of the abstract SHE scheme described, namely based on the Ring-LWE based public key encryption scheme by Zvika Brakerski and Vinod Vaikuntanathan [] described in section x.x. The \textbf{KeyGen}, \textbf{Enc}, and \textbf{Dec} algorithms of the scheme behave precisely as as the key-gen, encryption, and decryption algorithms described in section x.x. % Der er små afvigelser (enc kan tage randomness som input, mens enc og dec ikke bruger -a, men a som c1). Ved ikke lige hvad vi gør ved det
-The rest of the algorithms are then defined as follows
-\paragraph{ParamGen}
-
-
-\paragraph{KeyGen*}
-Sample $\widehat{a}, \widehat{b} \leftarrow R_q$ and return $\widehat{pk} := (\widehat{a}, \widehat{b})$
-
-\newpage
 \subsection{Preprocessing phase} \label{Prep}
 The preprocessing phase is implemented by the Prep protocol, which consists of the steps \textbf{initialize}, \textbf{pair}, and \textbf{triple}. These steps use the additional protocols Reshare, PAngle, and PBracket as subroutines.
-\paragraph{Reshare:}
+
+\paragraph{Protocol Reshare:} The Reshare protocol takes a ciphertext $e_m$ as input and a parameter $enc$, which can be set to either $NewCiphertext$ or $NoNewCiphertext$. The protocol then outputs a share $m_i$ of $m$ to each player along with a new fresh ciphertext $e'_m$ if $enc = NewCiphertext$, where $e'_m$ contains $\sum_i m_i$.
+To do this the players first each sample $f_i \in \mathbb{F}_{p^k}$, and then broadcast $$e_{f_i} \leftarrow Enc_{pk}(f_i)$$ ZK bla bla bla.
+Now, each player homomorphically adds each encrypted share
+$$e_f \leftarrow e_{f_1} \boxplus ... \boxplus e_{f_n} $$
+ and then homomorphically adds $e_m$ and $e_f$ to get $e_{m + f}$. The players now use $\mathcal{F}_{KeyGenDec}$ to decrypt $e_{m + f}$ so that they get $m + f$. Now $P_1$ sets $m_1 \leftarrow m + f + f_1$, while the rest of the players $P_i$ set $m_i \leftarrow - f_i$.
+If $enc = NewCiphertext$, then the players each compute
+$$e'_m \leftarrow Enc_{pk}(m + f) \boxminus e_{f_1} \boxminus ... \boxminus e_{f_n}$$ where default randomness is used for the encryption.
+
 \paragraph{Protocol PAngle:}
-\paragraph{PBracket:}
+PAngle takes as input a ciphertext $e_v$ along with privately held shares $v_1, ..., v_n$. These are then used to generate a value in the angle representation $\langle v \rangle$.
+To achieve this all players first compute $$e_{v \cdot a} \leftarrow e_v \boxplus e_\alpha$$
+Reshare is then used with $e_{v \cdot \alpha}$ as input, such that each player $P_i$ recieves a share $\gamma_i$ of $v \cdot \alpha$. Finally, $\langle v \rangle = (0, (v_1, ..., v_n), (\gamma_1, ..., \gamma_n)$ is output.
+
+\paragraph{Protocol PBracket:}
+PAngle takes as input a ciphertext $e_v$ along with privately held shares $v_1, ..., v_n$. These are then used to generate a value in the angle representation $[\![ v ]\!]$.
+For $i = 1, ..., n$ all players compute $$e_{\gamma_i} \leftarrow e_{\beta_i} \boxtimes e_v$$ and then generate $(\gamma^1_i, ..., \gamma^n_i)$ by calling Reshare with $e_{\gamma_i}$ and $NoNewCiphertext$ as input.
+The representation $[\![ v ]\!] = ((v_1, ..., v_n), (\beta_i, \gamma(v)^i_1, ..., \gamma(v)^i_n)_{i = 1, ..., n})$ is then output.
+
 \paragraph{Initialize:}
-In the \textbf{initialize} step we generate the global and personal keys. This is acheived by the players first calling "start" on $\mathcal{F}_{KeyGenDec}$, so that every player obtains the public key $pk$.
-Then the players sample $\alpha_i , \beta_i \in \mathbb{F}_{p^k}$.
-Following this the players broadcast $e_{\alpha_i} \leftarrow Enc_{pk}(Diag(\alpha_i))$ and $e_{\beta_i} \leftarrow Enc_{pk}(Diag(\beta_i))$, where $Diag(a) = (a, a, ..., a) \in (\mathbb{F}_{p^k})^s$. ZK bla bla bla.
-Finally, the players homomorphically add the encrypted shares $e_{\alpha_i}$ to get $e_\alpha$, which they use along with their share $Diag(\alpha_i)$ to generate $[\![ Diag(\alpha) ]\!]$ using a call to PBracket.
+The \textbf{initialize} step generates the global and personal keys. This is acheived by the players first calling "start" on $\mathcal{F}_{KeyGenDec}$, so that every player obtains the public key $pk$.
+Then each player samples $\alpha_i, \beta_i \in \mathbb{F}_{p^k}$, and broadcasts $$e_{\alpha_i} \leftarrow Enc_{pk}(Diag(\alpha_i)), \;\; e_{\beta_i} \leftarrow Enc_{pk}(Diag(\beta_i))$$ where $Diag(a) = (a, a, ..., a) \in (\mathbb{F}_{p^k})^s$. ZK bla bla bla.
+Finally, the players homomorphically add the encrypted shares $e_{\alpha_i}$ to get $e_\alpha$, which they use along with their share $Diag(\alpha_i)$ to generate $[\![ Diag(\alpha) ]\!]$ using a call to PBracket. Then $[\![ Diag(\alpha) ]\!]$ is the global key, while $\beta_i$ is $P_i$'s personal key.
 
 \paragraph{Pair:}
-In \textbf{pair} the players generate random values in the two representations $[\![ r ]\!], \langle r \rangle$. This is done by first sampling a share $r_i \in (\mathbb{F}_{p^k})^s$. Each player then encrypts their share to get $e_{r_i} \leftarrow Enc_{pk}(r_i)$, which they then broadcast. ZK bla bla bla.
-The players then homomorphically add the encrytped shares to get $e_r$, which they use along with their share $r_i$ as input to PBracket and PAngle to get $[\![ r ]\!], \langle r \rangle$.
+In \textbf{pair} the players generate random values in the two representations $[\![ r ]\!], \langle r \rangle$. This is done by each player first sampling a share $r_i \in (\mathbb{F}_{p^k})^s$, then broadcasting Each player then encrypts their share to get $$e_{r_i} \leftarrow Enc_{pk}(r_i)$$ which they then broadcast. ZK bla bla bla.
+The players then homomorphically add the encrytped shares to get $e_r$, which they use along with their share $r_i$ as input to PBracket and PAngle to generate $[\![ r ]\!], \langle r \rangle$.
 
 \paragraph{Triple:}
 The \textbf{triple} step generates triples $(\langle a \rangle, \langle b \rangle, \langle c \rangle)$ satisfying $c = ab$. To do this the players start off by sampling shares $a_i, b_i \in (\mathbb{F}_{p^k})^s$.
-The players then encrypt their shares $e_{a_i} \leftarrow Enc_{pk}(a_i)$, $e_{b_i} \leftarrow Enc_{pk}(b_i)$, and broadcast $e_{a_i}, e_{b_i}$. ZK bla bla bla.
+The players then encrypt their shares and broadcast the result $$e_{a_i} \leftarrow Enc_{pk}(a_i), \;\; e_{b_i} \leftarrow Enc_{pk}(b_i)$$
+ZK bla bla bla.
 The players then homomorphically add the encrypted shares to get $e_a$ and $e_b$, and use these along with their shares $a_i, b_i$ to generate $\langle a \rangle$, $\langle b \rangle$ using calls to PAngle.
 Following this each player homomorphically multiplies $e_a$ and $e_b$ to get $e_c$, which the players use as input to Reshare to get shares of $c$ along with a new ciphertext $(c_1, ..., c_n, e_{c'})$. Then the players then use their shares of $c$ along with $e_{c'}$ to generate $\langle c \rangle$ by calling PAngle. Finally, the triple $(\langle a \rangle, \langle b \rangle, \langle c \rangle)$ is output.
 
@@ -84,15 +79,18 @@ and consists of the steps \textbf{initialize}, \textbf{input}, \textbf{add}, \te
 
 \paragraph{Input:} The \textit{input} step lets a player $P_i$ share their private input $x_i$. The input is shared by taking a pair $[\![ r ]\!], \langle r \rangle$, and then opening $[\![ r ]\!]$ to $P_i$ so that $P_i$ gets $r$. Following this $P_i$ computes and broadcasts $\epsilon \leftarrow x_i - r$. All players finally set $\langle x_i \rangle \leftarrow \langle r \rangle + \epsilon$. %Forklar hvordan en konstant adderes til angle repr.
 
-\paragraph{Add:} To add two values $\langle x \rangle, \langle y \rangle$, we simply perform the component-wise addition $\langle x \rangle + \langle y \rangle$, meaning that each player adds their shares locally. %Er det klart hvad der sker her?
+\paragraph{Add:} To add two values $\langle x \rangle, \langle y \rangle$, we simply perform the component-wise addition $\langle z \rangle = \langle x \rangle + \langle y \rangle$, meaning that each player adds their shares locally $z_i = x_i + y_i, \gamma(z)_i = \gamma(x)_i + \gamma(y)_i$. %Er det klart hvad der sker her?
 
 \paragraph{Multiply:}
 
 \paragraph{Output:}
 
-\subsection{Parameter setting}
-In section D of the paper the authors give example parameter sets and explain how to choose the parameters, s.t. the previously described Ring-LWE public key encryption scheme meets the requirements of the MPC protocol.
+%\subsection{Parameter setting}
+%In section D of the paper the authors give example parameter sets and explain how to choose the parameters, s.t. the previously described Ring-LWE public key encryption scheme meets the requirements of the MPC protocol.
 
 \section{Reuse of unrevealed secret-shared data}
+In [] a technique that allows for reuse of unrevealed secret-shared data is used.
+
 
 \end{document}
+
