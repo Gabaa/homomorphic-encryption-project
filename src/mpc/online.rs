@@ -11,55 +11,109 @@ use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
 
-use super::PlayerState;
+use super::{AngleShare, PlayerState};
 
-pub struct ProtocolOnline {}
+/// Implementation of the online protocol (fig. 1).
+///
+/// #### Precondition
+/// The protocol assumes that the players have been initialized with the preprocessing protocol.
+pub mod protocol {
+    use crate::protocol::OnlineMessage;
 
-impl<F: Facilicator> ProtocolOnline {
-    pub fn input(
+    use super::*;
+
+    pub fn give_input<F: Facilicator>(
         params: &Parameters,
         x_i: BigInt,
-        r_pair: (Vec<BigInt>, Angle),
-        state: PlayerState<F>,
-    ) -> Angle {
+        r_pair: (BigInt, AngleShare),
+        state: &PlayerState<F>,
+    ) -> AngleShare {
         let amount_of_players = state.facilitator.player_count();
-        let (r_shares, r_angle) = r_pair;
+        let player_number = state.facilitator.player_number();
 
-        // Open r_bracket to P_i
+        // Send intent to share x_i
+        let msg = OnlineMessage::BeginInput;
+        state.facilitator.broadcast(&msg);
+        let _ = state.facilitator.receive();
+
+        // Send our share to ourselves
+        let (r_share, r_angle) = r_pair;
+        let msg = OnlineMessage::ShareBigInt(r_share);
+        state.facilitator.send(player_number, &msg);
+
+        // [[r]] is opened to P_i
+        let msgs = state.facilitator.receive_many(amount_of_players);
+        let mut r_shares = Vec::with_capacity(amount_of_players);
+        for msg in msgs {
+            if let (_, OnlineMessage::ShareBigInt(r_share)) = msg {
+                r_shares.push(r_share)
+            }
+        }
         let r = open_shares(&params, r_shares, amount_of_players);
 
         // P_i broadcasts this
+        // TODO: Burde dette være mod t?
         let eps = x_i - r;
+        let msg = OnlineMessage::ShareBigInt(eps.clone());
+        state.facilitator.broadcast(&msg);
+        let _ = state.facilitator.receive();
 
-        // All parties compute
-        let mut x_i_angle_shares = r_angle.clone();
-        x_i_angle_shares[0] = r_angle[0].clone() + eps.clone();
-        for i in 0..amount_of_players {
-            x_i_angle_shares[amount_of_players + i] =
-                r_angle[amount_of_players + i].clone() + eps.clone() * players[i].alpha_i.clone();
+        if state.facilitator.player_number() == 0 {
+            return (
+                r_angle.0 + eps.clone(),
+                r_angle.1 + eps.clone() * state.alpha_i.clone(),
+            );
         }
-
-        x_i_angle_shares
+        (r_angle.0, r_angle.1 + eps.clone() * state.alpha_i.clone())
     }
 
-    pub fn add(params: &Parameters, x: Angle, y: Angle) -> Angle {
-        // Players just add shares locally
-        let mut res = vec![BigInt::zero(); x.len()];
-        for i in 0..x.len() {
-            res[i] = x[i].clone() + y[i].clone();
+    pub fn receive_input<F: Facilicator>(
+        r_pair: (BigInt, AngleShare),
+        state: &PlayerState<F>,
+    ) -> AngleShare {
+        let amount_of_players = state.facilitator.player_count();
+
+        // Wait for sharing player to send BeginInput
+        let (p_i, msg) = state.facilitator.receive();
+        if !matches!(msg, OnlineMessage::BeginInput) {
+            panic!()
         }
-        res
+
+        // Share r with P_i
+        let (r_share, r_angle) = r_pair;
+        let msg = OnlineMessage::ShareBigInt(r_share);
+        state.facilitator.send(p_i, &msg);
+
+        // Receive eps
+        let (_, msg) = state.facilitator.receive();
+        let eps = if let OnlineMessage::ShareBigInt(eps) = msg {
+            eps
+        } else {
+            panic!()
+        };
+
+        if state.facilitator.player_number() == 0 {
+            return (
+                r_angle.0 + eps.clone(),
+                r_angle.1 + eps * state.alpha_i.clone(),
+            );
+        }
+        (r_angle.0, r_angle.1 + eps * state.alpha_i.clone())
     }
 
-    pub fn multiply(
+    pub fn add(x: AngleShare, y: AngleShare) -> AngleShare {
+        (x.0 + y.0, x.1 + y.1)
+    }
+
+    /* pub fn multiply<F: Facilicator>(
         params: &Parameters,
-        x: Angle,
-        y: Angle,
+        x: AngleShare,
+        y: AngleShare,
         abc_triple: MulTriple,
         fgh_triple: MulTriple,
-        t_shares: Vec<BigInt>,
-        players: &Vec<Player>,
-    ) -> (Angle, Vec<Player>) {
+        t_shares: BigInt,
+        state: PlayerState<F>,
+    ) -> (AngleShare, PlayerState<F>) {
         let amount_of_players = players.len();
         let (a_angle, b_angle, c_angle) = abc_triple.clone();
         let (f_angle, g_angle, h_angle) = fgh_triple.clone();
@@ -108,25 +162,48 @@ impl<F: Facilicator> ProtocolOnline {
         }
 
         (z_shares, new_players)
-    }
+    } */
 
-    pub fn output(params: &Parameters, y_angle: Angle, players: Vec<Player>) -> BigInt {
-        let amount_of_players = players.len();
+    pub fn output<F: Facilicator>(
+        params: &Parameters,
+        y_angle: AngleShare,
+        state: PlayerState<F>,
+    ) -> BigInt {
+        let amount_of_players = state.facilitator.player_count();
 
-        if !maccheck(params, players[0].opened.clone(), &players) {
+        /* if !maccheck(params, players[0].opened.clone(), &players) {
             panic!("MACCheck did not succeed!")
         }
 
         if !maccheck(params, vec![y_angle.clone()], &players) {
             panic!("MACCheck did not succeed!")
+        } */
+
+        // Broadcast my y_angle share
+        let (y_share, _) = y_angle;
+        state
+            .facilitator
+            .broadcast(&OnlineMessage::ShareBigInt(y_share));
+
+        // Receive all broadcasted y shares
+        let msgs = state.facilitator.receive_many(amount_of_players);
+        let mut y_shares = Vec::with_capacity(amount_of_players);
+        for msg in msgs {
+            if let (_, OnlineMessage::ShareBigInt(y_share)) = msg {
+                y_shares.push(y_share);
+            }
         }
 
-        let y = open_shares(&params, y_angle, amount_of_players);
+        let y = open_shares(params, y_shares, amount_of_players);
         y
     }
 }
 
-pub fn maccheck(params: &Parameters, to_check: Vec<Angle>, players: &Vec<Player>) -> bool {
+/* pub fn maccheck<F: Facilicator>(
+    params: &Parameters,
+    to_check: Vec<Angle>,
+    state: PlayerState<F>,
+) -> bool {
     let amount_of_players = players.len();
     let t = to_check.len();
 
@@ -225,12 +302,12 @@ pub fn xor(x: Vec<u8>, y: Vec<u8>) -> Vec<u8> {
     x.iter().zip(y.iter()).map(|(&x, &y)| x ^ y).collect()
 }
 
-pub fn triple_check(
+pub fn triple_check<F: Facilicator>(
     params: &Parameters,
     abc_triple: MulTriple,
     fgh_triple: MulTriple,
     t_shares: Vec<BigInt>,
-    players: &Vec<Player>,
+    state: PlayerState<F>,
 ) -> bool {
     let (a_angle, b_angle, c_angle) = abc_triple;
     let (f_angle, g_angle, h_angle) = fgh_triple;
@@ -268,9 +345,9 @@ pub fn triple_check(
 
     //Check for 0
     zero == BigInt::zero()
-}
+} */
 
-#[cfg(test)]
+/* #[cfg(test)]
 mod tests {
     use crate::{encryption::secure_params, mpc::prep::*, mpc::*};
 
@@ -342,3 +419,4 @@ mod tests {
         assert_eq!(BigInt::from(14_i32), output)
     }
 }
+ */

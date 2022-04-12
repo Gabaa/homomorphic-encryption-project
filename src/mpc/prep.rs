@@ -1,10 +1,12 @@
 //! Preprocessing phase (Multiparty Computation from Somewhat Homomorphic Encryption, sec. 5)
 
 use crate::mpc::zk::zkpopk;
-use crate::mpc::Angle;
+use crate::mpc::AngleShare;
+use crate::mpc::PlayerState;
+use crate::protocol::OnlineMessage;
 use crate::{
     encryption::*,
-    mpc::{ddec, diag, Player},
+    mpc::{ddec, diag},
     poly::Polynomial,
     polynomial,
     prob::*,
@@ -12,7 +14,7 @@ use crate::{
 use crate::{mpc::add_encrypted_shares, protocol::Facilicator};
 use num::One;
 
-use num::{BigInt, Zero};
+use num::BigInt;
 
 pub enum Enc {
     NewCiphertext,
@@ -20,145 +22,169 @@ pub enum Enc {
 }
 
 /// Represents the preprocessing protocol (fig. 7)
-pub struct ProtocolPrep {}
+pub mod protocol {
+    use super::*;
 
-impl ProtocolPrep {
     /// Implements the Initialize step
-    pub fn initialize(params: &Parameters, facilitator: Facilicator) -> Vec<Player> {
-        let amount_of_players = players.len();
-        let mut new_players = vec![]; // distribute_keys(params, players.clone());
+    pub fn initialize<F: Facilicator>(params: &Parameters, state: &mut PlayerState<F>) {
+        let amount_of_players = state.facilitator.player_count();
+        // distribute_keys(params, players.clone());
 
-        let mut e_alpha_is = vec![vec![]; amount_of_players];
+        state.alpha_i = sample_single(&params.t);
+        let e_alpha_i = encrypt(
+            params,
+            encode(diag(params, state.alpha_i.clone())),
+            &state.pk,
+        );
 
-        // Each player does the contents of the loop
-        for i in 0..amount_of_players {
-            new_players[i].alpha_i = sample_single(&params.t);
-            new_players[i].beta_i = sample_single(&params.t);
+        let msg = OnlineMessage::ShareCiphertext(e_alpha_i.clone());
+        state.facilitator.broadcast(&msg);
 
-            e_alpha_is[i] = encrypt(
-                params,
-                encode(diag(params, new_players[i].alpha_i.clone())),
-                &players[i].pk,
-            );
-        }
-
-        let e_alpha = add_encrypted_shares(&params, e_alpha_is.clone(), amount_of_players);
-
-        for i in 0..amount_of_players {
-            new_players[i].e_alpha = e_alpha.clone();
-        }
-
-        // TODO: ZK proof faked for now
-        let sec = 40; //sec hardcoded for now common values are 40, 80
-        for i in 0..amount_of_players {
-            for _ in 0..sec {
-                if !zkpopk(new_players[i].e_alpha.clone()) {
-                    panic!("ZK proof failed!")
-                }
+        let mut e_alpha_is = Vec::with_capacity(state.facilitator.player_count());
+        let messages = state
+            .facilitator
+            .receive_many(state.facilitator.player_count());
+        for (_, msg) in messages {
+            if let OnlineMessage::ShareCiphertext(e_i) = msg {
+                e_alpha_is.push(e_i);
             }
         }
 
-        new_players
+        state.e_alpha = add_encrypted_shares(params, e_alpha_is, amount_of_players);
+
+        // TODO: ZK proof faked for now
+        let sec = 40; //sec hardcoded for now common values are 40, 80
+        for _ in 0..sec {
+            if !zkpopk(e_alpha_i.clone()) {
+                panic!("ZK proof failed!")
+            }
+        }
     }
 
     /// Implements the Pair step
-    pub fn pair(params: &Parameters, players: &Vec<Player>) -> (Vec<BigInt>, Angle) {
-        let amount_of_players = players.len();
+    pub fn pair<F: Facilicator>(
+        params: &Parameters,
+        state: &PlayerState<F>,
+    ) -> (BigInt, AngleShare) {
+        let amount_of_players = state.facilitator.player_count();
 
-        let mut r_is = vec![BigInt::zero(); amount_of_players];
-        for i in 0..amount_of_players {
-            r_is[i] = sample_single(&params.t)
-        }
+        let r_i = sample_single(&params.t);
+        let e_r_i = encrypt(params, encode(r_i.clone()), &state.pk);
 
-        let mut e_r_is = vec![vec![]; amount_of_players];
-        for i in 0..amount_of_players {
-            e_r_is[i] = encrypt(params, encode(r_is[i].clone()), &players[0].pk)
+        let msg = OnlineMessage::ShareCiphertext(e_r_i.clone());
+        state.facilitator.broadcast(&msg);
+
+        let mut e_r_is = Vec::with_capacity(state.facilitator.player_count());
+        let messages = state
+            .facilitator
+            .receive_many(state.facilitator.player_count());
+        for (_, msg) in messages {
+            if let OnlineMessage::ShareCiphertext(e_i) = msg {
+                e_r_is.push(e_i);
+            }
         }
 
         let e_r = add_encrypted_shares(params, e_r_is.clone(), amount_of_players);
 
         // TODO: ZK proof faked for now
-        for i in 0..amount_of_players {
-            if !zkpopk(e_r_is[i].clone()) {
-                panic!("ZK proof failed!")
-            }
+        if !zkpopk(e_r_i) {
+            panic!("ZK proof failed!")
         }
 
-        let r_angle = p_angle(params, r_is.clone(), e_r, players);
-        (r_is, r_angle)
+        let r_angle = p_angle(params, r_i.clone(), e_r, state);
+        (r_i, r_angle)
     }
 
     /// Implements the Triple step
-    pub fn triple(params: &Parameters, players: &Vec<Player>) -> (Angle, Angle, Angle) {
-        let amount_of_players = players.len();
+    pub fn triple<F: Facilicator>(
+        params: &Parameters,
+        state: &PlayerState<F>,
+    ) -> (AngleShare, AngleShare, AngleShare) {
+        let amount_of_players = state.facilitator.player_count();
 
-        let mut a_is = vec![BigInt::zero(); amount_of_players];
-        let mut b_is = vec![BigInt::zero(); amount_of_players];
-        for i in 0..amount_of_players {
-            a_is[i] = sample_single(&params.t);
-            b_is[i] = sample_single(&params.t)
-        }
+        let a_i = sample_single(&params.t);
+        let b_i = sample_single(&params.t);
+        let e_a_i = encrypt(params, encode(a_i.clone()), &state.pk);
+        let e_b_i = encrypt(params, encode(b_i.clone()), &state.pk);
 
-        let mut e_a_is = vec![vec![]; amount_of_players];
-        let mut e_b_is = vec![vec![]; amount_of_players];
+        let msg = OnlineMessage::ShareCiphertext(e_a_i.clone());
+        state.facilitator.broadcast(&msg);
 
-        for i in 0..amount_of_players {
-            e_a_is[i] = encrypt(params, encode(a_is[i].clone()), &players[0].pk);
-            e_b_is[i] = encrypt(params, encode(b_is[i].clone()), &players[0].pk)
-        }
-
-        // TODO: ZK proof faked for now
-        for i in 0..amount_of_players {
-            if !zkpopk(e_a_is[i].clone()) {
-                panic!("ZK proof failed!")
+        let mut e_a_is = Vec::with_capacity(state.facilitator.player_count());
+        let messages = state
+            .facilitator
+            .receive_many(state.facilitator.player_count());
+        for (_, msg) in messages {
+            if let OnlineMessage::ShareCiphertext(e_i) = msg {
+                e_a_is.push(e_i);
             }
-            if !zkpopk(e_b_is[i].clone()) {
-                panic!("ZK proof failed!")
+        }
+
+        let msg = OnlineMessage::ShareCiphertext(e_b_i.clone());
+        state.facilitator.broadcast(&msg);
+
+        let mut e_b_is = Vec::with_capacity(state.facilitator.player_count());
+        let messages = state
+            .facilitator
+            .receive_many(state.facilitator.player_count());
+        for (_, msg) in messages {
+            if let OnlineMessage::ShareCiphertext(e_i) = msg {
+                e_b_is.push(e_i);
             }
         }
 
         let e_a = add_encrypted_shares(params, e_a_is, amount_of_players);
         let e_b = add_encrypted_shares(params, e_b_is, amount_of_players);
 
-        let a_angle = p_angle(params, a_is, e_a.clone(), players);
-        let b_angle = p_angle(params, b_is, e_b.clone(), players);
+        // TODO: ZK proof faked for now
+        if !zkpopk(e_a_i) {
+            panic!("ZK proof failed!")
+        }
+        if !zkpopk(e_b_i) {
+            panic!("ZK proof failed!")
+        }
+
+        let a_angle = p_angle(params, a_i, e_a.clone(), state);
+        let b_angle = p_angle(params, b_i, e_b.clone(), state);
         let e_c = mul(params, &e_a, &e_b);
 
-        let (e_c_prime_opt, reshared) = reshare(params, &e_c, players, Enc::NewCiphertext);
+        let (e_c_prime_opt, reshared) = reshare(params, &e_c, state, Enc::NewCiphertext);
         let e_c_prime: Ciphertext = e_c_prime_opt.unwrap();
 
-        let c_angle = p_angle(params, reshared, e_c_prime, players);
+        let c_angle = p_angle(params, reshared, e_c_prime, state);
 
         (a_angle, b_angle, c_angle)
     }
 }
 
 /// Implements Protocol Reshare (fig. 4)
-pub fn reshare(
+fn reshare<F: Facilicator>(
     params: &Parameters,
     e_m: &Ciphertext,
-    players: &Vec<Player>,
+    state: &PlayerState<F>,
     enc: Enc,
-) -> (Option<Ciphertext>, Vec<BigInt>) {
-    let amount_of_players = players.len();
+) -> (Option<Ciphertext>, BigInt) {
+    let amount_of_players = state.facilitator.player_count();
 
-    // Each player samples vec from M (this is just from Rt for now)
-    let mut f_is = vec![BigInt::zero(); amount_of_players];
-    for i in 0..amount_of_players {
-        f_is[i] = sample_single(&params.t)
-    }
+    let f_i = sample_single(&params.t);
+    let e_f_i = encrypt(params, encode(f_i.clone()), &state.pk);
 
-    // e_f_is[i] supposed to be computed by P_i and broadcast
-    let mut e_f_is = vec![vec![]; amount_of_players];
-    for i in 0..amount_of_players {
-        e_f_is[i] = encrypt(params, encode(f_is[i].clone()), &players[i].pk)
+    let msg = OnlineMessage::ShareCiphertext(e_f_i.clone());
+    state.facilitator.broadcast(&msg);
+
+    let mut e_f_is = Vec::with_capacity(state.facilitator.player_count());
+    let messages = state
+        .facilitator
+        .receive_many(state.facilitator.player_count());
+    for (_, msg) in messages {
+        if let OnlineMessage::ShareCiphertext(e_i) = msg {
+            e_f_is.push(e_i);
+        }
     }
 
     // ZK proof faked for now
-    for i in 0..amount_of_players {
-        if !zkpopk(e_f_is[i].clone()) {
-            panic!("ZK proof failed!")
-        }
+    if !zkpopk(e_f_i) {
+        panic!("ZK proof failed!")
     }
 
     // This is done by each player
@@ -166,20 +192,19 @@ pub fn reshare(
     let e_m_plus_f = add(params, e_m, &e_f);
 
     // Done by each player
-    let m_plus_f = ddec(params, players, e_m_plus_f);
+    let m_plus_f = ddec(params, state, e_m_plus_f);
 
-    // m_i computed by P_i
-    let mut m_is = vec![BigInt::zero(); amount_of_players];
-    m_is[0] = (m_plus_f.clone() - f_is[0].clone()).modpow(&BigInt::one(), &params.t);
-    for i in 1..amount_of_players {
-        m_is[i] = (-f_is[i].clone()).modpow(&BigInt::one(), &params.t)
-    }
+    let m_i = if state.facilitator.player_number() == 0 {
+        (m_plus_f.clone() - f_i).modpow(&BigInt::one(), &params.t)
+    } else {
+        (-f_i).modpow(&BigInt::one(), &params.t)
+    };
 
     if matches!(enc, Enc::NewCiphertext) {
         let mut e_m_prime = encrypt_det(
             params,
             encode(m_plus_f),
-            &players[0].pk,
+            &state.pk,
             (polynomial![1], polynomial![1], polynomial![1]),
         ); //Hvilket randomness???
         for i in 0..amount_of_players {
@@ -189,28 +214,28 @@ pub fn reshare(
                 &(e_f_is[i].iter().map(|e| -(e.clone())).collect()),
             );
         }
-        return (Some(e_m_prime), m_is);
+        return (Some(e_m_prime), m_i);
     }
 
     // Player P_i is supposed to get m_is[i]
-    (None, m_is)
+    (None, m_i)
 }
 
 /// Implements Protocol PAngle (fig. 6)
-pub fn p_angle(
+fn p_angle<F: Facilicator>(
     params: &Parameters,
-    v_is: Vec<BigInt>,
+    v_i: BigInt,
     e_v: Ciphertext,
-    players: &Vec<Player>,
-) -> Angle {
+    player_state: &PlayerState<F>,
+) -> AngleShare {
     // Each player does the following:
-    let e_v_mul_alpha = mul(&params, &e_v, &players[0].e_alpha);
-    let (_, gamma_is) = reshare(params, &e_v_mul_alpha, players, Enc::NoNewCiphertext); // each player Pi gets a share γi of α·v
-    let v_angle = [v_is.as_slice(), gamma_is.as_slice()].concat();
+    let e_v_mul_alpha = mul(params, &e_v, &player_state.e_alpha);
+    let (_, gamma_i) = reshare(params, &e_v_mul_alpha, player_state, Enc::NoNewCiphertext); // each player Pi gets a share γi of α·v
+    let v_angle: AngleShare = (v_i, gamma_i);
     v_angle
 }
 
-#[cfg(test)]
+/* #[cfg(test)]
 mod tests {
     use crate::{encryption::secure_params, mpc::prep::*, mpc::*};
 
@@ -285,3 +310,4 @@ mod tests {
         assert_eq!(res, sigma)
     }
 }
+ */

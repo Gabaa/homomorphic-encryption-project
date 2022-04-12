@@ -71,8 +71,12 @@ pub fn mpc_secure_params() -> Parameters {
     Parameters::new(80708963, 2.0, 80.0, 12900, 127)
 }
 
-pub fn encrypt_det(params: &Parameters, m: Polynomial, pk: &PublicKey, r: (Polynomial, Polynomial, Polynomial)) -> Ciphertext {
-
+pub fn encrypt_det(
+    params: &Parameters,
+    m: Polynomial,
+    pk: &PublicKey,
+    r: (Polynomial, Polynomial, Polynomial),
+) -> Ciphertext {
     let rq = &params.quotient_ring;
 
     let (a0, b0) = pk;

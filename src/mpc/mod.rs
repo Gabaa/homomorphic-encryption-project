@@ -6,14 +6,14 @@ use crate::{encryption::*, polynomial};
 use crate::{poly::*, protocol::Facilicator};
 use crate::{prob::sample_from_uniform, protocol::OnlineMessage};
 
-mod commitment;
-mod online;
-mod prep;
-mod zk;
+pub mod commitment;
+pub mod online;
+pub mod prep;
+pub mod zk;
 
 pub type Angle = Vec<BigInt>;
 pub type AngleShare = (BigInt, BigInt);
-pub type MulTriple = (Angle, Angle, Angle);
+pub type MulTriple = (AngleShare, AngleShare, AngleShare);
 
 #[derive(Clone, Debug)]
 pub struct PlayerState<F: Facilicator> {
@@ -38,12 +38,16 @@ impl<F: Facilicator> PlayerState<F> {
             facilitator,
         }
     }
+
+    pub fn stop(self) {
+        self.facilitator.stop()
+    }
 }
 
 /// Function for "dec" functionality in Fkey_gen_dec figure 3 of the MPC article.
 pub fn ddec<F: Facilicator>(
     params: &Parameters,
-    state: PlayerState<F>,
+    state: &PlayerState<F>,
     mut c: Ciphertext,
 ) -> BigInt {
     let rq = &params.quotient_ring;
@@ -74,18 +78,15 @@ pub fn ddec<F: Facilicator>(
     let msg = OnlineMessage::SharePoly(t_i);
     state.facilitator.broadcast(&msg);
 
-    let t_shares: Vec<Polynomial> = state
+    let mut t_shares = Vec::with_capacity(state.facilitator.player_count());
+    let messages = state
         .facilitator
-        .receive_many(state.facilitator.player_count())
-        .iter()
-        .map(|(_, msg)| {
-            if let OnlineMessage::SharePoly(t_j) = msg {
-                t_j
-            } else {
-                panic!("Expected a share of a polynomial")
-            }
-        })
-        .collect();
+        .receive_many(state.facilitator.player_count());
+    for (_, msg) in messages {
+        if let OnlineMessage::SharePoly(t_j) = msg {
+            t_shares.push(t_j);
+        }
+    }
 
     let t_prime = t_shares
         .iter()

@@ -101,8 +101,8 @@ mod tests {
         let b = sample_from_uniform(&params.t, params.n);
         let ab = rt.mul(&a, &b);
 
-        let e_a = encrypt(&params, a.clone(), &pk);
-        let e_b = encrypt(&params, b.clone(), &pk);
+        let e_a = encrypt(&params, a, &pk);
+        let e_b = encrypt(&params, b, &pk);
 
         let e_c = mul(&params, &e_a, &e_b);
 

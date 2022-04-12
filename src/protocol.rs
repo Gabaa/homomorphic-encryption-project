@@ -1,8 +1,12 @@
 use std::net::SocketAddr;
 
+use num::BigInt;
 use serde::{Deserialize, Serialize};
 
-use crate::{encryption::PublicKey, poly::Polynomial};
+use crate::{
+    encryption::{Ciphertext, PublicKey},
+    poly::Polynomial,
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct KeyMaterial {
@@ -21,13 +25,17 @@ pub enum PrepMessage {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum OnlineMessage {
     SharePoly(Polynomial),
+    ShareCiphertext(Ciphertext),
+    ShareBigInt(BigInt),
+    BeginInput,
 }
 
 pub trait Facilicator {
     fn player_count(&self) -> usize;
     fn player_number(&self) -> usize;
-    fn send(&mut self, player: usize, msg: &OnlineMessage);
-    fn broadcast(&mut self, msg: &OnlineMessage);
-    fn receive(&mut self) -> (usize, OnlineMessage);
-    fn receive_many(&mut self, n: usize) -> Vec<(usize, OnlineMessage)>;
+    fn send(&self, player: usize, msg: &OnlineMessage);
+    fn broadcast(&self, msg: &OnlineMessage);
+    fn receive(&self) -> (usize, OnlineMessage);
+    fn receive_many(&self, n: usize) -> Vec<(usize, OnlineMessage)>;
+    fn stop(self);
 }
