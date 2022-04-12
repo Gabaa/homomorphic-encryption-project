@@ -49,7 +49,7 @@ pub mod protocol {
                 r_shares.push(r_share)
             }
         }
-        let r = open_shares(&params, r_shares, amount_of_players);
+        let r = open_shares(params, r_shares, amount_of_players);
 
         // P_i broadcasts this
         // TODO: Burde dette være mod t?
@@ -61,18 +61,16 @@ pub mod protocol {
         if state.facilitator.player_number() == 0 {
             return (
                 r_angle.0 + eps.clone(),
-                r_angle.1 + eps.clone() * state.alpha_i.clone(),
+                r_angle.1 + eps * state.alpha_i.clone(),
             );
         }
-        (r_angle.0, r_angle.1 + eps.clone() * state.alpha_i.clone())
+        (r_angle.0, r_angle.1 + eps * state.alpha_i.clone())
     }
 
     pub fn receive_input<F: Facilicator>(
         r_pair: (BigInt, AngleShare),
         state: &PlayerState<F>,
     ) -> AngleShare {
-        let amount_of_players = state.facilitator.player_count();
-
         // Wait for sharing player to send BeginInput
         let (p_i, msg) = state.facilitator.receive();
         if !matches!(msg, OnlineMessage::BeginInput) {
@@ -86,10 +84,9 @@ pub mod protocol {
 
         // Receive eps
         let (_, msg) = state.facilitator.receive();
-        let eps = if let OnlineMessage::ShareBigInt(eps) = msg {
-            eps
-        } else {
-            panic!()
+        let eps = match msg {
+            OnlineMessage::ShareBigInt(eps) => eps,
+            _ => panic!(),
         };
 
         if state.facilitator.player_number() == 0 {
@@ -101,8 +98,8 @@ pub mod protocol {
         (r_angle.0, r_angle.1 + eps * state.alpha_i.clone())
     }
 
-    pub fn add(x: AngleShare, y: AngleShare) -> AngleShare {
-        (x.0 + y.0, x.1 + y.1)
+    pub fn add(x: &AngleShare, y: &AngleShare) -> AngleShare {
+        (&x.0 + &y.0, &x.1 + &y.1)
     }
 
     /* pub fn multiply<F: Facilicator>(
@@ -167,7 +164,7 @@ pub mod protocol {
     pub fn output<F: Facilicator>(
         params: &Parameters,
         y_angle: AngleShare,
-        state: PlayerState<F>,
+        state: &PlayerState<F>,
     ) -> BigInt {
         let amount_of_players = state.facilitator.player_count();
 
@@ -194,8 +191,7 @@ pub mod protocol {
             }
         }
 
-        let y = open_shares(params, y_shares, amount_of_players);
-        y
+        open_shares(params, y_shares, amount_of_players)
     }
 }
 
