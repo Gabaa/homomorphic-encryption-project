@@ -64,6 +64,22 @@ impl Polynomial {
         );
         mod_pol.trim_res()
     }
+
+    /// Normalize all coefficients to be in the range [-q/2, q/2) instead of [0, q).
+    pub fn normalized_coefficients(&self, q: &BigInt) -> Polynomial {
+        Polynomial(
+            self.coefficients()
+                .map(|x| {
+                    if x > &(q / 2_i32) {
+                        x - q
+                    } else {
+                        x.to_owned()
+                    }
+                })
+                .collect(),
+        )
+        .trim_res()
+    }
 }
 
 impl<Int: Into<BigInt> + Clone> From<Vec<Int>> for Polynomial {

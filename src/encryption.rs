@@ -133,19 +133,7 @@ pub fn decrypt(
         msg = rq.add(&msg, &ci_mul_sk_veci);
     }
 
-    // Compute msg minus q if x > q/2
-    let msg_minus_q = Polynomial::from(
-        msg.coefficients()
-            .map(|x| {
-                if x > &(&rq.q / 2_i32) {
-                    x - &rq.q
-                } else {
-                    x.to_owned()
-                }
-            })
-            .collect::<Vec<BigInt>>(),
-    )
-    .trim_res();
+    let msg_minus_q = msg.normalized_coefficients(&rq.q);
 
     if msg_minus_q.l_inf_norm() >= &rq.q / 2_i32 {
         return Err(DecryptionError::LInfNormTooBig(msg_minus_q.l_inf_norm()));

@@ -92,20 +92,7 @@ pub fn ddec<F: Facilicator>(
         .iter()
         .fold(polynomial![0], |acc, elem| rq.add(&acc, elem));
 
-    // Compute msg minus q if x > q/2
-    let msg_minus_q = Polynomial::from(
-        t_prime
-            .coefficients()
-            .map(|x| {
-                if x > &(&rq.q / 2_i32) {
-                    x - &rq.q
-                } else {
-                    x.to_owned()
-                }
-            })
-            .collect::<Vec<BigInt>>(),
-    )
-    .trim_res();
+    let msg_minus_q = t_prime.normalized_coefficients(&rq.q);
 
     decode(msg_minus_q.modulo(&params.t))
 }
