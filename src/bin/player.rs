@@ -204,3 +204,72 @@ fn add_private_inputs(
 
     Ok(())
 }
+
+fn multiply_private_inputs(
+    mut state: PlayerState<FacilitatorImpl>,
+    params: Parameters,
+    input: BigInt,
+) -> Result<(), io::Error> {
+    let player_count = state.facilitator.player_count();
+
+    println!("Begin preprocessing...");
+    prep::protocol::initialize(&params, &mut state);
+
+    let mut pairs = Vec::with_capacity(player_count + (player_count - 1));
+    for _ in 0..player_count {
+        let pair = prep::protocol::pair(&params, &state);
+        pairs.push(pair);
+    }
+    
+    let mut triples = Vec::with_capacity((player_count - 1)*2);
+    for _ in 0..((player_count - 1) * 2) {
+        let triple = prep::protocol::triple(&params, &state);
+        triples.push(triple);
+        let triple = prep::protocol::triple(&params, &state);
+        triples.push(triple);
+
+        //Extra pair for multiply
+        let pair = prep::protocol::pair(&params, &state);
+        pairs.push(pair);
+    }
+
+    println!("Finished with preprocessing!");
+
+    println!("Sharing inputs...");
+    let mut input_shares = Vec::with_capacity(player_count);
+    for i in 0..player_count {
+        let r_pair = pairs.pop().unwrap();
+        let input_share = if i == state.facilitator.player_number() {
+            println!("My input is: {}", input);
+            online::protocol::give_input(&params, input.clone(), r_pair, &state)
+        } else {
+            online::protocol::receive_input(r_pair, &state)
+        };
+        input_shares.push(input_share);
+    }
+    println!("Finished sharing all inputs!");
+
+    println!("Multiplying all inputs together...");
+    let mut multiplied_shares = input_shares[0].clone();
+    for i in 1..input_shares.len() {
+        (multiplied_shares, state) = online::protocol::multiply(
+            &params,
+            multiplied_shares,
+            input_shares[i].clone(),
+            triples.pop().unwrap(),
+            triples.pop().unwrap(),
+            pairs.pop().unwrap().0,
+            state
+        );
+    }
+    println!("Finished adding all inputs!");
+
+    println!("Getting output...");
+    let output = online::protocol::output(&params, multiplied_shares, &state);
+
+    println!("Output is {}", output);
+
+    state.stop();
+
+    Ok(())
+}

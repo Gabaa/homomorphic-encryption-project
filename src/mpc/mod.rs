@@ -22,7 +22,7 @@ pub struct PlayerState<F: Facilicator> {
     pk: PublicKey,
     alpha_i: BigInt,     // global key share
     e_alpha: Ciphertext, // Encrypted global key
-    opened: Vec<Angle>,
+    opened: Vec<(BigInt, BigInt)>,
     pub facilitator: F,
 }
 

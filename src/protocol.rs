@@ -27,6 +27,8 @@ pub enum OnlineMessage {
     SharePoly(Polynomial),
     ShareCiphertext(Ciphertext),
     ShareBigInt(BigInt),
+    ShareCommitment(Vec<u8>),
+    ShareCommitOpen(Vec<u8>),
     BeginInput,
 }
 
