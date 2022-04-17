@@ -230,8 +230,8 @@ fn multiply_private_inputs(
         pairs.push(pair);
     }
 
-    let mut triples = Vec::with_capacity((player_count - 1) * 2);
-    for _ in 0..((player_count - 1) * 2) {
+    let mut triples = Vec::with_capacity(player_count - 1);
+    for _ in 0..(player_count - 1) {
         let triple = prep::protocol::triple(&params, &state);
         triples.push(triple);
         let triple = prep::protocol::triple(&params, &state);

@@ -142,15 +142,9 @@ pub mod protocol {
 
         // Adding epsilon * delta
         if state.facilitator.player_number() == 0 {
-            z_share = (
-                z_share.0 + epsilon.clone() * delta.clone(),
-                z_share.1 + epsilon.clone() * delta.clone() * state.alpha_i.clone(),
-            );
+            z_share.0 += epsilon.clone() * delta.clone();
         }
-        z_share = (
-            z_share.0,
-            z_share.1 + epsilon * delta * state.alpha_i.clone(),
-        );
+        z_share.1 -= epsilon * delta * state.alpha_i.clone();
 
         (z_share, state)
     }
@@ -203,16 +197,16 @@ fn partial_opening<F: Facilicator>(
     // Need to send to a designated player, here we choose player 1, which has index 0
     state.facilitator.send(0, &msg);
     if state.facilitator.player_number() == 0 {
-        let mut epsilon_shares = Vec::with_capacity(amount_of_players);
+        let mut shares = Vec::with_capacity(amount_of_players);
         let messages = state.facilitator.receive_many(amount_of_players);
-        for (_, msg) in messages {
-            if let OnlineMessage::ShareBigInt(eps_i) = msg {
-                epsilon_shares.push(eps_i);
+        for (_, received_msg) in messages {
+            if let OnlineMessage::ShareBigInt(received_share) = received_msg {
+                shares.push(received_share);
             }
         }
-        let eps = open_shares(params, epsilon_shares, amount_of_players);
-        let eps_msg = OnlineMessage::ShareBigInt(eps);
-        state.facilitator.broadcast(&eps_msg)
+        let result = open_shares(params, shares, amount_of_players);
+        let result_msg = OnlineMessage::ShareBigInt(result);
+        state.facilitator.broadcast(&result_msg)
     }
 
     let (from, msg) = state.facilitator.receive();
@@ -394,15 +388,9 @@ pub fn triple_check<F: Facilicator>(
 
     // Subtracting sigma * rho
     if state.facilitator.player_number() == 0 {
-        zero_share = (
-            zero_share.0 - sigma.clone() * rho.clone(),
-            zero_share.1 - sigma.clone() * rho.clone() * state.alpha_i.clone(),
-        );
+        zero_share.0 -= sigma.clone() * rho.clone();
     }
-    zero_share = (
-        zero_share.0,
-        zero_share.1 - sigma * rho * state.alpha_i.clone(),
-    );
+    zero_share.1 = zero_share.1 - sigma * rho * state.alpha_i.clone();
 
     let zero = partial_opening(params, zero_share.0, &state);
     state.opened.push((zero.clone(), zero_share.1));
