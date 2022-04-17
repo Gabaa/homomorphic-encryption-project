@@ -292,11 +292,11 @@ fn maccheck<F: Facilicator>(
     commit(sigma_i_bytes.clone(), r.clone(), state);
 
     // Store commitments
-    let sigma_commitments: Vec<Vec<u8>> = vec![vec![]; amount_of_players];
+    let mut sigma_commitments: Vec<Vec<u8>> = vec![vec![]; amount_of_players];
     for _i in 0..amount_of_players {
         let (p_i, msg) = state.facilitator.receive();
         if let OnlineMessage::ShareCommitment(commitment_i) = msg {
-            commitments[p_i] = commitment_i;
+            sigma_commitments[p_i] = commitment_i;
         }
     }
 
@@ -314,7 +314,7 @@ fn maccheck<F: Facilicator>(
             let opened = open(sigma_commitments[p_i].clone(), o_i).unwrap();
             sigma_is[p_i] = BigInt::from_bytes_be(
                 num::bigint::Sign::NoSign,
-                &opened.as_slice(),
+                &opened.iter().take(opened.len() - 32).cloned().collect::<Vec<u8>>().as_slice(),
             )
         }
     }
