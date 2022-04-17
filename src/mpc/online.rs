@@ -52,7 +52,7 @@ pub mod protocol {
                 r_shares.push(r_share)
             }
         }
-        let r = open_shares(params, r_shares, amount_of_players);
+        let r = open_shares(params, r_shares);
 
         // P_i broadcasts this
         // TODO: Burde dette være mod t?
@@ -179,7 +179,7 @@ pub mod protocol {
             }
         }
 
-        open_shares(params, y_shares, amount_of_players)
+        open_shares(params, y_shares)
     }
 }
 
@@ -204,7 +204,7 @@ fn partial_opening<F: Facilicator>(
                 shares.push(received_share);
             }
         }
-        let result = open_shares(params, shares, amount_of_players);
+        let result = open_shares(params, shares);
         let result_msg = OnlineMessage::ShareBigInt(result);
         state.facilitator.broadcast(&result_msg)
     }
@@ -361,7 +361,7 @@ pub fn triple_check<F: Facilicator>(
             t_shares.push(t_share)
         }
     }
-    let t = open_shares(params, t_shares, amount_of_players);
+    let t = open_shares(params, t_shares);
 
     // Compute rho
     let rho_share = (
@@ -377,13 +377,9 @@ pub fn triple_check<F: Facilicator>(
     state.opened.push((sigma.clone(), sigma_share.1));
 
     // Evaluate formula and check if zero as expected. If zero, then ab = c.
-    let t_times_c = (t.clone() * c_angle.0, t * c_angle.1);
-    let sigma_times_f = (sigma.clone() * f_angle.0, sigma.clone() * f_angle.1);
-    let rho_times_g = (rho.clone() * g_angle.0, rho.clone() * g_angle.1);
-
     let mut zero_share = (
-        t_times_c.0 - h_angle.0 - sigma_times_f.0 - rho_times_g.0,
-        t_times_c.1 - h_angle.1 - sigma_times_f.1 - rho_times_g.1,
+        t.clone() * c_angle.0 - h_angle.0 - sigma.clone() * f_angle.0 - rho.clone() * g_angle.0,
+        t.clone() * c_angle.1 - h_angle.1 - sigma.clone() * f_angle.1 - rho.clone() * g_angle.1,
     );
 
     // Subtracting sigma * rho

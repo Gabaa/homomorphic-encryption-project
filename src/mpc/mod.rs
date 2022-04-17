@@ -97,13 +97,8 @@ pub fn ddec<F: Facilicator>(
     decode(msg_minus_q.modulo(&params.t))
 }
 
-pub fn open_shares(params: &Parameters, repr: Vec<BigInt>, amount_of_players: usize) -> BigInt {
+pub fn open_shares(params: &Parameters, shares: Vec<BigInt>) -> BigInt {
     let mut r = BigInt::zero();
-    let shares = repr
-        .iter()
-        .take(amount_of_players)
-        .cloned()
-        .collect::<Vec<BigInt>>();
     for share in &shares {
         r = (r + share).modpow(&BigInt::one(), &params.t);
     }
