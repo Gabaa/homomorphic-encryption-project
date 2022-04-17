@@ -144,7 +144,7 @@ pub mod protocol {
         if state.facilitator.player_number() == 0 {
             z_share.0 += epsilon.clone() * delta.clone();
         }
-        z_share.1 -= epsilon * delta * state.alpha_i.clone();
+        z_share.1 += epsilon * delta * state.alpha_i.clone();
 
         (z_share, state)
     }
@@ -390,7 +390,7 @@ pub fn triple_check<F: Facilicator>(
     if state.facilitator.player_number() == 0 {
         zero_share.0 -= sigma.clone() * rho.clone();
     }
-    zero_share.1 = zero_share.1 - sigma * rho * state.alpha_i.clone();
+    zero_share.1 -= sigma * rho * state.alpha_i.clone();
 
     let zero = partial_opening(params, zero_share.0, &state);
     state.opened.push((zero.clone(), zero_share.1));
