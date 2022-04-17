@@ -1,14 +1,14 @@
 //! Online phase (Multiparty Computation from Somewhat Homomorphic Encryption, sec. 2)
 
-use num::One;
-use num::Zero;
-use crate::protocol::OnlineMessage;
 use crate::mpc::commitment::commit;
 use crate::mpc::commitment::open;
 use crate::mpc::open_shares;
 use crate::mpc::MulTriple;
+use crate::protocol::OnlineMessage;
 use crate::{encryption::Parameters, protocol::Facilicator};
 use num::BigInt;
+use num::One;
+use num::Zero;
 use rand::distributions::Uniform;
 use rand::rngs::StdRng;
 use rand::Rng;
@@ -114,12 +114,11 @@ pub mod protocol {
         t_share: BigInt,
         mut state: PlayerState<F>,
     ) -> (AngleShare, PlayerState<F>) {
-        let amount_of_players = state.facilitator.player_count();
         let (a_angle, b_angle, c_angle) = abc_triple.clone();
 
         // Check if ab = c in first triple by using the second triple
 
-        let (is_valid, new_state) = triple_check(&params, abc_triple, fgh_triple, t_share, state);
+        let (is_valid, new_state) = triple_check(params, abc_triple, fgh_triple, t_share, state);
         if !is_valid {
             panic!("Triple check did not succeed!")
         }
@@ -127,28 +126,30 @@ pub mod protocol {
 
         // Compute epsilon
         let epsilon_share = (x.0 - a_angle.clone().0, x.1 - a_angle.clone().1);
-        let epsilon = partial_opening(&params, epsilon_share.0, &state);
+        let epsilon = partial_opening(params, epsilon_share.0, &state);
         state.opened.push((epsilon.clone(), epsilon_share.1));
 
         // Compute delta
         let delta_share = (y.0 - b_angle.clone().0, y.1 - b_angle.clone().1);
-        let delta = partial_opening(&params, delta_share.0, &state);
+        let delta = partial_opening(params, delta_share.0, &state);
         state.opened.push((delta.clone(), delta_share.1));
 
         // Compute shares of result
-        let mut z_share = (c_angle.0 + epsilon.clone() * b_angle.0 + delta.clone() * a_angle.0,
-            c_angle.1 + epsilon.clone() * b_angle.1 + delta.clone() * a_angle.1);
+        let mut z_share = (
+            c_angle.0 + epsilon.clone() * b_angle.0 + delta.clone() * a_angle.0,
+            c_angle.1 + epsilon.clone() * b_angle.1 + delta.clone() * a_angle.1,
+        );
 
         // Adding epsilon * delta
         if state.facilitator.player_number() == 0 {
             z_share = (
                 z_share.0 + epsilon.clone() * delta.clone(),
-                z_share.1 + epsilon.clone() * delta.clone() * state.alpha_i.clone()
+                z_share.1 + epsilon.clone() * delta.clone() * state.alpha_i.clone(),
             );
         }
         z_share = (
             z_share.0,
-            z_share.1 + epsilon.clone() * delta.clone() * state.alpha_i.clone()
+            z_share.1 + epsilon * delta * state.alpha_i.clone(),
         );
 
         (z_share, state)
@@ -192,33 +193,37 @@ fn xor(x: Vec<u8>, y: Vec<u8>) -> Vec<u8> {
     x.iter().zip(y.iter()).map(|(&x, &y)| x ^ y).collect()
 }
 
-fn partial_opening<F: Facilicator>(params: &Parameters, to_share: BigInt, state: &PlayerState<F>) -> BigInt {
+fn partial_opening<F: Facilicator>(
+    params: &Parameters,
+    to_share: BigInt,
+    state: &PlayerState<F>,
+) -> BigInt {
     let amount_of_players = state.facilitator.player_count();
-        let msg = OnlineMessage::ShareBigInt(to_share);
-        // Need to send to a designated player, here we choose player 1, which has index 0
-        state.facilitator.send(0, &msg);
-        if state.facilitator.player_number() == 0 {
-            let mut epsilon_shares = Vec::with_capacity(amount_of_players);
-            let messages = state.facilitator.receive_many(amount_of_players);
-            for (_, msg) in messages {
-                if let OnlineMessage::ShareBigInt(eps_i) = msg {
-                    epsilon_shares.push(eps_i);
-                }
+    let msg = OnlineMessage::ShareBigInt(to_share);
+    // Need to send to a designated player, here we choose player 1, which has index 0
+    state.facilitator.send(0, &msg);
+    if state.facilitator.player_number() == 0 {
+        let mut epsilon_shares = Vec::with_capacity(amount_of_players);
+        let messages = state.facilitator.receive_many(amount_of_players);
+        for (_, msg) in messages {
+            if let OnlineMessage::ShareBigInt(eps_i) = msg {
+                epsilon_shares.push(eps_i);
             }
-            let eps = open_shares(&params, epsilon_shares, amount_of_players);
-            let eps_msg = OnlineMessage::ShareBigInt(eps);
-            state.facilitator.broadcast(&eps_msg)
         }
+        let eps = open_shares(params, epsilon_shares, amount_of_players);
+        let eps_msg = OnlineMessage::ShareBigInt(eps);
+        state.facilitator.broadcast(&eps_msg)
+    }
 
-        let (from, msg) = state.facilitator.receive();
-        if from != 0 {
-            panic!("Supposed to receive message from player 1, but received from someone else")
-        }
-        if let OnlineMessage::ShareBigInt(received) = msg {
-            return received
-        }
-        
-        BigInt::zero() // TODO: Mere clean løsning
+    let (from, msg) = state.facilitator.receive();
+    if from != 0 {
+        panic!("Supposed to receive message from player 1, but received from someone else")
+    }
+    if let OnlineMessage::ShareBigInt(received) = msg {
+        return received;
+    }
+
+    BigInt::zero() // TODO: Mere clean løsning
 }
 
 fn maccheck<F: Facilicator>(
@@ -247,7 +252,9 @@ fn maccheck<F: Facilicator>(
     let mut o = vec![];
     o.extend(s_i);
     o.extend(r);
-    state.facilitator.broadcast(&OnlineMessage::ShareCommitOpen(o));
+    state
+        .facilitator
+        .broadcast(&OnlineMessage::ShareCommitOpen(o));
 
     // This should actually have been a part of the commitment.rs module
     let mut seeds: Vec<Vec<u8>> = vec![vec![]; amount_of_players];
@@ -256,18 +263,20 @@ fn maccheck<F: Facilicator>(
         if let OnlineMessage::ShareCommitOpen(o_i) = msg {
             let opened = open(commitments[p_i].clone(), o_i).unwrap();
             seeds[p_i] = opened.iter().take(32).cloned().collect();
-            
         }
     }
 
     // XOR seeds to get s
     let mut s: Vec<u8> = seeds[0].clone();
-    for i in 1..amount_of_players {
-        s = xor(s, seeds[i].clone());
+    for seed in seeds {
+        s = xor(s, seed);
     }
 
     // Players sample random vector r using seed s (a vector of length n with elements generated uniformly modulo q)
-    let rng_seed: [u8; 32] = s.as_slice().try_into().expect("Wrong length seed received!");
+    let rng_seed: [u8; 32] = s
+        .as_slice()
+        .try_into()
+        .expect("Wrong length seed received!");
     let range = Uniform::new(BigInt::zero(), &params.t);
     let rng = StdRng::from_seed(rng_seed);
     let r: Vec<BigInt> = rng.sample_iter(&range).take(t).collect();
@@ -282,9 +291,10 @@ fn maccheck<F: Facilicator>(
     // Player i computes gamma_i and sigma_i
     let mut gamma_i = BigInt::zero();
     for j in 0..t {
-        gamma_i = (gamma_i + r[j].clone() * to_check[j].clone().1).modpow(&BigInt::one(), &params.t);
+        gamma_i =
+            (gamma_i + r[j].clone() * to_check[j].clone().1).modpow(&BigInt::one(), &params.t);
     }
-    let sigma_i = (gamma_i - state.alpha_i.clone() * a.clone()).modpow(&BigInt::one(), &params.t);
+    let sigma_i = (gamma_i - state.alpha_i.clone() * a).modpow(&BigInt::one(), &params.t);
 
     // Convert sigma_i to bytes, sample randomness, and commit to sigma_i
     let (_, sigma_i_bytes) = sigma_i.to_bytes_be();
@@ -304,25 +314,32 @@ fn maccheck<F: Facilicator>(
     let mut o = vec![];
     o.extend(sigma_i_bytes);
     o.extend(r);
-    state.facilitator.broadcast(&OnlineMessage::ShareCommitOpen(o));
+    state
+        .facilitator
+        .broadcast(&OnlineMessage::ShareCommitOpen(o));
 
     // This should actually have been a part of the commitment.rs module
     let mut sigma_is: Vec<BigInt> = vec![BigInt::zero(); amount_of_players];
-    for i in 0..amount_of_players {
+    for _ in 0..amount_of_players {
         let (p_i, msg) = state.facilitator.receive();
         if let OnlineMessage::ShareCommitOpen(o_i) = msg {
             let opened = open(sigma_commitments[p_i].clone(), o_i).unwrap();
             sigma_is[p_i] = BigInt::from_bytes_be(
                 num::bigint::Sign::NoSign,
-                &opened.iter().take(opened.len() - 32).cloned().collect::<Vec<u8>>().as_slice(),
+                opened
+                    .iter()
+                    .take(opened.len() - 32)
+                    .cloned()
+                    .collect::<Vec<u8>>()
+                    .as_slice(),
             )
         }
     }
 
     // Sum sigma_i's and check that this equals 0
     let mut sigma_sum = BigInt::zero();
-    for i in 0..amount_of_players {
-        sigma_sum = (sigma_sum + sigma_is[i].clone()).modpow(&BigInt::one(), &params.t);
+    for sigma_i in sigma_is.iter().take(amount_of_players) {
+        sigma_sum = (sigma_sum + sigma_i).modpow(&BigInt::one(), &params.t);
     }
 
     sigma_sum == BigInt::zero()
@@ -350,16 +367,19 @@ pub fn triple_check<F: Facilicator>(
             t_shares.push(t_share)
         }
     }
-    let t = open_shares(&params, t_shares, amount_of_players);
+    let t = open_shares(params, t_shares, amount_of_players);
 
     // Compute rho
-    let rho_share = (t.clone() * a_angle.0 - f_angle.clone().0, t.clone() * a_angle.1 - f_angle.clone().1);
-    let rho = partial_opening(&params, rho_share.0, &state);
+    let rho_share = (
+        t.clone() * a_angle.0 - f_angle.clone().0,
+        t.clone() * a_angle.1 - f_angle.clone().1,
+    );
+    let rho = partial_opening(params, rho_share.0, &state);
     state.opened.push((rho.clone(), rho_share.1));
 
     // Compute sigma
     let sigma_share = (b_angle.0 - g_angle.clone().0, b_angle.1 - g_angle.clone().1);
-    let sigma = partial_opening(&params, sigma_share.0, &state);
+    let sigma = partial_opening(params, sigma_share.0, &state);
     state.opened.push((sigma.clone(), sigma_share.1));
 
     // Evaluate formula and check if zero as expected. If zero, then ab = c.
@@ -369,22 +389,22 @@ pub fn triple_check<F: Facilicator>(
 
     let mut zero_share = (
         t_times_c.0 - h_angle.0 - sigma_times_f.0 - rho_times_g.0,
-        t_times_c.1 - h_angle.1 - sigma_times_f.1 - rho_times_g.1
+        t_times_c.1 - h_angle.1 - sigma_times_f.1 - rho_times_g.1,
     );
 
     // Subtracting sigma * rho
     if state.facilitator.player_number() == 0 {
         zero_share = (
             zero_share.0 - sigma.clone() * rho.clone(),
-            zero_share.1 - sigma.clone() * rho.clone() * state.alpha_i.clone()
+            zero_share.1 - sigma.clone() * rho.clone() * state.alpha_i.clone(),
         );
     }
     zero_share = (
         zero_share.0,
-        zero_share.1 - sigma.clone() * rho.clone() * state.alpha_i.clone()
+        zero_share.1 - sigma * rho * state.alpha_i.clone(),
     );
 
-    let zero = partial_opening(&params, zero_share.0, &state);
+    let zero = partial_opening(params, zero_share.0, &state);
     state.opened.push((zero.clone(), zero_share.1));
 
     //Check for 0

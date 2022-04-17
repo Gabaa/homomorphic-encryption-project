@@ -2,7 +2,7 @@ use num::BigInt;
 use num::One;
 use num::Zero;
 
-use crate::{encryption::*, polynomial};
+use crate::{encryption::*, polynomial, protocol::KeyMaterial};
 use crate::{poly::*, protocol::Facilicator};
 use crate::{prob::sample_from_uniform, protocol::OnlineMessage};
 
@@ -27,11 +27,11 @@ pub struct PlayerState<F: Facilicator> {
 }
 
 impl<F: Facilicator> PlayerState<F> {
-    pub fn new(facilitator: F) -> Self {
+    pub fn new(facilitator: F, key_material: KeyMaterial) -> Self {
         Self {
-            sk_i1: polynomial![0],
-            sk_i2: polynomial![0],
-            pk: (polynomial![0], polynomial![0]),
+            sk_i1: key_material.sk_i1,
+            sk_i2: key_material.sk_i2,
+            pk: key_material.pk,
             alpha_i: BigInt::zero(),
             e_alpha: vec![],
             opened: vec![],
@@ -104,25 +104,21 @@ pub fn open_shares(params: &Parameters, repr: Vec<BigInt>, amount_of_players: us
         .take(amount_of_players)
         .cloned()
         .collect::<Vec<BigInt>>();
-    for i in 0..shares.len() {
-        r = (r + shares[i].clone()).modpow(&BigInt::one(), &params.t);
+    for share in &shares {
+        r = (r + share).modpow(&BigInt::one(), &params.t);
     }
     r
 }
 
-pub fn add_encrypted_shares(
-    params: &Parameters,
-    enc_shares: Vec<Ciphertext>,
-    amount_of_players: usize,
-) -> Ciphertext {
+pub fn add_encrypted_shares(params: &Parameters, enc_shares: Vec<Ciphertext>) -> Ciphertext {
     let mut res = vec![polynomial![0]];
-    for i in 0..amount_of_players {
-        res = add(params, &res, &enc_shares[i])
+    for enc_share in &enc_shares {
+        res = add(params, &res, enc_share)
     }
     res
 }
 
-pub fn diag(params: &Parameters, a: BigInt) -> BigInt {
+pub fn diag(_params: &Parameters, a: BigInt) -> BigInt {
     //vec![a; params.n]
     a
 }

@@ -12,7 +12,7 @@ use std::{
 use homomorphic_encryption_project::{
     encryption::{secure_params, Parameters},
     mpc::{online, prep, PlayerState},
-    protocol::{Facilicator, OnlineMessage, PrepMessage},
+    protocol::{Facilicator, KeyMaterial, OnlineMessage, PrepMessage},
 };
 use num::{bigint::RandBigInt, BigInt, Zero};
 use rand::rngs::OsRng;
@@ -116,19 +116,34 @@ impl Facilicator for FacilitatorImpl {
 }
 
 fn main() -> io::Result<()> {
+    let (listener, players, key_material) = initialize_mpc()?;
+
+    let facilitator = FacilitatorImpl::new(players, listener);
+
+    let params = secure_params();
+    let state = PlayerState::new(facilitator, key_material);
+    let input = OsRng.gen_bigint_range(&BigInt::zero(), &BigInt::from(50_u32));
+
+    if false {
+        add_private_inputs(state, params, input)
+    } else {
+        multiply_private_inputs(state, params, input)
+    }
+}
+
+fn initialize_mpc() -> Result<(TcpListener, Vec<SocketAddr>, KeyMaterial), io::Error> {
     let listener = TcpListener::bind("localhost:0")?;
 
     println!("Connecting to dealer...");
     let stream = TcpStream::connect("localhost:9000")?;
 
-    // Send start
     println!("Sending Start...");
     let start_msg = PrepMessage::Start(listener.local_addr()?);
     serde_json::to_writer(stream, &start_msg)?;
 
-    // Wait to receive all players and key material
     println!("Waiting for players to connect...");
     let mut players = vec![];
+
     let key_material;
     loop {
         // TODO: Should we check whether this is actually the dealer or not?
@@ -147,13 +162,7 @@ fn main() -> io::Result<()> {
     }
     println!("Received key material: {:?}", key_material);
 
-    let facilitator = FacilitatorImpl::new(players, listener);
-
-    let params = secure_params();
-    let state = PlayerState::new(facilitator);
-    let input = OsRng.gen_bigint_range(&BigInt::zero(), &BigInt::from(50_u32));
-
-    add_private_inputs(state, params, input)
+    Ok((listener, players, key_material))
 }
 
 fn add_private_inputs(
@@ -220,8 +229,8 @@ fn multiply_private_inputs(
         let pair = prep::protocol::pair(&params, &state);
         pairs.push(pair);
     }
-    
-    let mut triples = Vec::with_capacity((player_count - 1)*2);
+
+    let mut triples = Vec::with_capacity((player_count - 1) * 2);
     for _ in 0..((player_count - 1) * 2) {
         let triple = prep::protocol::triple(&params, &state);
         triples.push(triple);
@@ -251,18 +260,18 @@ fn multiply_private_inputs(
 
     println!("Multiplying all inputs together...");
     let mut multiplied_shares = input_shares[0].clone();
-    for i in 1..input_shares.len() {
+    for input_share in input_shares.iter().skip(1) {
         (multiplied_shares, state) = online::protocol::multiply(
             &params,
             multiplied_shares,
-            input_shares[i].clone(),
+            input_share.clone(),
             triples.pop().unwrap(),
             triples.pop().unwrap(),
             pairs.pop().unwrap().0,
-            state
+            state,
         );
     }
-    println!("Finished adding all inputs!");
+    println!("Finished multiplying all inputs!");
 
     println!("Getting output...");
     let output = online::protocol::output(&params, multiplied_shares, &state);

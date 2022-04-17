@@ -27,9 +27,6 @@ pub mod protocol {
 
     /// Implements the Initialize step
     pub fn initialize<F: Facilicator>(params: &Parameters, state: &mut PlayerState<F>) {
-        let amount_of_players = state.facilitator.player_count();
-        // distribute_keys(params, players.clone());
-
         state.alpha_i = sample_single(&params.t);
         let e_alpha_i = encrypt(
             params,
@@ -50,7 +47,7 @@ pub mod protocol {
             }
         }
 
-        state.e_alpha = add_encrypted_shares(params, e_alpha_is, amount_of_players);
+        state.e_alpha = add_encrypted_shares(params, e_alpha_is);
 
         // TODO: ZK proof faked for now
         let sec = 40; //sec hardcoded for now common values are 40, 80
@@ -66,8 +63,6 @@ pub mod protocol {
         params: &Parameters,
         state: &PlayerState<F>,
     ) -> (BigInt, AngleShare) {
-        let amount_of_players = state.facilitator.player_count();
-
         let r_i = sample_single(&params.t);
         let e_r_i = encrypt(params, encode(r_i.clone()), &state.pk);
 
@@ -84,7 +79,7 @@ pub mod protocol {
             }
         }
 
-        let e_r = add_encrypted_shares(params, e_r_is.clone(), amount_of_players);
+        let e_r = add_encrypted_shares(params, e_r_is.clone());
 
         // TODO: ZK proof faked for now
         if !zkpopk(e_r_i) {
@@ -100,8 +95,6 @@ pub mod protocol {
         params: &Parameters,
         state: &PlayerState<F>,
     ) -> (AngleShare, AngleShare, AngleShare) {
-        let amount_of_players = state.facilitator.player_count();
-
         let a_i = sample_single(&params.t);
         let b_i = sample_single(&params.t);
         let e_a_i = encrypt(params, encode(a_i.clone()), &state.pk);
@@ -133,8 +126,8 @@ pub mod protocol {
             }
         }
 
-        let e_a = add_encrypted_shares(params, e_a_is, amount_of_players);
-        let e_b = add_encrypted_shares(params, e_b_is, amount_of_players);
+        let e_a = add_encrypted_shares(params, e_a_is);
+        let e_b = add_encrypted_shares(params, e_b_is);
 
         // TODO: ZK proof faked for now
         if !zkpopk(e_a_i) {
@@ -164,8 +157,6 @@ fn reshare<F: Facilicator>(
     state: &PlayerState<F>,
     enc: Enc,
 ) -> (Option<Ciphertext>, BigInt) {
-    let amount_of_players = state.facilitator.player_count();
-
     let f_i = sample_single(&params.t);
     let e_f_i = encrypt(params, encode(f_i.clone()), &state.pk);
 
@@ -188,7 +179,7 @@ fn reshare<F: Facilicator>(
     }
 
     // This is done by each player
-    let e_f = add_encrypted_shares(params, e_f_is.clone(), amount_of_players);
+    let e_f = add_encrypted_shares(params, e_f_is.clone());
     let e_m_plus_f = add(params, e_m, &e_f);
 
     // Done by each player
@@ -207,11 +198,11 @@ fn reshare<F: Facilicator>(
             &state.pk,
             (polynomial![1], polynomial![1], polynomial![1]),
         ); //Hvilket randomness???
-        for i in 0..amount_of_players {
+        for e_f_i in e_f_is {
             e_m_prime = add(
                 params,
                 &e_m_prime,
-                &(e_f_is[i].iter().map(|e| -(e.clone())).collect()),
+                &(e_f_i.iter().map(|e| -(e.clone())).collect()),
             );
         }
         return (Some(e_m_prime), m_i);
