@@ -261,14 +261,14 @@ fn multiply_private_inputs(
     println!("Multiplying all inputs together...");
     let mut multiplied_shares = input_shares[0].clone();
     for input_share in input_shares.iter().skip(1) {
-        (multiplied_shares, state) = online::protocol::multiply(
+        multiplied_shares = online::protocol::multiply(
             &params,
             multiplied_shares,
             input_share.clone(),
             triples.pop().unwrap(),
             triples.pop().unwrap(),
             pairs.pop().unwrap().0,
-            state,
+            &mut state,
         );
     }
     println!("Finished multiplying all inputs!");

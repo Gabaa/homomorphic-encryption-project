@@ -112,26 +112,24 @@ pub mod protocol {
         abc_triple: MulTriple,
         fgh_triple: MulTriple,
         t_share: BigInt,
-        mut state: PlayerState<F>,
-    ) -> (AngleShare, PlayerState<F>) {
+        state: &mut PlayerState<F>,
+    ) -> AngleShare {
         let (a_angle, b_angle, c_angle) = abc_triple.clone();
 
         // Check if ab = c in first triple by using the second triple
-
-        let (is_valid, new_state) = triple_check(params, abc_triple, fgh_triple, t_share, state);
-        if !is_valid {
-            panic!("Triple check did not succeed!")
+        match triple_check(params, abc_triple, fgh_triple, t_share, state) {
+            Ok(()) => {}
+            Err(e) => panic!("Triple check did not succeed: {:?}", e),
         }
-        state = new_state;
 
         // Compute epsilon
         let epsilon_share = (x.0 - a_angle.clone().0, x.1 - a_angle.clone().1);
-        let epsilon = partial_opening(params, epsilon_share.0, &state);
+        let epsilon = partial_opening(params, epsilon_share.0, state);
         state.opened.push((epsilon.clone(), epsilon_share.1));
 
         // Compute delta
         let delta_share = (y.0 - b_angle.clone().0, y.1 - b_angle.clone().1);
-        let delta = partial_opening(params, delta_share.0, &state);
+        let delta = partial_opening(params, delta_share.0, state);
         state.opened.push((delta.clone(), delta_share.1));
 
         // Compute shares of result
@@ -146,7 +144,7 @@ pub mod protocol {
         }
         z_share.1 += epsilon * delta * state.alpha_i.clone();
 
-        (z_share, state)
+        z_share
     }
 
     pub fn output<F: Facilicator>(
@@ -339,13 +337,19 @@ fn maccheck<F: Facilicator>(
     sigma_sum == BigInt::zero()
 }
 
-pub fn triple_check<F: Facilicator>(
+#[allow(dead_code)]
+#[derive(Debug)]
+enum TripleCheckErr {
+    ResultNotZero { result: BigInt },
+}
+
+fn triple_check<F: Facilicator>(
     params: &Parameters,
     abc_triple: MulTriple,
     fgh_triple: MulTriple,
     t_share: BigInt,
-    mut state: PlayerState<F>,
-) -> (bool, PlayerState<F>) {
+    state: &mut PlayerState<F>,
+) -> Result<(), TripleCheckErr> {
     let (a_angle, b_angle, c_angle) = abc_triple;
     let (f_angle, g_angle, h_angle) = fgh_triple;
     let amount_of_players = state.facilitator.player_count();
@@ -368,18 +372,18 @@ pub fn triple_check<F: Facilicator>(
         t.clone() * a_angle.0 - f_angle.clone().0,
         t.clone() * a_angle.1 - f_angle.clone().1,
     );
-    let rho = partial_opening(params, rho_share.0, &state);
+    let rho = partial_opening(params, rho_share.0, state);
     state.opened.push((rho.clone(), rho_share.1));
 
     // Compute sigma
     let sigma_share = (b_angle.0 - g_angle.clone().0, b_angle.1 - g_angle.clone().1);
-    let sigma = partial_opening(params, sigma_share.0, &state);
+    let sigma = partial_opening(params, sigma_share.0, state);
     state.opened.push((sigma.clone(), sigma_share.1));
 
     // Evaluate formula and check if zero as expected. If zero, then ab = c.
     let mut zero_share = (
         t.clone() * c_angle.0 - h_angle.0 - sigma.clone() * f_angle.0 - rho.clone() * g_angle.0,
-        t.clone() * c_angle.1 - h_angle.1 - sigma.clone() * f_angle.1 - rho.clone() * g_angle.1,
+        t * c_angle.1 - h_angle.1 - sigma.clone() * f_angle.1 - rho.clone() * g_angle.1,
     );
 
     // Subtracting sigma * rho
@@ -388,11 +392,14 @@ pub fn triple_check<F: Facilicator>(
     }
     zero_share.1 -= sigma * rho * state.alpha_i.clone();
 
-    let zero = partial_opening(params, zero_share.0, &state);
+    let zero = partial_opening(params, zero_share.0, state);
     state.opened.push((zero.clone(), zero_share.1));
 
     //Check for 0
-    (zero == BigInt::zero(), state)
+    match zero == BigInt::zero() {
+        true => Ok(()),
+        false => Err(TripleCheckErr::ResultNotZero { result: zero }),
+    }
 }
 
 /* #[cfg(test)]
