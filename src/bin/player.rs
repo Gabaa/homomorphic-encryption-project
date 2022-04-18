@@ -17,6 +17,8 @@ use homomorphic_encryption_project::{
 use num::{bigint::RandBigInt, BigInt, Zero};
 use rand::rngs::OsRng;
 
+const IS_ADDITION_PROTOCOL: bool = false;
+
 struct FacilitatorImpl {
     players: Vec<SocketAddr>,
     player_number: usize,
@@ -124,7 +126,7 @@ fn main() -> io::Result<()> {
     let state = PlayerState::new(facilitator, key_material);
     let input = OsRng.gen_bigint_range(&BigInt::zero(), &BigInt::from(50_u32));
 
-    if false {
+    if IS_ADDITION_PROTOCOL {
         add_private_inputs(state, params, input)
     } else {
         multiply_private_inputs(state, params, input)
@@ -146,7 +148,6 @@ fn initialize_mpc() -> Result<(TcpListener, Vec<SocketAddr>, KeyMaterial), io::E
 
     let key_material;
     loop {
-        // TODO: Should we check whether this is actually the dealer or not?
         let (stream, _) = listener.accept()?;
         match serde_json::from_reader::<_, PrepMessage>(stream).unwrap() {
             PrepMessage::PlayerConnected(player_addr) => {
