@@ -1,4 +1,4 @@
-use num::{BigInt, Zero};
+use num::BigInt;
 
 use crate::{poly::Polynomial, polynomial};
 
@@ -24,7 +24,8 @@ impl Rq {
 
         while r != polynomial![0; i32] && r.degree() >= self.modulo.degree() {
             let t = r.coefficient(r.degree()) / self.modulo.coefficient(self.modulo.degree());
-            let shifted_pol = (self.modulo.clone() * t).shift_poly(r.degree() - self.modulo.degree());
+            let shifted_pol =
+                (self.modulo.clone() * t).shift_poly(r.degree() - self.modulo.degree());
             r = r - shifted_pol;
         }
         // Reduce coefficients mod q

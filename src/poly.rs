@@ -6,8 +6,9 @@ use std::{
 };
 
 use num::{bigint::ToBigInt, BigInt, One, Zero};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Polynomial(Vec<BigInt>);
 
 impl Polynomial {
@@ -62,6 +63,22 @@ impl Polynomial {
                 .collect(),
         );
         mod_pol.trim_res()
+    }
+
+    /// Normalize all coefficients to be in the range [-q/2, q/2) instead of [0, q).
+    pub fn normalized_coefficients(&self, q: &BigInt) -> Polynomial {
+        Polynomial(
+            self.coefficients()
+                .map(|x| {
+                    if x > &(q / 2_i32) {
+                        x - q
+                    } else {
+                        x.to_owned()
+                    }
+                })
+                .collect(),
+        )
+        .trim_res()
     }
 }
 

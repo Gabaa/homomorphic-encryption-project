@@ -7,3 +7,5 @@
 .DS_Store
 /report/sections/*.pdf
 /report/sections/*.gz
+
+/*.log

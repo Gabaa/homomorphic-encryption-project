@@ -1,26 +1,29 @@
-use rand::Rng;
+use crate::mpc::PlayerState;
+use crate::protocol::Facilicator;
+use crate::protocol::OnlineMessage;
 use sha2::Digest;
 use sha2::Sha256;
-use crate::mpc::Player;
 
-pub fn commit(v: Vec<u8>, r: Vec<u8>) -> Vec<u8> {
+pub fn commit<F: Facilicator>(v: Vec<u8>, r: Vec<u8>, state: &PlayerState<F>) {
+    let mut o = vec![];
+    o.extend(v);
+    o.extend(r);
+
     let mut hasher = Sha256::new();
-    
-    let mut to_hash = vec![];
-    to_hash.extend(v);
-    to_hash.extend(r);
+    hasher.update(o);
+    let c = hasher.finalize().to_vec();
 
-    hasher.update(to_hash);
-
-    hasher.finalize().to_vec()
+    state
+        .facilitator
+        .broadcast(&OnlineMessage::ShareCommitment(c));
 }
 
-pub fn open(c: Vec<u8>, o: Vec<u8>) -> Option<Vec<u8>> {
+pub fn open(c: Vec<u8>, o: Vec<u8>) -> Result<Vec<u8>, &'static str> {
     let mut hasher = Sha256::new();
     hasher.update(o.clone());
     let res = hasher.finalize().to_vec();
     if res != c {
-        return None
+        return Err("Hash of o does not equal c");
     }
-    Some(o)
+    Ok(o)
 }
