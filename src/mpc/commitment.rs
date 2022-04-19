@@ -1,10 +1,10 @@
 use crate::mpc::PlayerState;
-use crate::protocol::Facilicator;
+use crate::protocol::Facilitator;
 use crate::protocol::OnlineMessage;
 use sha2::Digest;
 use sha2::Sha256;
 
-pub fn commit<F: Facilicator>(v: Vec<u8>, r: Vec<u8>, state: &PlayerState<F>) {
+pub fn commit<F: Facilitator>(v: Vec<u8>, r: Vec<u8>, state: &PlayerState<F>) {
     let mut o = vec![];
     o.extend(v);
     o.extend(r);

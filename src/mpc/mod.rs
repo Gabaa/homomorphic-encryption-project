@@ -1,7 +1,7 @@
 use rug::{ops::RemRounding, Integer};
 
 use crate::{encryption::*, polynomial, protocol::KeyMaterial};
-use crate::{poly::*, protocol::Facilicator};
+use crate::{poly::*, protocol::Facilitator};
 use crate::{prob::sample_from_uniform, protocol::OnlineMessage};
 
 pub mod commitment;
@@ -14,7 +14,7 @@ pub type AngleShare = (Integer, Integer);
 pub type MulTriple = (AngleShare, AngleShare, AngleShare);
 
 #[derive(Clone, Debug)]
-pub struct PlayerState<F: Facilicator> {
+pub struct PlayerState<F: Facilitator> {
     sk_i1: Polynomial, // Additive shares of sk
     sk_i2: Polynomial, // Additive shares of sk^2
     pk: PublicKey,
@@ -24,7 +24,7 @@ pub struct PlayerState<F: Facilicator> {
     pub facilitator: F,
 }
 
-impl<F: Facilicator> PlayerState<F> {
+impl<F: Facilitator> PlayerState<F> {
     pub fn new(facilitator: F, key_material: KeyMaterial) -> Self {
         Self {
             sk_i1: key_material.sk_i1,
@@ -43,7 +43,7 @@ impl<F: Facilicator> PlayerState<F> {
 }
 
 /// Function for "dec" functionality in Fkey_gen_dec figure 3 of the MPC article.
-pub fn ddec<F: Facilicator>(
+pub fn ddec<F: Facilitator>(
     params: &Parameters,
     state: &PlayerState<F>,
     mut c: Ciphertext,

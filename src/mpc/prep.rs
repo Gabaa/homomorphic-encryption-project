@@ -11,7 +11,7 @@ use crate::{
     polynomial,
     prob::*,
 };
-use crate::{mpc::add_encrypted_shares, protocol::Facilicator};
+use crate::{mpc::add_encrypted_shares, protocol::Facilitator};
 
 use rug::{ops::RemRounding, Integer};
 
@@ -25,7 +25,7 @@ pub mod protocol {
     use super::*;
 
     /// Implements the Initialize step
-    pub fn initialize<F: Facilicator>(params: &Parameters, state: &mut PlayerState<F>) {
+    pub fn initialize<F: Facilitator>(params: &Parameters, state: &mut PlayerState<F>) {
         state.alpha_i = sample_single(&params.t);
         let e_alpha_i = encrypt(
             params,
@@ -49,15 +49,15 @@ pub mod protocol {
 
         // TODO: ZK proof faked for now
         let sec = 40; //sec hardcoded for now common values are 40, 80
-        for _ in 0..sec {
-            if !zkpopk(e_alpha_i.clone()) {
-                panic!("ZK proof failed!")
-            }
-        }
+                      /* for _ in 0..sec {
+                          if !zkpopk(e_alpha_i.clone()) {
+                              panic!("ZK proof failed!")
+                          }
+                      } */
     }
 
     /// Implements the Pair step
-    pub fn pair<F: Facilicator>(
+    pub fn pair<F: Facilitator>(
         params: &Parameters,
         state: &PlayerState<F>,
     ) -> (Integer, AngleShare) {
@@ -78,17 +78,17 @@ pub mod protocol {
 
         let e_r = add_encrypted_shares(params, e_r_is);
 
-        // TODO: ZK proof faked for now
+        /* // TODO: ZK proof faked for now
         if !zkpopk(e_r_i) {
             panic!("ZK proof failed!")
-        }
+        } */
 
         let r_angle = p_angle(params, r_i.clone(), e_r, state);
         (r_i, r_angle)
     }
 
     /// Implements the Triple step
-    pub fn triple<F: Facilicator>(
+    pub fn triple<F: Facilitator>(
         params: &Parameters,
         state: &PlayerState<F>,
     ) -> (AngleShare, AngleShare, AngleShare) {
@@ -124,13 +124,13 @@ pub mod protocol {
         let e_a = add_encrypted_shares(params, e_a_is);
         let e_b = add_encrypted_shares(params, e_b_is);
 
-        // TODO: ZK proof faked for now
+        /* // TODO: ZK proof faked for now
         if !zkpopk(e_a_i) {
             panic!("ZK proof failed!")
         }
         if !zkpopk(e_b_i) {
             panic!("ZK proof failed!")
-        }
+        } */
 
         let a_angle = p_angle(params, a_i, e_a.clone(), state);
         let b_angle = p_angle(params, b_i, e_b.clone(), state);
@@ -146,7 +146,7 @@ pub mod protocol {
 }
 
 /// Implements Protocol Reshare (fig. 4)
-fn reshare<F: Facilicator>(
+fn reshare<F: Facilitator>(
     params: &Parameters,
     e_m: &Ciphertext,
     state: &PlayerState<F>,
@@ -167,10 +167,10 @@ fn reshare<F: Facilicator>(
         })
         .collect();
 
-    // ZK proof faked for now
+    /* // ZK proof faked for now
     if !zkpopk(e_f_i) {
         panic!("ZK proof failed!")
-    }
+    } */
 
     // This is done by each player
     let e_f = add_encrypted_shares(params, e_f_is.clone());
@@ -207,7 +207,7 @@ fn reshare<F: Facilicator>(
 }
 
 /// Implements Protocol PAngle (fig. 6)
-fn p_angle<F: Facilicator>(
+fn p_angle<F: Facilitator>(
     params: &Parameters,
     v_i: Integer,
     e_v: Ciphertext,

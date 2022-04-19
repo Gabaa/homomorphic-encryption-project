@@ -6,7 +6,7 @@ use crate::{
         commitment::{commit, open},
         open_shares, MulTriple,
     },
-    protocol::{Facilicator, OnlineMessage},
+    protocol::{Facilitator, OnlineMessage},
 };
 
 use rand::Rng;
@@ -19,11 +19,11 @@ use super::{AngleShare, PlayerState};
 /// #### Precondition
 /// The protocol assumes that the players have been initialized with the preprocessing protocol.
 pub mod protocol {
-    use crate::protocol::OnlineMessage;
+    use crate::protocol::{Facilitator, OnlineMessage};
 
     use super::*;
 
-    pub fn give_input<F: Facilicator>(
+    pub fn give_input<F: Facilitator>(
         params: &Parameters,
         x_i: Integer,
         r_pair: (Integer, AngleShare),
@@ -72,7 +72,7 @@ pub mod protocol {
         (r_angle.0, r_angle.1 + eps * state.alpha_i.clone())
     }
 
-    pub fn receive_input<F: Facilicator>(
+    pub fn receive_input<F: Facilitator>(
         r_pair: (Integer, AngleShare),
         sharing_player: usize,
         state: &PlayerState<F>,
@@ -108,7 +108,7 @@ pub mod protocol {
         ((&x.0 + &y.0).into(), (&x.1 + &y.1).into())
     }
 
-    pub fn multiply<F: Facilicator>(
+    pub fn multiply<F: Facilitator>(
         params: &Parameters,
         x: AngleShare,
         y: AngleShare,
@@ -150,7 +150,7 @@ pub mod protocol {
         z_share
     }
 
-    pub fn output<F: Facilicator>(
+    pub fn output<F: Facilitator>(
         params: &Parameters,
         y_angle: AngleShare,
         state: &PlayerState<F>,
@@ -189,7 +189,7 @@ fn xor(x: &[u8], y: &[u8]) -> Vec<u8> {
     x.iter().zip(y.iter()).map(|(&x, &y)| x ^ y).collect()
 }
 
-fn partial_opening<F: Facilicator>(
+fn partial_opening<F: Facilitator>(
     params: &Parameters,
     to_share: Integer,
     state: &PlayerState<F>,
@@ -219,7 +219,7 @@ fn partial_opening<F: Facilicator>(
     }
 }
 
-fn maccheck<F: Facilicator>(
+fn maccheck<F: Facilitator>(
     params: &Parameters,
     to_check: Vec<(Integer, Integer)>,
     state: &PlayerState<F>,
@@ -355,7 +355,7 @@ enum TripleCheckErr {
     ResultNotZero { result: Integer },
 }
 
-fn triple_check<F: Facilicator>(
+fn triple_check<F: Facilitator>(
     params: &Parameters,
     abc_triple: MulTriple,
     fgh_triple: MulTriple,
