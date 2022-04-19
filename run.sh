@@ -1,5 +1,7 @@
 #!/bin/bash
 
+mkdir logs
+
 cargo build --release
 cargo run --bin dealer --release > logs/dealer.log 2>&1 &
 sleep 3
