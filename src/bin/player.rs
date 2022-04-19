@@ -64,7 +64,7 @@ impl FacilitatorImpl {
     }
 }
 
-impl Facilicator for FacilitatorImpl {
+impl Facilitator for FacilitatorImpl {
     fn player_count(&self) -> usize {
         self.players.len()
     }

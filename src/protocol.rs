@@ -32,7 +32,7 @@ pub enum OnlineMessage {
     BeginInput,
 }
 
-pub trait Facilicator {
+pub trait Facilitator {
     fn player_count(&self) -> usize;
     fn player_number(&self) -> usize;
     fn send(&self, player: usize, msg: &OnlineMessage);
