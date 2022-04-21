@@ -1,6 +1,6 @@
 //! Preprocessing phase (Multiparty Computation from Somewhat Homomorphic Encryption, sec. 5)
 
-use crate::mpc::zk::zkpopk;
+use crate::mpc::zk::make_zkpopk;
 use crate::mpc::AngleShare;
 use crate::mpc::PlayerState;
 use crate::protocol::OnlineMessage;
