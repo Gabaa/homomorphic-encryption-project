@@ -1,18 +1,16 @@
 //! Online phase (Multiparty Computation from Somewhat Homomorphic Encryption, sec. 2)
 
-use crate::mpc::commitment::commit;
-use crate::mpc::commitment::open;
-use crate::mpc::open_shares;
-use crate::mpc::MulTriple;
-use crate::protocol::OnlineMessage;
-use crate::{encryption::Parameters, protocol::Facilicator};
-use num::BigInt;
-use num::One;
-use num::Zero;
-use rand::distributions::Uniform;
-use rand::rngs::StdRng;
+use crate::{
+    encryption::Parameters,
+    mpc::{
+        commitment::{commit, open},
+        open_shares, MulTriple,
+    },
+    protocol::{Facilicator, OnlineMessage},
+};
+
 use rand::Rng;
-use rand::SeedableRng;
+use rug::{integer::Order, ops::RemRounding, rand::RandState, Integer};
 
 use super::{AngleShare, PlayerState};
 
@@ -27,8 +25,8 @@ pub mod protocol {
 
     pub fn give_input<F: Facilicator>(
         params: &Parameters,
-        x_i: BigInt,
-        r_pair: (BigInt, AngleShare),
+        x_i: Integer,
+        r_pair: (Integer, AngleShare),
         state: &PlayerState<F>,
     ) -> AngleShare {
         let amount_of_players = state.facilitator.player_count();
@@ -41,14 +39,14 @@ pub mod protocol {
 
         // Send our share to ourselves
         let (r_share, r_angle) = r_pair;
-        let msg = OnlineMessage::ShareBigInt(r_share);
+        let msg = OnlineMessage::ShareInteger(r_share);
         state.facilitator.send(player_number, &msg);
 
         // [[r]] is opened to P_i
         let msgs = state.facilitator.receive_many(amount_of_players);
         let mut r_shares = Vec::with_capacity(amount_of_players);
         for msg in msgs {
-            if let (_, OnlineMessage::ShareBigInt(r_share)) = msg {
+            if let (_, OnlineMessage::ShareInteger(r_share)) = msg {
                 r_shares.push(r_share)
             }
         }
@@ -57,7 +55,7 @@ pub mod protocol {
         // P_i broadcasts this
         // TODO: Burde dette være mod t?
         let eps = x_i - r;
-        let msg = OnlineMessage::ShareBigInt(eps.clone());
+        let msg = OnlineMessage::ShareInteger(eps.clone());
         state.facilitator.broadcast(&msg);
         let _ = state.facilitator.receive();
 
@@ -71,7 +69,7 @@ pub mod protocol {
     }
 
     pub fn receive_input<F: Facilicator>(
-        r_pair: (BigInt, AngleShare),
+        r_pair: (Integer, AngleShare),
         state: &PlayerState<F>,
     ) -> AngleShare {
         // Wait for sharing player to send BeginInput
@@ -82,13 +80,13 @@ pub mod protocol {
 
         // Share r with P_i
         let (r_share, r_angle) = r_pair;
-        let msg = OnlineMessage::ShareBigInt(r_share);
+        let msg = OnlineMessage::ShareInteger(r_share);
         state.facilitator.send(p_i, &msg);
 
         // Receive eps
         let (_, msg) = state.facilitator.receive();
         let eps = match msg {
-            OnlineMessage::ShareBigInt(eps) => eps,
+            OnlineMessage::ShareInteger(eps) => eps,
             _ => panic!(),
         };
 
@@ -102,7 +100,7 @@ pub mod protocol {
     }
 
     pub fn add(x: &AngleShare, y: &AngleShare) -> AngleShare {
-        (&x.0 + &y.0, &x.1 + &y.1)
+        ((&x.0 + &y.0).into(), (&x.1 + &y.1).into())
     }
 
     pub fn multiply<F: Facilicator>(
@@ -111,7 +109,7 @@ pub mod protocol {
         y: AngleShare,
         abc_triple: MulTriple,
         fgh_triple: MulTriple,
-        t_share: BigInt,
+        t_share: Integer,
         state: &mut PlayerState<F>,
     ) -> AngleShare {
         let (a_angle, b_angle, c_angle) = abc_triple.clone();
@@ -151,7 +149,7 @@ pub mod protocol {
         params: &Parameters,
         y_angle: AngleShare,
         state: &PlayerState<F>,
-    ) -> BigInt {
+    ) -> Integer {
         let amount_of_players = state.facilitator.player_count();
 
         if !maccheck(params, state.opened.clone(), state) {
@@ -166,13 +164,13 @@ pub mod protocol {
         let (y_share, _) = y_angle;
         state
             .facilitator
-            .broadcast(&OnlineMessage::ShareBigInt(y_share));
+            .broadcast(&OnlineMessage::ShareInteger(y_share));
 
         // Receive all broadcasted y shares
         let msgs = state.facilitator.receive_many(amount_of_players);
         let mut y_shares = Vec::with_capacity(amount_of_players);
         for msg in msgs {
-            if let (_, OnlineMessage::ShareBigInt(y_share)) = msg {
+            if let (_, OnlineMessage::ShareInteger(y_share)) = msg {
                 y_shares.push(y_share);
             }
         }
@@ -181,29 +179,29 @@ pub mod protocol {
     }
 }
 
-fn xor(x: Vec<u8>, y: Vec<u8>) -> Vec<u8> {
+fn xor(x: &[u8], y: &[u8]) -> Vec<u8> {
     x.iter().zip(y.iter()).map(|(&x, &y)| x ^ y).collect()
 }
 
 fn partial_opening<F: Facilicator>(
     params: &Parameters,
-    to_share: BigInt,
+    to_share: Integer,
     state: &PlayerState<F>,
-) -> BigInt {
+) -> Integer {
     let amount_of_players = state.facilitator.player_count();
-    let msg = OnlineMessage::ShareBigInt(to_share);
+    let msg = OnlineMessage::ShareInteger(to_share);
     // Need to send to a designated player, here we choose player 1, which has index 0
     state.facilitator.send(0, &msg);
     if state.facilitator.player_number() == 0 {
         let mut shares = Vec::with_capacity(amount_of_players);
         let messages = state.facilitator.receive_many(amount_of_players);
         for (_, received_msg) in messages {
-            if let OnlineMessage::ShareBigInt(received_share) = received_msg {
+            if let OnlineMessage::ShareInteger(received_share) = received_msg {
                 shares.push(received_share);
             }
         }
         let result = open_shares(params, shares);
-        let result_msg = OnlineMessage::ShareBigInt(result);
+        let result_msg = OnlineMessage::ShareInteger(result);
         state.facilitator.broadcast(&result_msg)
     }
 
@@ -211,16 +209,16 @@ fn partial_opening<F: Facilicator>(
     if from != 0 {
         panic!("Supposed to receive message from player 1, but received from someone else")
     }
-    if let OnlineMessage::ShareBigInt(received) = msg {
+    if let OnlineMessage::ShareInteger(received) = msg {
         return received;
     }
 
-    BigInt::zero() // TODO: Mere clean løsning
+    Integer::ZERO // TODO: Mere clean løsning
 }
 
 fn maccheck<F: Facilicator>(
     params: &Parameters,
-    to_check: Vec<(BigInt, BigInt)>,
+    to_check: Vec<(Integer, Integer)>,
     state: &PlayerState<F>,
 ) -> bool {
     let amount_of_players = state.facilitator.player_count();
@@ -260,8 +258,8 @@ fn maccheck<F: Facilicator>(
 
     // XOR seeds to get s
     let mut s: Vec<u8> = seeds[0].clone();
-    for seed in seeds {
-        s = xor(s, seed);
+    for seed in seeds.iter().skip(1) {
+        s = xor(&s, seed);
     }
 
     // Players sample random vector r using seed s (a vector of length n with elements generated uniformly modulo q)
@@ -269,27 +267,35 @@ fn maccheck<F: Facilicator>(
         .as_slice()
         .try_into()
         .expect("Wrong length seed received!");
-    let range = Uniform::new(BigInt::zero(), &params.t);
-    let rng = StdRng::from_seed(rng_seed);
-    let r: Vec<BigInt> = rng.sample_iter(&range).take(t).collect();
+
+    let rng_seed = Integer::from_digits(&rng_seed, Order::MsfBe);
+
+    // TODO: This is not cryptographically secure, should make a custom RandGen
+    let mut rand_state = RandState::new();
+    rand_state.seed(&rng_seed);
+
+    let mut r = Vec::with_capacity(t);
+    for _ in 0..t {
+        let r_i = params.t.clone().random_below(&mut rand_state);
+        r.push(r_i);
+    }
 
     // Each player computes a
-    let mut a: BigInt = BigInt::zero();
+    let mut a = Integer::ZERO;
     for j in 0..t {
         let a_j = to_check[j].clone().0;
-        a = (a + r[j].clone() * a_j).modpow(&BigInt::one(), &params.t);
+        a = (a + r[j].clone() * a_j).rem_euc(&params.t);
     }
 
     // Player i computes gamma_i and sigma_i
-    let mut gamma_i = BigInt::zero();
+    let mut gamma_i = Integer::ZERO;
     for j in 0..t {
-        gamma_i =
-            (gamma_i + r[j].clone() * to_check[j].clone().1).modpow(&BigInt::one(), &params.t);
+        gamma_i = (gamma_i + r[j].clone() * to_check[j].clone().1).rem_euc(&params.t);
     }
-    let sigma_i = (gamma_i - state.alpha_i.clone() * a).modpow(&BigInt::one(), &params.t);
+    let sigma_i = (gamma_i - state.alpha_i.clone() * a).rem_euc(&params.t);
 
     // Convert sigma_i to bytes, sample randomness, and commit to sigma_i
-    let (_, sigma_i_bytes) = sigma_i.to_bytes_be();
+    let sigma_i_bytes = sigma_i.to_digits(Order::MsfBe);
     let r = rand::thread_rng().gen::<[u8; 32]>().to_vec(); // Hvor mange bytes?
     commit(sigma_i_bytes.clone(), r.clone(), state);
 
@@ -311,43 +317,36 @@ fn maccheck<F: Facilicator>(
         .broadcast(&OnlineMessage::ShareCommitOpen(o));
 
     // This should actually have been a part of the commitment.rs module
-    let mut sigma_is: Vec<BigInt> = vec![BigInt::zero(); amount_of_players];
+    let mut sigma_is = vec![Integer::ZERO; amount_of_players];
     for _ in 0..amount_of_players {
         let (p_i, msg) = state.facilitator.receive();
         if let OnlineMessage::ShareCommitOpen(o_i) = msg {
             let opened = open(sigma_commitments[p_i].clone(), o_i).unwrap();
-            sigma_is[p_i] = BigInt::from_bytes_be(
-                num::bigint::Sign::NoSign,
-                opened
-                    .iter()
-                    .take(opened.len() - 32)
-                    .cloned()
-                    .collect::<Vec<u8>>()
-                    .as_slice(),
-            )
+            let digits: Vec<u8> = opened.iter().take(opened.len() - 32).cloned().collect();
+            sigma_is[p_i] = Integer::from_digits(&digits, Order::MsfBe);
         }
     }
 
     // Sum sigma_i's and check that this equals 0
-    let mut sigma_sum = BigInt::zero();
+    let mut sigma_sum = Integer::ZERO;
     for sigma_i in sigma_is.iter().take(amount_of_players) {
-        sigma_sum = (sigma_sum + sigma_i).modpow(&BigInt::one(), &params.t);
+        sigma_sum = (sigma_sum + sigma_i).rem_euc(&params.t);
     }
 
-    sigma_sum == BigInt::zero()
+    sigma_sum == Integer::ZERO
 }
 
 #[allow(dead_code)]
 #[derive(Debug)]
 enum TripleCheckErr {
-    ResultNotZero { result: BigInt },
+    ResultNotZero { result: Integer },
 }
 
 fn triple_check<F: Facilicator>(
     params: &Parameters,
     abc_triple: MulTriple,
     fgh_triple: MulTriple,
-    t_share: BigInt,
+    t_share: Integer,
     state: &mut PlayerState<F>,
 ) -> Result<(), TripleCheckErr> {
     let (a_angle, b_angle, c_angle) = abc_triple;
@@ -355,13 +354,13 @@ fn triple_check<F: Facilicator>(
     let amount_of_players = state.facilitator.player_count();
 
     // Open t_bracket
-    let msg = OnlineMessage::ShareBigInt(t_share);
+    let msg = OnlineMessage::ShareInteger(t_share);
     state.facilitator.broadcast(&msg);
 
     let msgs = state.facilitator.receive_many(amount_of_players);
     let mut t_shares = Vec::with_capacity(amount_of_players);
     for msg in msgs {
-        if let (_, OnlineMessage::ShareBigInt(t_share)) = msg {
+        if let (_, OnlineMessage::ShareInteger(t_share)) = msg {
             t_shares.push(t_share)
         }
     }
@@ -396,7 +395,7 @@ fn triple_check<F: Facilicator>(
     state.opened.push((zero.clone(), zero_share.1));
 
     //Check for 0
-    match zero == BigInt::zero() {
+    match zero == Integer::ZERO {
         true => Ok(()),
         false => Err(TripleCheckErr::ResultNotZero { result: zero }),
     }
@@ -419,10 +418,10 @@ mod tests {
 
         assert_eq!(r1_pair.1.len(), players.len() * 2);
 
-        let x = ProtocolOnline::input(&params, BigInt::from(2_i32), r1_pair, &initialized_players);
+        let x = ProtocolOnline::input(&params, Integer::from(2_i32), r1_pair, &initialized_players);
         let x_output = ProtocolOnline::output(&params, x, initialized_players);
 
-        assert_eq!(BigInt::from(2_i32), x_output)
+        assert_eq!(Integer::from(2_i32), x_output)
     }
 
     #[test]
@@ -435,13 +434,13 @@ mod tests {
         let r1_pair = ProtocolPrep::pair(&params, &initialized_players);
         let r2_pair = ProtocolPrep::pair(&params, &initialized_players);
 
-        let x = ProtocolOnline::input(&params, BigInt::from(2_i32), r1_pair, &initialized_players);
-        let y = ProtocolOnline::input(&params, BigInt::from(7_i32), r2_pair, &initialized_players);
+        let x = ProtocolOnline::input(&params, Integer::from(2_i32), r1_pair, &initialized_players);
+        let y = ProtocolOnline::input(&params, Integer::from(7_i32), r2_pair, &initialized_players);
 
         let res = ProtocolOnline::add(&params, x, y);
         let output = ProtocolOnline::output(&params, res, initialized_players);
 
-        assert_eq!(BigInt::from(9_i32), output)
+        assert_eq!(Integer::from(9_i32), output)
     }
 
     #[test]
@@ -457,8 +456,8 @@ mod tests {
         let r2_pair = ProtocolPrep::pair(&params, &initialized_players);
         let (t_bracket, _) = ProtocolPrep::pair(&params, &initialized_players);
 
-        let x = ProtocolOnline::input(&params, BigInt::from(2_i32), r1_pair, &initialized_players);
-        let y = ProtocolOnline::input(&params, BigInt::from(7_i32), r2_pair, &initialized_players);
+        let x = ProtocolOnline::input(&params, Integer::from(2_i32), r1_pair, &initialized_players);
+        let y = ProtocolOnline::input(&params, Integer::from(7_i32), r2_pair, &initialized_players);
 
         let (res, new_players) = ProtocolOnline::multiply(
             &params,
@@ -471,7 +470,7 @@ mod tests {
         );
         let output = ProtocolOnline::output(&params, res, new_players);
 
-        assert_eq!(BigInt::from(14_i32), output)
+        assert_eq!(Integer::from(14_i32), output)
     }
 }
  */

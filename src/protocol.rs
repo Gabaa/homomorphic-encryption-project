@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 
-use num::BigInt;
+use rug::Integer;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -26,7 +26,7 @@ pub enum PrepMessage {
 pub enum OnlineMessage {
     SharePoly(Polynomial),
     ShareCiphertext(Ciphertext),
-    ShareBigInt(BigInt),
+    ShareInteger(Integer),
     ShareCommitment(Vec<u8>),
     ShareCommitOpen(Vec<u8>),
     BeginInput,

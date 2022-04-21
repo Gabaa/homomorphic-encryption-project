@@ -12,9 +12,8 @@ use crate::{
     prob::*,
 };
 use crate::{mpc::add_encrypted_shares, protocol::Facilicator};
-use num::One;
 
-use num::BigInt;
+use rug::{ops::RemRounding, Integer};
 
 pub enum Enc {
     NewCiphertext,
@@ -62,7 +61,7 @@ pub mod protocol {
     pub fn pair<F: Facilicator>(
         params: &Parameters,
         state: &PlayerState<F>,
-    ) -> (BigInt, AngleShare) {
+    ) -> (Integer, AngleShare) {
         let r_i = sample_single(&params.t);
         let e_r_i = encrypt(params, encode(r_i.clone()), &state.pk);
 
@@ -156,7 +155,7 @@ fn reshare<F: Facilicator>(
     e_m: &Ciphertext,
     state: &PlayerState<F>,
     enc: Enc,
-) -> (Option<Ciphertext>, BigInt) {
+) -> (Option<Ciphertext>, Integer) {
     let f_i = sample_single(&params.t);
     let e_f_i = encrypt(params, encode(f_i.clone()), &state.pk);
 
@@ -186,9 +185,9 @@ fn reshare<F: Facilicator>(
     let m_plus_f = ddec(params, state, e_m_plus_f);
 
     let m_i = if state.facilitator.player_number() == 0 {
-        (m_plus_f.clone() - f_i).modpow(&BigInt::one(), &params.t)
+        (m_plus_f.clone() - f_i).rem_euc(&params.t)
     } else {
-        (-f_i).modpow(&BigInt::one(), &params.t)
+        (-f_i).rem_euc(&params.t)
     };
 
     if matches!(enc, Enc::NewCiphertext) {
@@ -215,7 +214,7 @@ fn reshare<F: Facilicator>(
 /// Implements Protocol PAngle (fig. 6)
 fn p_angle<F: Facilicator>(
     params: &Parameters,
-    v_i: BigInt,
+    v_i: Integer,
     e_v: Ciphertext,
     player_state: &PlayerState<F>,
 ) -> AngleShare {
@@ -239,9 +238,9 @@ mod tests {
         let initialized_players = ProtocolPrep::initialize(&params, &players);
         let (a_angle, b_angle, c_angle) = ProtocolPrep::triple(&params, &initialized_players);
 
-        let mut a = BigInt::zero();
-        let mut b = BigInt::zero();
-        let mut c = BigInt::zero();
+        let mut a = Integer::ZERO;
+        let mut b = Integer::ZERO;
+        let mut c = Integer::ZERO;
         for i in 0..amount_of_players {
             a = a + a_angle[i].clone();
             b = b + b_angle[i].clone();
@@ -249,8 +248,8 @@ mod tests {
         }
 
         assert_eq!(
-            (a * b).modpow(&BigInt::one(), &params.t),
-            c.modpow(&BigInt::one(), &params.t)
+            (a * b).modpow(&Integer::from(1), &params.t),
+            c.modpow(&Integer::from(1), &params.t)
         )
     }
 
@@ -262,7 +261,7 @@ mod tests {
 
         let initialized_players = ProtocolPrep::initialize(&params, &players);
 
-        let mut r_is = vec![BigInt::zero(); amount_of_players];
+        let mut r_is = vec![Integer::ZERO; amount_of_players];
         for i in 0..amount_of_players {
             r_is[i] = sample_single(&params.t)
         }
@@ -286,18 +285,18 @@ mod tests {
         let params = secure_params();
         let initialized_players = ProtocolPrep::initialize(&params, &players);
         let (_, angle) = ProtocolPrep::pair(&params, &initialized_players);
-        let mut sigma = BigInt::zero();
+        let mut sigma = Integer::ZERO;
         for i in 0..amount_of_players {
             sigma =
-                (sigma + angle[amount_of_players + i].clone()).modpow(&BigInt::one(), &params.t);
+                (sigma + angle[amount_of_players + i].clone()).modpow(&Integer::from(1), &params.t);
         }
         let a = open_shares(&params, angle, amount_of_players);
-        let mut alpha_is = vec![BigInt::zero(); amount_of_players];
+        let mut alpha_is = vec![Integer::ZERO; amount_of_players];
         for i in 0..amount_of_players {
             alpha_is[i] = initialized_players[i].alpha_i.clone();
         }
         let alpha = open_shares(&params, alpha_is, amount_of_players);
-        let res = (alpha * a).modpow(&BigInt::one(), &params.t);
+        let res = (alpha * a).modpow(&Integer::from(1), &params.t);
         assert_eq!(res, sigma)
     }
 }

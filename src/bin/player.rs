@@ -12,10 +12,10 @@ use std::{
 use homomorphic_encryption_project::{
     encryption::{secure_params, Parameters},
     mpc::{online, prep, PlayerState},
+    prob::sample_single,
     protocol::{Facilicator, KeyMaterial, OnlineMessage, PrepMessage},
 };
-use num::{bigint::RandBigInt, BigInt, Zero};
-use rand::rngs::OsRng;
+use rug::Integer;
 
 const IS_ADDITION_PROTOCOL: bool = false;
 
@@ -124,7 +124,8 @@ fn main() -> io::Result<()> {
 
     let params = secure_params();
     let state = PlayerState::new(facilitator, key_material);
-    let input = OsRng.gen_bigint_range(&BigInt::zero(), &BigInt::from(50_u32));
+
+    let input = sample_single(&Integer::from(50));
 
     if IS_ADDITION_PROTOCOL {
         add_private_inputs(state, params, input)
@@ -169,7 +170,7 @@ fn initialize_mpc() -> Result<(TcpListener, Vec<SocketAddr>, KeyMaterial), io::E
 fn add_private_inputs(
     mut state: PlayerState<FacilitatorImpl>,
     params: Parameters,
-    input: BigInt,
+    input: Integer,
 ) -> Result<(), io::Error> {
     let player_count = state.facilitator.player_count();
 
@@ -200,7 +201,7 @@ fn add_private_inputs(
     println!("Adding all inputs together...");
     let added_shares = input_shares
         .iter()
-        .fold((BigInt::zero(), BigInt::zero()), |a, b| {
+        .fold((Integer::ZERO, Integer::ZERO), |a, b| {
             online::protocol::add(&a, b)
         });
     println!("Finished adding all inputs!");
@@ -218,7 +219,7 @@ fn add_private_inputs(
 fn multiply_private_inputs(
     mut state: PlayerState<FacilitatorImpl>,
     params: Parameters,
-    input: BigInt,
+    input: Integer,
 ) -> Result<(), io::Error> {
     let player_count = state.facilitator.player_count();
 

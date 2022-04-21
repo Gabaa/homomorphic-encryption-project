@@ -1,6 +1,4 @@
-use num::BigInt;
-use num::One;
-use num::Zero;
+use rug::{ops::RemRounding, Integer};
 
 use crate::{encryption::*, polynomial, protocol::KeyMaterial};
 use crate::{poly::*, protocol::Facilicator};
@@ -11,8 +9,8 @@ pub mod online;
 pub mod prep;
 pub mod zk;
 
-pub type Angle = Vec<BigInt>;
-pub type AngleShare = (BigInt, BigInt);
+pub type Angle = Vec<Integer>;
+pub type AngleShare = (Integer, Integer);
 pub type MulTriple = (AngleShare, AngleShare, AngleShare);
 
 #[derive(Clone, Debug)]
@@ -20,9 +18,9 @@ pub struct PlayerState<F: Facilicator> {
     sk_i1: Polynomial, // Additive shares of sk
     sk_i2: Polynomial, // Additive shares of sk^2
     pk: PublicKey,
-    alpha_i: BigInt,     // global key share
+    alpha_i: Integer,    // global key share
     e_alpha: Ciphertext, // Encrypted global key
-    opened: Vec<(BigInt, BigInt)>,
+    opened: Vec<(Integer, Integer)>,
     pub facilitator: F,
 }
 
@@ -32,7 +30,7 @@ impl<F: Facilicator> PlayerState<F> {
             sk_i1: key_material.sk_i1,
             sk_i2: key_material.sk_i2,
             pk: key_material.pk,
-            alpha_i: BigInt::zero(),
+            alpha_i: Integer::ZERO,
             e_alpha: vec![],
             opened: vec![],
             facilitator,
@@ -49,7 +47,7 @@ pub fn ddec<F: Facilicator>(
     params: &Parameters,
     state: &PlayerState<F>,
     mut c: Ciphertext,
-) -> BigInt {
+) -> Integer {
     let rq = &params.quotient_ring;
 
     // Need to ensure that there are 3 elements (there can never be < 2)
@@ -68,7 +66,7 @@ pub fn ddec<F: Facilicator>(
     };
 
     //Random element does not currently have a bounded l_inf norm
-    let norm_bound: BigInt = BigInt::from(2_i32) ^ &BigInt::from(32_i32);
+    let norm_bound = Integer::from(2) ^ Integer::from(32);
     let t_i = rq.add(
         &v_i,
         &rq.times(&sample_from_uniform(&norm_bound, params.n), &params.t), // norm_bound is placeholder, since q needs to be a lot higher for this to work properly
@@ -97,10 +95,10 @@ pub fn ddec<F: Facilicator>(
     decode(msg_minus_q.modulo(&params.t))
 }
 
-pub fn open_shares(params: &Parameters, shares: Vec<BigInt>) -> BigInt {
-    let mut r = BigInt::zero();
+pub fn open_shares(params: &Parameters, shares: Vec<Integer>) -> Integer {
+    let mut r = Integer::ZERO;
     for share in &shares {
-        r = (r + share).modpow(&BigInt::one(), &params.t);
+        r = (r + share).rem_euc(&params.t);
     }
     r
 }
@@ -113,7 +111,7 @@ pub fn add_encrypted_shares(params: &Parameters, enc_shares: Vec<Ciphertext>) ->
     res
 }
 
-pub fn diag(_params: &Parameters, a: BigInt) -> BigInt {
+pub fn diag(_params: &Parameters, a: Integer) -> Integer {
     //vec![a; params.n]
     a
 }
