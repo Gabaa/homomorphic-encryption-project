@@ -36,7 +36,7 @@ pub fn zkpopk<F: Facilitator>(
             m_i = diag(params, m_i)
         }
         let encoded_m_i = encode(m_i);
-        let u_i = sample_from_uniform(&((y_i_bound.clone() / params.t.clone()) - 1), params.n)
+        let u_i = sample_from_uniform(&((y_i_bound.clone() / params.t.clone()) - 1_i32), params.n)
             * params.t.clone();
         y.push(encoded_m_i + u_i);
 
@@ -63,7 +63,11 @@ pub fn zkpopk<F: Facilitator>(
     let mut reader = hasher.finalize_xof();
     let mut output = [0_u8; SEC / 8];
     reader.read(&mut output);
-
+    
+    for i in 0..output.len() {
+        println!("{:b}", i);
+    }
+    
     todo!()
 }
 
@@ -71,3 +75,4 @@ fn polynomial_to_bytes(p: &Polynomial) -> Vec<u8> {
     let json = serde_json::to_string(p).unwrap();
     json.as_bytes().to_owned()
 }
+
