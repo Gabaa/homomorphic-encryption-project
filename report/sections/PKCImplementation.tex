@@ -9,30 +9,30 @@
 \begin{document}
 
 \todo{Dette skal nok opdateres n{\aa}r vi er f{\ae}rdige med implementationen. Skal inkludere det om MPC.}
-We implemented a somewhat-homomorphic public-key encryption scheme in the Rust programming language, as well as functions for adding and multiplying ciphertexts for that encryption scheme.
+%We implemented a somewhat-homomorphic public-key encryption scheme in the Rust programming language, as well as functions for adding and multiplying ciphertexts for that encryption scheme.
 \todo{Hvor meget skal forklares her? At det er Brakersky-Vaikuntanathan vi implementerede? At det er baseret p{\aa} Ring-LWE? Eller bliver det alt sammen beskrevet et andet sted?}
-
-\section{Polynomials (\lstinline{poly.rs})}
+\section{Ring-LWE cryptosystem}
+\subsection{Polynomials (\lstinline{poly.rs})}
 
 Since our public-key encryption scheme uses polynomials to represent all of the values we work on (messages, ciphertexts, secret keys, and public keys), we made an implementa
 
-\section{Quotient ring (\lstinline{quotient\_ring.rs})}
+\subsection{Quotient ring (\lstinline{quotient\_ring.rs})}
 Encryption, decryption, and key generation involves adding, subtracting, multiplying, and negating elements in the quotient ring $R_q = Z_q[x]/\langle x^n + 1 \rangle$. To be able to do these computations we made a quotient ring implementation, which can be found in \lstinline{quotient_ring.rs}.
 
-\subsection{\lstinline{Rq}}
+\subsubsection{\lstinline{Rq}}
 The quotient ring module contains a struct definition \lstinline{Rq}, which represents an instantiation of a quotient ring $Z_q[x]/\langle f(x) \rangle$. It therefore has fields $q$ and $modulo$, where $q$ is a \lstinline{BigInt}, and $modulo$ is a \lstinline{Polynomial} representing $f(x)$. The \lstinline{new} function takes $q$ and $modulo$ as input, and is used to make a new instantiation of \lstinline{Rq}.
 
-\subsection{\lstinline{reduce}}
+\subsubsection{\lstinline{reduce}}
 The \lstinline{reduce} method found in the quotient ring module is called on an \lstinline{Rq} struct, takes a polynomial \lstinline{pol} as input, and returns the normal form of the element \lstinline{pol} with respect to \lstinline{modulo}.
 
 To achieve this the method first does polynomial long division with \lstinline{pol} as the dividend and the \lstinline{modulo} from the \lstinline{Rq} struct as the divisor. The remainder computed in this way is then stored in the variable $r$.
 
 Lastly, we reduce the coefficients of the resulting polynomial $r$ modulo $q$, by using the remainder operation($\%$) defined in the \lstinline{poly.rs} module, and then return the result.
 
-\subsection{\lstinline{add}, \lstinline{times}, \lstinline{neg}, \lstinline{mul}}
+\subsubsection{\lstinline{add}, \lstinline{times}, \lstinline{neg}, \lstinline{mul}}
 The methods \lstinline{add}, \lstinline{times}, \lstinline{neg}, \lstinline{mul} are called on an \lstinline{Rq} struct. These methods first use the addition, scalar multiplication, negation, and polynomial multiplication methods defined in the the \lstinline{poly.rs} module on the input. Then a reduce call is done with the result as input to get a new $R_q$ element.
 
-\section{Public-key encryption scheme (\lstinline{encryption.rs})}
+\subsection{Public-key encryption scheme (\lstinline{encryption.rs})}
 
 The encryption scheme, as usual, has three major components:
 
@@ -42,7 +42,7 @@ The encryption scheme, as usual, has three major components:
   \item and the \lstinline{decrypt} function
 \end{itemize}
 
-\subsection{\lstinline{generate_key_pair}}
+\subsubsection{\lstinline{generate_key_pair}}
 
 The \lstinline{generate_key_pair} function takes as input an instance of the \lstinline{Parameters} struct.
 This struct essentially just defines the parameters that nearly all functions in the encryption scheme use in some form or another.
@@ -52,7 +52,7 @@ The function starts by sampling polynomials $sk$ and $e_0$ from a Gaussian distr
 
 It then calculates the public-key as $pk = (a_0, a_0 \cdot sk + e_0 \cdot t)$, and finally returns the key pair $(pk, sk)$.
 
-\subsection{\lstinline{encrypt}}
+\subsubsection{\lstinline{encrypt}}
 
 The \lstinline{encrypt} function takes a \lstinline{Parameters} instance, as described above, and additionally takes a polynomial $m$ and a public key $pk$.
 
@@ -64,7 +64,7 @@ Then, we sample polynomials $v$ and $e'$ from a Gaussian distribution with stand
 We then calculate $a = a_0 \cdot v + e' \cdot t$ and $b = b_0 \cdot v + e'' \cdot t$.
 Finally, we create the ciphertext as a \lstinline{Vec} (a contiguous growable array type) $c = [b + m, a]$ and return it.
 
-\subsection{\lstinline{decrypt}}
+\subsubsection{\lstinline{decrypt}}
 
 The \lstinline{decrypt} function takes a \lstinline{Parameters} instance, as well as a ciphertext $c = [c_0, c_1, \dots]$ and a secret key $sk$.
 

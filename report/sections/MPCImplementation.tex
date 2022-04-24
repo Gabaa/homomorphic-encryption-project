@@ -1,0 +1,42 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{listings}
+\usepackage{listings-rust}
+\usepackage{xcolor}
+
+% Code environment (incomplete)
+\lstset{language=Rust, basicstyle=\ttfamily}
+
+
+\begin{document}
+\section{MPC protocol}
+
+\subsection{Preprocessing phase (prep.rs)}
+\subsubsection{reshare}
+
+\subsubsection{p\_angle}
+The p\_angle method takes a \lstinline{Parameters} struct \lstinline{params}, a \lstinline{BigInt} \lstinline{v_i}, a \lstinline{Ciphertext} \lstinline{e_v}, and a \lstinline{PlayerState} \lstinline{state}.
+
+The first thing done in p\_angle is to homomorphically multiply \lstinline{e_v} and \lstinline{state.e_alpha} to get \lstinline{e_v_mul_alpha}. Then, \lstinline{reshare} is called to get \lstinline{gamma_i}, which is a share of a \lstinline{BigInt}, namely the plaintext in \lstinline{e_v_mul_alpha}. Lastly, the method outputs \lstinline{(v_i, gamma_i)}, which is a share of $\langle v \rangle$.
+ 
+\subsubsection{initialize}
+The initialize method takes a Parameters struct $params$, and a mutable PlayerState $state$ as input.
+
+First, we sample a uniformly random \lstinline{BigInt} from $[0, t)$ using the \lstinline{sample_single} method with \lstinline{params.t} as input, and set the \lstinline{alpha_i} variable of the player state to this value. This represents the given players share of the global key. We then encrypt \lstinline{state.alpha_i} to get an encrypted share \lstinline{e_alpha_i}. Now, \lstinline{e_alpha_i} is broadcasted using \lstinline{state.facilitor}, and each player then uses their facilitator to receive $e_{\alpha_i}$ from the other players. The $e_{\alpha_i}$'s are then homomorphically added to get $e_\alpha$, and the result is then assigned to the \lstinline{e_alpha} variable of \lstinline{state}. %Well ikke helt, men add_encrypted_shares, skal vi nævne det?
+Finally, we run \lstinline{zpopk} from \lstinline{zk.rs} in a loop $sec$ times.
+
+Notice how we do not compute the private keys $\beta_i$ as done in []. As mentioned earlier these are not needed when we use the trick described in section x.x.
+\subsubsection{pair}
+\subsubsection{triple}
+
+\subsection{Online phase (prep.rs)}
+\subsubsection{give\_input}
+\subsubsection{receive\_input}
+\subsubsection{add}
+Add simply takes two \lstinline{AngleShare} values \lstinline{x} and \lstinline{y} as input.
+
+These are then used to compute \lstinline{(x.0 + y.0, x.1 + y.1)}, and the resulting \lstinline{AngleShare} is then returned.
+\subsubsection{multiply}
+\subsubsection{output}
+
+\end{document}
