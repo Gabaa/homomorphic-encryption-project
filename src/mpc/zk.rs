@@ -1,4 +1,4 @@
-use num::{integer::sqrt, BigInt};
+use num::{integer::sqrt, BigInt, Zero};
 use sha2::digest::{ExtendableOutput, Update, XofReader};
 use sha3::Shake256;
 
@@ -10,16 +10,16 @@ use crate::{
 };
 
 const SEC: usize = 40;
+const V: usize = 2 * SEC + 1;
 
-// Supposed to be split into part for prover and part for verifier
+/// Make a zero-knowledge proof of plaintext knowledge
 pub fn make_zkpopk(
     params: &Parameters,
-    x: Polynomial,
-    c: Ciphertext,
+    x: Vec<Polynomial>,
+    c: Vec<Ciphertext>,
     diagonal: bool,
     pk: &PublicKey,
-) -> (Vec<Vec<Polynomial>>, (), ()) {
-    let v = 2 * SEC - 1;
+) -> (Vec<Vec<Polynomial>>, Vec<Vec<BigInt>>, ()) {
     let tau: BigInt = &params.t / BigInt::from(2_i32);
     let rho = BigInt::from(2_i32) * BigInt::from(params.r as i64) * sqrt(params.n);
     let d = params.n * 3;
@@ -27,11 +27,11 @@ pub fn make_zkpopk(
     let y_i_bound = BigInt::from(128_i32) * params.n * tau * BigInt::from(SEC).pow(2);
     let s_i_bound = BigInt::from(128_i32) * d * rho * BigInt::from(SEC).pow(2);
 
-    let mut y = Vec::with_capacity(v);
-    let mut s = Vec::with_capacity(v);
+    let mut y = Vec::with_capacity(V);
+    let mut s = Vec::with_capacity(V);
 
-    let mut a = Vec::with_capacity(v);
-    for i in 0..v {
+    let mut a = Vec::with_capacity(V);
+    for i in 0..V {
         let mut m_i = sample_single(&params.t);
         if diagonal {
             m_i = diag(params, m_i)
@@ -50,17 +50,64 @@ pub fn make_zkpopk(
         a.push(encrypt_det(params, y[i].clone(), pk, s[i].clone()))
     }
 
-    // The prover sends a to the verifier.
+    let e = hash(&a, &c);
 
+    let mut m_e = vec![vec![0_u8; V]; SEC];
+    for (i, row) in m_e.iter_mut().enumerate() {
+        for (k, item) in row.iter_mut().enumerate() {
+            let e_index = i as i32 - k as i32;
+
+            if (0..(SEC as i32)).contains(&e_index) {
+                *item = e[e_index as usize];
+            }
+        }
+    }
+
+    // Calculate z
+    let mut z = Vec::with_capacity(params.n);
+    for i in 0..params.n {
+        let mut z_row = Vec::with_capacity(V);
+
+        for j in 0..V {
+            let mut val;
+
+            // Get y^T values
+            let y_col = &y[j];
+            val = y_col.coefficient(i).to_owned();
+
+            // Multiply M_e * x^T and add it
+            for k in 0..SEC {
+                let x_i = &x[k];
+                val += m_e[k][j] * x_i.coefficient(i).to_owned();
+            }
+
+            z_row.push(val);
+        }
+
+        z.push(z_row);
+    }
+
+    // Calculate t
+    let t = ();
+
+    (a, z, t)
+}
+
+/// Hash `(a, c)` to get a random value `e`
+fn hash(a: &[Vec<Polynomial>], c: &[Vec<Polynomial>]) -> Vec<u8> {
     let mut hasher = Shake256::default();
-    for ciphertext in &a {
+
+    for ciphertext in a {
         for p in ciphertext {
             hasher.update(&polynomial_to_bytes(p));
         }
     }
-    for p in c {
-        hasher.update(&polynomial_to_bytes(&p));
+    for ciphertext in c {
+        for p in ciphertext {
+            hasher.update(&polynomial_to_bytes(p));
+        }
     }
+
     let mut reader = hasher.finalize_xof();
     let mut e_bytes = [0_u8; SEC / 8];
     reader.read(&mut e_bytes);
@@ -70,7 +117,7 @@ pub fn make_zkpopk(
         e_bit_string = format!("{}{:08b}", e_bit_string, &e_byte);
     }
 
-    let mut e_bits: Vec<u8> = Vec::new();
+    let mut e_bits = Vec::with_capacity(SEC);
     for c in e_bit_string.chars() {
         match c {
             '0' => e_bits.push(0),
@@ -79,29 +126,15 @@ pub fn make_zkpopk(
         }
     }
 
-    let mut m_e = vec![vec![0_u8; v]; SEC];
-    for (i, row) in m_e.iter_mut().enumerate() {
-        for (k, item) in row.iter_mut().enumerate() {
-            let e_index = i as i32 - k as i32;
-
-            if (0..(SEC as i32)).contains(&e_index) {
-                let e_index = e_index as usize;
-                *item = e_bits[e_index];
-            }
-        }
-    }
-
-    let mut z = y.clone();
-
-    let t = ();
-
-    (a, z, t)
+    e_bits
 }
 
-pub fn verify_zkpopk(a: Vec<Vec<Polynomial>>, z: (), t: ()) -> bool {
+/// Verify the validity of a zero-knowledge proof of plaintext knowledge
+pub fn verify_zkpopk(a: Vec<Vec<Polynomial>>, z: Vec<Vec<BigInt>>, t: ()) -> bool {
     true
 }
 
+/// A little hack to convert a polynomial to bytes
 fn polynomial_to_bytes(p: &Polynomial) -> Vec<u8> {
     let json = serde_json::to_string(p).unwrap();
     json.as_bytes().to_owned()
@@ -113,20 +146,32 @@ mod tests {
     use rand::Rng;
 
     use crate::{
-        encryption::{encrypt, generate_key_pair, Parameters, PublicKey, SecretKey},
+        encryption::{encrypt, generate_key_pair, Ciphertext, Parameters, PublicKey, SecretKey},
         poly::Polynomial,
     };
 
-    use super::{make_zkpopk, verify_zkpopk};
+    use super::{make_zkpopk, verify_zkpopk, SEC};
 
-    fn setup() -> (Parameters, PublicKey, SecretKey, Vec<Polynomial>) {
+    fn setup() -> (
+        Parameters,
+        PublicKey,
+        SecretKey,
+        Vec<Polynomial>,
+        Vec<Ciphertext>,
+    ) {
         let params = Parameters::default();
         let (pk, sk) = generate_key_pair(&params);
 
-        let m = Polynomial::new(vec![random_bigint()]);
-        let c = encrypt(&params, m, &pk);
+        let mut x = Vec::with_capacity(SEC);
+        let mut c = Vec::with_capacity(SEC);
+        for _ in 0..SEC {
+            let x_i = Polynomial::new(vec![random_bigint()]);
+            let c_i = encrypt(&params, x_i.clone(), &pk);
+            x.push(x_i);
+            c.push(c_i);
+        }
 
-        (params, pk, sk, c)
+        (params, pk, sk, x, c)
     }
 
     fn random_bigint() -> BigInt {
@@ -136,9 +181,9 @@ mod tests {
 
     #[test]
     fn verify_accepts_valid_zkpopk() {
-        let (params, pk, sk, c) = setup();
+        let (params, pk, sk, x, c) = setup();
 
-        let (a, z, t) = make_zkpopk(&params, c, false, &pk);
+        let (a, z, t) = make_zkpopk(&params, x, c, false, &pk);
 
         assert!(verify_zkpopk(a, z, t), "proof was not valid")
     }
