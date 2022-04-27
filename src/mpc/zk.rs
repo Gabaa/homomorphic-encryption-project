@@ -19,7 +19,7 @@ pub fn make_zkpopk(
     c: Vec<Ciphertext>,
     diagonal: bool,
     pk: &PublicKey,
-) -> (Vec<Vec<Polynomial>>, Vec<Vec<BigInt>>, ()) {
+) -> (Vec<Vec<Polynomial>>, Vec<Vec<BigInt>>, Vec<Vec<BigInt>>) {
     let tau: BigInt = &params.t / BigInt::from(2_i32);
     let rho = BigInt::from(2_i32) * BigInt::from(params.r as i64) * sqrt(params.n);
     let d = params.n * 3;
@@ -50,8 +50,10 @@ pub fn make_zkpopk(
         a.push(encrypt_det(params, y[i].clone(), pk, s[i].clone()))
     }
 
+    // Create a SEC-bit bitstring (each bit represented by u8)
     let e = hash(&a, &c);
 
+    // Create M_e from e
     let mut m_e = vec![vec![0_u8; V]; SEC];
     for (i, row) in m_e.iter_mut().enumerate() {
         for (k, item) in row.iter_mut().enumerate() {
@@ -63,7 +65,7 @@ pub fn make_zkpopk(
         }
     }
 
-    // Calculate z
+    // Calculate z (such that z^T = y^T + M_e * x^T)
     let mut z = Vec::with_capacity(params.n);
     for i in 0..params.n {
         let mut z_row = Vec::with_capacity(V);
@@ -77,8 +79,8 @@ pub fn make_zkpopk(
 
             // Multiply M_e * x^T and add it
             for k in 0..SEC {
-                let x_i = &x[k];
-                val += m_e[k][j] * x_i.coefficient(i).to_owned();
+                let x_k = &x[k];
+                val += m_e[k][j] * x_k.coefficient(i).to_owned();
             }
 
             z_row.push(val);
@@ -87,10 +89,30 @@ pub fn make_zkpopk(
         z.push(z_row);
     }
 
-    // Calculate t
-    let t = ();
+    // Calculate t = S + M_e * R
+    let mut t = vec![vec![BigInt::zero(); d]; V];
+    for (t_row_index, t_row) in t.iter_mut().enumerate() {
+        let (s_row_1, s_row_2, s_row_3) = &s[t_row_index];
+        let mut s_row = s_row_1
+            .coefficients()
+            .chain(s_row_2.coefficients())
+            .chain(s_row_3.coefficients());
+
+        for (t_col_index, t_val) in t_row.iter_mut().enumerate() {
+            let s_val = s_row.next().unwrap().to_owned();
+
+            let m_e_val = ???
+
+            *t_val = s_val;
+        }
+    }
 
     (a, z, t)
+}
+
+/// Verify the validity of a zero-knowledge proof of plaintext knowledge
+pub fn verify_zkpopk(a: Vec<Vec<Polynomial>>, z: Vec<Vec<BigInt>>, t: Vec<Vec<BigInt>>) -> bool {
+    true
 }
 
 /// Hash `(a, c)` to get a random value `e`
@@ -127,11 +149,6 @@ fn hash(a: &[Vec<Polynomial>], c: &[Vec<Polynomial>]) -> Vec<u8> {
     }
 
     e_bits
-}
-
-/// Verify the validity of a zero-knowledge proof of plaintext knowledge
-pub fn verify_zkpopk(a: Vec<Vec<Polynomial>>, z: Vec<Vec<BigInt>>, t: ()) -> bool {
-    true
 }
 
 /// A little hack to convert a polynomial to bytes
