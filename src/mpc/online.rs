@@ -158,11 +158,6 @@ pub mod protocol {
             panic!("MACCheck did not succeed!")
         }
 
-        if !maccheck(params, vec![y_angle.clone()], state) {
-            panic!("MACCheck did not succeed!")
-        }
-
-        // Broadcast my y_angle share
         let (y_share, _) = y_angle;
         state
             .facilitator
@@ -177,7 +172,14 @@ pub mod protocol {
             }
         }
 
-        open_shares(params, y_shares)
+        let y = open_shares(params, y_shares);
+
+        if !maccheck(params, vec![(y.clone(), y_angle.1)], state) {
+            panic!("MACCheck did not succeed!")
+        }
+
+        // Broadcast my y_angle share
+        return y
     }
 }
 
@@ -317,14 +319,14 @@ fn maccheck<F: Facilicator>(
         if let OnlineMessage::ShareCommitOpen(o_i) = msg {
             let opened = open(sigma_commitments[p_i].clone(), o_i).unwrap();
             sigma_is[p_i] = BigInt::from_bytes_be(
-                num::bigint::Sign::NoSign,
+                num::bigint::Sign::Plus,
                 opened
                     .iter()
                     .take(opened.len() - 32)
                     .cloned()
                     .collect::<Vec<u8>>()
                     .as_slice(),
-            )
+            );
         }
     }
 
