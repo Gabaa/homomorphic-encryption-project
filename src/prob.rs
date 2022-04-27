@@ -1,7 +1,10 @@
 use crate::poly::Polynomial;
-use num::{BigInt, Zero};
 use probability::prelude::{source, Gaussian, Independent};
-use rand::{distributions::Uniform, rngs::OsRng, Rng, RngCore};
+use rand::{rngs::OsRng, RngCore};
+use rug::{
+    rand::{RandGen, RandState},
+    Integer,
+};
 
 /// Creating Source to use rand package as source of randomness
 struct Source<T>(T);
@@ -26,24 +29,36 @@ pub fn sample_from_gaussian(sd: f64, n: usize) -> Polynomial {
     Polynomial::from(
         samples
             .iter()
-            .map(|x| BigInt::from(x.round() as i128))
-            .collect::<Vec<BigInt>>(),
+            .map(|x| Integer::from(x.round() as i128))
+            .collect::<Vec<Integer>>(),
     )
 }
 
-/// Returns n samples from a Uniform distribution in the interval [0, q)
-pub fn sample_from_uniform(q: &BigInt, n: usize) -> Polynomial {
-    let rng = OsRng;
-    let range = Uniform::new(BigInt::zero(), q);
+/// Implement OsRng adapter for rug::rand
+struct OsRngRandGen;
 
-    let samples: Vec<BigInt> = rng.sample_iter(&range).take(n).collect();
+impl RandGen for OsRngRandGen {
+    fn gen(&mut self) -> u32 {
+        OsRng.next_u32()
+    }
+}
+
+/// Returns n samples from a Uniform distribution in the interval [0, q)
+pub fn sample_from_uniform(q: &Integer, n: usize) -> Polynomial {
+    let mut rand_gen = OsRngRandGen;
+    let mut rand_state = RandState::new_custom(&mut rand_gen);
+
+    let mut samples = Vec::with_capacity(n);
+    for _ in 0..n {
+        samples.push(q.to_owned().random_below(&mut rand_state))
+    }
 
     Polynomial::from(samples)
 }
 
-pub fn sample_single(t: &BigInt) -> BigInt {
-    let range = Uniform::new(BigInt::zero(), t);
+pub fn sample_single(t: &Integer) -> Integer {
+    let mut rand_gen = OsRngRandGen;
+    let mut rand_state = RandState::new_custom(&mut rand_gen);
 
-    let sample: BigInt = OsRng.sample(&range);
-    sample
+    t.to_owned().random_below(&mut rand_state)
 }
