@@ -70,16 +70,38 @@ Finally, we return the shares \lstinline{a_angle}, \lstinline{b_angle}, and \lst
 \subsection{Online phase (prep.rs)}
 The code related to the online phase can be found in prep.rs.
 \subsubsection{give\_input}
+
+
 \subsubsection{receive\_input}
 \subsubsection{add}
 Add simply takes two \lstinline{AngleShare} values \lstinline{x} and \lstinline{y} as input.
 
 These are then used to compute \lstinline{(x.0 + y.0, x.1 + y.1)}, and the resulting \lstinline{AngleShare} is then returned.
 \subsubsection{partial\_opening}
+To partially open some value $v$ where player $i$ holds share $v_i$, each player calls \lstinline{partial_opening} with a \lstinline{Parameters} struct \lstinline{params}, a \lstinline{BigInt} \lstinline{to_share}, and a \lstinline{PlayerState}  \lstinline{state} as arguments. When partially opening we send all shares to some designated player, and in this case we simply let all players send their share to player $P_1$, who has index $0$.
+
+To do this we first send the calling players share of $v$, \lstinline{to_share}, to $P_1$ using the facilitator. Player $P_1$ then computes $v = v_1 + ... + v_n \mod p$, which is subsequently broadcast to all players using the facilitator.
+
+Finally, the method returns the value $v$ received from $P_1$.
 
 \subsubsection{triple\_check}
+The \lstinline{triple_check} method takes a \lstinline{Parameters} struct \lstinline{params}, two \lstinline{MulTriple} values \lstinline{abc_triple, fgh_triple}, a \lstinline{BigInt} \lstinline{t_share} and a mutable \lstinline{PlayerState} \lstinline{state} as arguments.
+
+The first thing done is to use the facilitator to broadcast the players share of $t$, \lstinline{t_share}. The player then uses the facilitator to receive shares of $t$ from the other players, and then compute $t = t_1 + ... + t_n \mod p$.
+
+Now, we compute (...) and save it in variable \lstinline{rho_share}.
+
 \subsubsection{multiply}
 \subsubsection{maccheck}
 \subsubsection{output}
+The \lstinline{output} method is called by a player when that player is ready to output some value $\langle y \rangle$. The method takes a \lstinline{Parameters} struct \lstinline{params}, \lstinline{AngleShare} \lstinline{y_angle}, and a \lstinline{PlayerState} \lstinline{state} as arguments.
+
+To output a value we first call the \lstinline{maccheck} method on \lstinline{state.opened}, to check that the MAC values are correct for all of the values $v$ in the $\langle r \rangle$ representation that have been opened. If this returns false, then the check was unsuccessful and we \lstinline{panic} to abort the protocol.
+
+Then we broadcast \lstinline{y_angle.0}, which is the players share $y_i$ of the output value $y$. This is followed by receiving shares from all players, and then computing $y = y_1 + ... + y_n \mod p$.
+
+Now, we once again call the \lstinline{maccheck} method but this time we use the \lstinline{(y, y_angle.1)} as input, which is the opened value $y$ and the players corresponding MAC value. If this returns false, then we once again \lstinline{panic} to abort the protocol.
+
+If we did not abort at any point during the method, then we return the final result \lstinline{y}.
 
 \end{document}
