@@ -8,10 +8,10 @@
 %\section{Security of MPC protocols}
 % Active vs passive
 % \section{Homomorphic Encryption} Antager at det her allerede er dækket
-\section{Protocol for Multiparty Computation based on SHE}
+\section{Protocol for Multiparty Computation based on SHE} \label{section: MPC scheme}
 The Multiparty Computation (MPC) problem is the problem where $n$ players each with some private input $x_i$, want to compute some function $f$ on the input, without revealing anything but the result.
 
-In [] the authors describe a protocol for MPC based on a SHE scheme. The protocol is able compute arithmetic formulas consisting of up to a single multiplication, along with a relatively large number of additions, while being statistically UC-secure against an active adversary and $n - 1$ corruptions.
+In \cite{damgaard2012multiparty} the authors describe a protocol for MPC based on a SHE scheme. The protocol is able compute arithmetic formulas consisting of up to a single multiplication, along with a relatively large number of additions, while being statistically UC-secure against an active adversary and $n - 1$ corruptions.
 
 The protocol proceeds in two phases. In the first phase, preprocessing, a global key $[\![\alpha]\!]$, random values in two representations $[\![r]\!], \langle r \rangle$, and a number of multiplicative triples $\langle a \rangle, \langle b \rangle, \langle c \rangle$ satisfying $c = ab$ are generated.
 
@@ -19,7 +19,7 @@ In the second phase, the online phase, the players use the global key and secret
 
 The online phase therefore only makes indirect use of the SHE scheme, as it is only used in the preprocessing phase to generate input for the online phase.
 
-These two phases are described in further detail in section \ref{Prep} \& \ref{Online}.
+These two phases are described in further detail in section \ref{subsection: Prep} \& \ref{subsection: Online}.
 
 \paragraph{Representations of shared values}
 The protocol makes use of two different representations of shared values $[\![ \cdot ]\!], \langle \cdot \rangle$. For a shared value $a \in F_{p^k}$ the $\langle \cdot \rangle$ representation is defined as follows:
@@ -36,7 +36,7 @@ The cryptosystem used as the SHE scheme in the protocol has to have certain prop
 
 In addition to the aforementioned requirements, we also want the cryptosystem to implement a functionality $\mathcal{F}_{KeyGenDec}$. This functionality will on receiving ''start'' from all honest players generate a keypair $(pk, sk)$, and then distribute $pk$ to the players and store $sk$. The players can then use the functionality to cooperate in decrypting a ciphertext encrypted under $pk$.
 
-\subsection{Preprocessing phase} \label{Prep}
+\subsection{Preprocessing phase} \label{subsection: Prep}
 The preprocessing phase is implemented by the Prep protocol, which consists of the steps \textbf{initialize}, \textbf{pair}, and \textbf{triple}. These steps use the additional protocols Reshare, PAngle, and PBracket as subroutines.
 
 \paragraph{Protocol Reshare:} The Reshare protocol takes a ciphertext $e_m$ as input and a parameter $enc$, which can be set to either $NewCiphertext$ or $NoNewCiphertext$. The protocol then outputs a share $m_i$ of $m$ to each player along with a new fresh ciphertext $e'_m$ if $enc = NewCiphertext$, where $e'_m$ contains $\sum_i m_i$.
@@ -75,7 +75,7 @@ The players then homomorphically add the encrypted shares to get $e_a$ and $e_b$
 Following this each player homomorphically multiplies $e_a$ and $e_b$ to get $e_c$, which the players use as input to Reshare to get shares of $c$ along with a new ciphertext $(c_1, ..., c_n, e_{c'})$. Then the players then use their shares of $c$ along with $e_{c'}$ to generate $\langle c \rangle$ by calling PAngle. Finally, the triple $(\langle a \rangle, \langle b \rangle, \langle c \rangle)$ is output.
 
 
-\subsection{Online phase} \label{Online}
+\subsection{Online phase} \label{subsection: Online}
 The Online protocol implements the online phase, 
 and consists of the steps \textbf{initialize}, \textbf{input}, \textbf{add}, \textbf{multiply}, and \textbf{output}. These steps are executed as needed to evaluate the arithemtic circuit that we wish to evaluate.
 
@@ -103,8 +103,8 @@ Finally, to make sure that all players end up with $y$ the commitments to $y_i$ 
 %\subsection{Parameter setting}
 %In section D of the paper the authors give example parameter sets and explain how to choose the parameters, s.t. the previously described Ring-LWE public key encryption scheme meets the requirements of the MPC protocol.
 
-\section{Reuse of unrevealed secret-shared data}
-In [] a technique that allows for reuse of unrevealed secret-shared data is used. This technique revolves around not having to open $[\![ \alpha ]\!]$, and in fact we do not even need the $[\![ \cdot ]\!]$ representation when using this technique.
+\section{Reuse of unrevealed secret-shared data} \label{section: Reuse}
+In \cite{damgaard2013practical} a technique that allows for reuse of unrevealed secret-shared data is used. This technique revolves around not having to open $[\![ \alpha ]\!]$, and in fact we do not even need the $[\![ \cdot ]\!]$ representation when using this technique.
 
 The technique works as follows. First, when we generate the global key we now just need each player $P_i$ to have a share $\alpha_i$ of $\alpha$. In the output step the player will then instead of the current MAC check instead invoke the new MACCheck protocol on all of the values in the $\langle \cdot \rangle$ representation that have been opened, and if this succeeds the player invokes MACCheck on the output value $\langle y \rangle$. The MACCheck protocol works as follows:
 \paragraph{Protocol MACCheck}

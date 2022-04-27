@@ -1,42 +1,85 @@
-\documentclass{article}
-\usepackage[utf8]{inputenc}
-\usepackage{listings}
-\usepackage{listings-rust}
-\usepackage{xcolor}
-
-% Code environment (incomplete)
-\lstset{language=Rust, basicstyle=\ttfamily}
+% Preamble
+\documentclass[../main.tex]{subfiles}
+\graphicspath{{\subfix{../images/}}}
 
 
 \begin{document}
+
 \section{MPC protocol}
 
+\subsection{$\mathcal{F}_{Com}$ functionality (commit.rs)}
+Our implementation of the commitment functionality that is used in the online phase can be found in commit.rs.
+
+\subsection{ZKPoPK (zk.rs)}
+
 \subsection{Preprocessing phase (prep.rs)}
+The file prep.rs contains all of the methods that are called in the preprocessing phase to generate values for the online phase.
 \subsubsection{reshare}
+Reshare takes as input a \lstinline{Parameters} struct \lstinline{params}, a Ciphertext \lstinline{e_m}, a  \lstinline{PlayerState} \lstinline{state}, and an \lstinline{Enc} enum \lstinline{enc}, which can take on values \lstinline{NewCiphertext} or \lstinline{NoNewCiphertext}.
+
+The first thing done in this method is to sample a value \lstinline{f_i} uniformly from $Z_t$ using \lstinline{sample_single} from \lstinline{prob.rs}. Then, \lstinline{f_i} is encrypted to get \lstinline{e_f_i}.
+%Mangler ZK
+The facilitator is then used to broadcast \lstinline{e_f_i}, and subsequently receive the encrypted shares from the other parties, which are then homomorphically added to get \lstinline{e_f}. Then, we compute \lstinline{e_m_plus_f = add(params, e_m, &e_f)}.
+
+The \lstinline{ddec} method from mod.rs is then called with \lstinline{e_m_plus_f} as input to get the plaintext \lstinline{m_plus_f}.
+
+Then we set \lstinline{m_i} to be $e_{m + f} - f_i \text{ mod } t$ if the player calling the method is the player with index $0$, and $- f_i \text{ mod } t$ otherwise. If \lstinline{enc = NewCiphertext}, we now encrypt \lstinline{m_plus_f} using \lstinline{encrypt_det} where we use a triple of 1-polynomials instead of the randomness to make encryption deterministic. Now, we use \lstinline{add} from encrypt.rs to homomorphically subtract the encrypted shares $e_{f_i}$ from the encryption of \lstinline{m_plus_f} to get \lstinline{e_m_prime}. Afterwards, we return \lstinline{(Some(e_m_prime), m_i)}
+
+If \lstinline{enc = NoNewCiphertext}, we instead just return \lstinline{(None, m_i)}.
 
 \subsubsection{p\_angle}
-The p\_angle method takes a \lstinline{Parameters} struct \lstinline{params}, a \lstinline{BigInt} \lstinline{v_i}, a \lstinline{Ciphertext} \lstinline{e_v}, and a \lstinline{PlayerState} \lstinline{state}.
+The p\_angle method takes a \lstinline{Parameters} struct \lstinline{params}, a \lstinline{BigInt} \lstinline{v_i}, a \lstinline{Ciphertext} \lstinline{e_v}, and a \lstinline{PlayerState} \lstinline{state} as input.
 
 The first thing done in p\_angle is to homomorphically multiply \lstinline{e_v} and \lstinline{state.e_alpha} to get \lstinline{e_v_mul_alpha}. Then, \lstinline{reshare} is called to get \lstinline{gamma_i}, which is a share of a \lstinline{BigInt}, namely the plaintext in \lstinline{e_v_mul_alpha}. Lastly, the method outputs \lstinline{(v_i, gamma_i)}, which is a share of $\langle v \rangle$.
+
+As can be seen from the implementation we omit the public $\delta$ value as done in \cite{damgaard2013practical}, such that the MAC's now instead satisfy $\alpha v = \sum_i \gamma(v)_i$.
  
 \subsubsection{initialize}
-The initialize method takes a Parameters struct $params$, and a mutable PlayerState $state$ as input.
+The initialize method takes a \lstinline{Parameters} struct \lstinline{params}, and a mutable \lstinline{PlayerState} \lstinline{state} as input.
 
-First, we sample a uniformly random \lstinline{BigInt} from $[0, t)$ using the \lstinline{sample_single} method with \lstinline{params.t} as input, and set the \lstinline{alpha_i} variable of the player state to this value. This represents the given players share of the global key. We then encrypt \lstinline{state.alpha_i} to get an encrypted share \lstinline{e_alpha_i}. Now, \lstinline{e_alpha_i} is broadcasted using \lstinline{state.facilitor}, and each player then uses their facilitator to receive $e_{\alpha_i}$ from the other players. The $e_{\alpha_i}$'s are then homomorphically added to get $e_\alpha$, and the result is then assigned to the \lstinline{e_alpha} variable of \lstinline{state}. %Well ikke helt, men add_encrypted_shares, skal vi nævne det?
+First, we sample a uniformly random \lstinline{BigInt} from $[0, t)$ using the \lstinline{sample_single} method with \lstinline{params.t} as input, and set the \lstinline{alpha_i} variable of the player state to this value. This represents the given players share of the global key. We then encrypt \lstinline{state.alpha_i} to get an encrypted share \lstinline{e_alpha_i}. Now, \lstinline{e_alpha_i} is broadcast using \lstinline{state.facilitor}, and each player then uses their facilitator to receive $e_{\alpha_i}$ from the other players. The $e_{\alpha_i}$'s are then homomorphically added to get $e_\alpha$, and the result is then assigned to the \lstinline{e_alpha} variable of \lstinline{state}. %Well ikke helt, men add_encrypted_shares, skal vi nævne det?
 Finally, we run \lstinline{zpopk} from \lstinline{zk.rs} in a loop $sec$ times.
 
-Notice how we do not compute the private keys $\beta_i$ as done in []. As mentioned earlier these are not needed when we use the trick described in section x.x.
+Notice how we do not compute the personal keys $\beta_i$ as done in \cite{damgaard2012multiparty}. As mentioned earlier these are not needed when we use the trick described in section \ref{section: Reuse}.
 \subsubsection{pair}
+The pair methods takes a Parameters struct params, and a PlayerState state as input.
+
+The method first samples a uniformly random \lstinline{BigInt} \lstinline{r_i} from $Z_t$. Now, \lstinline{r_i} is encrypted to get \lstinline{e_r_i}, which is the broadcast using the facilitator. All players then again use the facilitator to receive the encrypted shares from the other parties, which are then homomorphically added to compute \lstinline{e_r}. Then, we call \lstinline{zkpopk} with \lstinline{e_r_i} as input.
+
+Following this we compute the given players share of $\langle r \rangle$ with a call to \lstinline{p_angle} with \lstinline{r_i} and \lstinline{e_r} as arguments, which returns \lstinline{r_angle}.
+
+Again, we use the trick explained in section \ref{section: Reuse}, so we don't need the values in the bracket representation, and therefore we just return \lstinline{(r_i, r_angle)}.
+
 \subsubsection{triple}
+The triple method takes a \lstinline{Parameters} struct \lstinline{params}, along with a \lstinline{PlayerState} \lstinline{state} as arguments.
+
+First, we sample \lstinline{a_i}, \lstinline{b_i} uniformly at random from $Z_t$, which are both then encrypted, and then encrypted shares are then broadcast.
+
+Then, when the player receives the encrypted shares of $a$ and $b$ from the other players, then these are homomorphically added to get \lstinline{e_a} and \lstinline{e_b}.
+
+Following this, we generate shares \lstinline{a_angle} and \lstinline{b_angle} with calls to \lstinline{p_angle} using \lstinline{a_i}, \lstinline{e_a} and \lstinline{b_i}, \lstinline{e_b} as input respectively.
+
+Now, the player calling the method has shares of $\langle a \rangle$ and $\langle b \rangle$, and we need to compute a share of $\langle c \rangle$.
+
+To do this we compute \lstinline{e_c} by homomorphically multiplying \lstinline{e_a} and \lstinline{e_b}, and then we call \lstinline{reshare} with \lstinline{e_c} and \lstinline{NewCiphertext} as input to get a new ciphertext \lstinline{e_c_prime} and \lstinline{c_i}, which is a share of c. 
+
+This allows us to call \lstinline{p_angle} using \lstinline{c_i} and \lstinline{e_c_prime} to get \lstinline{c_angle}.
+
+Finally, we return the shares \lstinline{a_angle}, \lstinline{b_angle}, and \lstinline{c_angle}.
 
 \subsection{Online phase (prep.rs)}
+The code related to the online phase can be found in prep.rs.
 \subsubsection{give\_input}
 \subsubsection{receive\_input}
 \subsubsection{add}
 Add simply takes two \lstinline{AngleShare} values \lstinline{x} and \lstinline{y} as input.
 
 These are then used to compute \lstinline{(x.0 + y.0, x.1 + y.1)}, and the resulting \lstinline{AngleShare} is then returned.
+\subsubsection{partial\_opening}
+
+\subsubsection{triple\_check}
 \subsubsection{multiply}
+\subsubsection{maccheck}
 \subsubsection{output}
 
 \end{document}
