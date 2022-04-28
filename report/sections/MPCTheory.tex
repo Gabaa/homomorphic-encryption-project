@@ -1,7 +1,5 @@
-\documentclass{article}
-\usepackage[utf8]{inputenc}
-\usepackage{amsmath}
-\usepackage{amssymb}
+% !TeX root = ../main.tex
+\documentclass[../main.tex]{subfiles}
 
 \begin{document}
 %\section{Multiparty Computation}
@@ -40,11 +38,11 @@ In addition to the aforementioned requirements, we also want the cryptosystem to
 The preprocessing phase is implemented by the Prep protocol, which consists of the steps \textbf{initialize}, \textbf{pair}, and \textbf{triple}. These steps use the additional protocols Reshare, PAngle, and PBracket as subroutines.
 
 \paragraph{Protocol Reshare:} The Reshare protocol takes a ciphertext $e_m$ as input and a parameter $enc$, which can be set to either $NewCiphertext$ or $NoNewCiphertext$. The protocol then outputs a share $m_i$ of $m$ to each player along with a new fresh ciphertext $e'_m$ if $enc = NewCiphertext$, where $e'_m$ contains $\sum_i m_i$.
-To do this the players first each sample $f_i \in \mathbb{F}_{p^k}$, and then broadcast $$e_{f_i} \leftarrow Enc_{pk}(f_i)$$ 
+To do this the players first each sample $f_i \in \mathbb{F}_{p^k}$, and then broadcast $$e_{f_i} \leftarrow Enc_{pk}(f_i)$$
 Each $P_i$ then runs the ZKPoPK protocol while acting as a prover on the previously generated ciphertext $e_{f_i}$, and if any of these proofs fail, then parties abort.
 Now, each player homomorphically adds each encrypted share
 $$e_f \leftarrow e_{f_1} \boxplus ... \boxplus e_{f_n} $$
- and then homomorphically adds $e_m$ and $e_f$ to get $e_{m + f}$. The players now use $\mathcal{F}_{KeyGenDec}$ to decrypt $e_{m + f}$ so that they get $m + f$. Now $P_1$ sets $m_1 \leftarrow m + f + f_1$, while the rest of the players $P_i$ set $m_i \leftarrow - f_i$.
+and then homomorphically adds $e_m$ and $e_f$ to get $e_{m + f}$. The players now use $\mathcal{F}_{KeyGenDec}$ to decrypt $e_{m + f}$ so that they get $m + f$. Now $P_1$ sets $m_1 \leftarrow m + f + f_1$, while the rest of the players $P_i$ set $m_i \leftarrow - f_i$.
 If $enc = NewCiphertext$, then the players each compute
 $$e'_m \leftarrow Enc_{pk}(m + f) \boxminus e_{f_1} \boxminus ... \boxminus e_{f_n}$$ where default randomness is used for the encryption.
 
@@ -76,7 +74,7 @@ Following this each player homomorphically multiplies $e_a$ and $e_b$ to get $e_
 
 
 \subsection{Online phase} \label{subsection: Online}
-The Online protocol implements the online phase, 
+The Online protocol implements the online phase,
 and consists of the steps \textbf{initialize}, \textbf{input}, \textbf{add}, \textbf{multiply}, and \textbf{output}. These steps are executed as needed to evaluate the arithemtic circuit that we wish to evaluate.
 
 \paragraph{Initialize:} The \textbf{initialize} step simply consists using the Prep protocol to generate a global key, along with enough multiplicative triples and random values in the two representations showed earlier, for the circuit that we want to evaluate.

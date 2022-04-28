@@ -1,3 +1,4 @@
+% !TeX root = ../main.tex
 % TODO: Måske der skal indsættes et eksempel af de her 2? Burde være ganske let at gøre, da vi kan bruge implementationen
 
 % Preamble
@@ -7,95 +8,95 @@
 % Document
 \begin{document}
 
-    \section{Ring LWE - A somewhat homomorphic encryption scheme} \label{section: RLWE theory}
-    In the paper ``Fully Homomorphic Encryption from Ring-LWE and Security for Key Dependent Messages'' written by
-    Zvika Brakerski and Vinod Vaikuntanathan \cite{brakerski2011fully}
-    they describe a method for converting the Ring Learnig with errors (RingLWE) problem into an encryption scheme
-    which reduces to the worst-case hardness of problems on ideal lattices.
-    We'll shortly describe the encryption scheme here but will omit proofs and detailed discussions.
-    Both system will be over the message space of $R_t = \mathbb{Z}_t[x] / \langle f(x) \rangle $.
+\section{Ring LWE - A somewhat homomorphic encryption scheme} \label{section: RLWE theory}
+In the paper ``Fully Homomorphic Encryption from Ring-LWE and Security for Key Dependent Messages'' written by
+Zvika Brakerski and Vinod Vaikuntanathan \cite{brakerski2011fully}
+they describe a method for converting the Ring Learnig with errors (RingLWE) problem into an encryption scheme
+which reduces to the worst-case hardness of problems on ideal lattices.
+We'll shortly describe the encryption scheme here but will omit proofs and detailed discussions.
+Both system will be over the message space of $R_t = \mathbb{Z}_t[x] / \langle f(x) \rangle $.
 
-    \subsection{Polynomial learning with errors}
-    The polynomial learning with errors problem is made as a decision problem
-    and is defined by in the Hermite normal form as the following.
-    \\[2mm]
-    \textbf{The PLWE Assumption - Hermite Normal Form.}
-    for all $\kappa \in \mathbb{N}$, let $f(x) = f_{\kappa}(x) \in \mathbb{Z}[x]$
-    be a polynomial of degree n = n($\kappa$), let $q = q(\kappa) \in \mathbb{Z}$
-    be a prime integer, let the ring $R = \mathbb{Z}[x] / \langle f(x) \rangle$
-    and $R_q = R / qR$ with $\chi$ denoting a distribution over the ring R. 
-    Then the Polynomial learning with error ($PLWE_{f,q,\chi}$) assumption can be defined as
-    $$
-        \{ (a_i, a_i \cdot s + e_i) \}_{i \in [l]} \approx^{c} \{(a_i, u_i) \}_{i \in [l]}\}
-    $$
-    where s is sampled from $\chi$, $a_i$ is uniform in $R_q$, the error polynomials
-    $e_i$ are sampled from $\chi$ and $u_i$ are random ring elements from $R_q$.
+\subsection{Polynomial learning with errors}
+The polynomial learning with errors problem is made as a decision problem
+and is defined by in the Hermite normal form as the following.
+\\[2mm]
+\textbf{The PLWE Assumption - Hermite Normal Form.}
+for all $\kappa \in \mathbb{N}$, let $f(x) = f_{\kappa}(x) \in \mathbb{Z}[x]$
+be a polynomial of degree n = n($\kappa$), let $q = q(\kappa) \in \mathbb{Z}$
+be a prime integer, let the ring $R = \mathbb{Z}[x] / \langle f(x) \rangle$
+and $R_q = R / qR$ with $\chi$ denoting a distribution over the ring R.
+Then the Polynomial learning with error ($PLWE_{f,q,\chi}$) assumption can be defined as
+$$
+    \{ (a_i, a_i \cdot s + e_i) \}_{i \in [l]} \approx^{c} \{(a_i, u_i) \}_{i \in [l]}\}
+$$
+where s is sampled from $\chi$, $a_i$ is uniform in $R_q$, the error polynomials
+$e_i$ are sampled from $\chi$ and $u_i$ are random ring elements from $R_q$.
 
-    \subsection{Symmetric version}
-    Let $\kappa$ be the security parameter and let further q and t be prime numbers where $t \in \mathbb{Z}_n^*$.
-    We also need a polynomial of degree n $f(x) \in \mathbb{Z}[x]$ and an error distribution $\chi$ over the ring
-    $R_q = \mathbb{Z}_q[x] / \langle f(x) \rangle$, then we can define the following operations.
+\subsection{Symmetric version}
+Let $\kappa$ be the security parameter and let further q and t be prime numbers where $t \in \mathbb{Z}_n^*$.
+We also need a polynomial of degree n $f(x) \in \mathbb{Z}[x]$ and an error distribution $\chi$ over the ring
+$R_q = \mathbb{Z}_q[x] / \langle f(x) \rangle$, then we can define the following operations.
 
-    \subsubsection{Key-gen}
-    Let our secret key be a randomly sampled element from the error distribution $s \leftarrow^\$ \chi$
-    Then given the security parameter $\kappa$ sample a ring element s uniformly at random from $\kappa$ and define the
-    secret key vector by $(s^0, s^1, s^2, \dots, s^D) \in R_q^{D+1}$.
+\subsubsection{Key-gen}
+Let our secret key be a randomly sampled element from the error distribution $s \leftarrow^\$ \chi$
+Then given the security parameter $\kappa$ sample a ring element s uniformly at random from $\kappa$ and define the
+secret key vector by $(s^0, s^1, s^2, \dots, s^D) \in R_q^{D+1}$.
 
-    \subsubsection{Encryption}
-    Rememer that all messages are encodeable in our message space $R_t$, thus we will encode our message m as a n degree
-    polynomium with coefficient mod t.
-    To encrypt we sample $(a, b = a \cdot s + t \cdot e)$ where $a \leftarrow^\$ R_q$ and $e \leftarrow^\$ \chi$,
-    then compute
-    \begin{align*}
-        c_0 \coloneqq b + m && c_1 \coloneqq -a
-    \end{align*}
-    and from this output the ciphertext \textbf{c} $\coloneqq (c_0, c_1) \in R_q^2$.
+\subsubsection{Encryption}
+Rememer that all messages are encodeable in our message space $R_t$, thus we will encode our message m as a n degree
+polynomium with coefficient mod t.
+To encrypt we sample $(a, b = a \cdot s + t \cdot e)$ where $a \leftarrow^\$ R_q$ and $e \leftarrow^\$ \chi$,
+then compute
+\begin{align*}
+    c_0 \coloneqq b + m &  & c_1 \coloneqq -a
+\end{align*}
+and from this output the ciphertext \textbf{c} $\coloneqq (c_0, c_1) \in R_q^2$.
 
-    \subsubsection{Decryption}
-    Note that a ciphertext is on the form $(c_0, c_1, \dots , C_{D}) \in R_q^{D+1}$.
-    Define the inner product over $R_q$ as
-    \begin{align*}
-        \langle c, s \rangle = \sum_{i=0}^{D} c_i \cdot s^i
-    \end{align*}
-    Then to decrypt, simply set m as the inner product of c and s and take modulo t.
-    \begin{align*}
-        m = \langle c, s \rangle \bmod t
-    \end{align*}
-    m will then be the decrypted message.
+\subsubsection{Decryption}
+Note that a ciphertext is on the form $(c_0, c_1, \dots , C_{D}) \in R_q^{D+1}$.
+Define the inner product over $R_q$ as
+\begin{align*}
+    \langle c, s \rangle = \sum_{i=0}^{D} c_i \cdot s^i
+\end{align*}
+Then to decrypt, simply set m as the inner product of c and s and take modulo t.
+\begin{align*}
+    m = \langle c, s \rangle \bmod t
+\end{align*}
+m will then be the decrypted message.
 
-    \subsubsection{Eval}
-    To obtain the homomorphic abilities of the encryption scheme, Zvika Brakerski and Vinod Vaikuntanathan show
-    how to obtain homomorphic addition and multiplication of ciphertexts.
-    \\[2mm]
-    \textbf{Addition:} Assume we have 2 ciphertexts $c \in R_q^{D+1}$ and $c' \in R_q^{D+1}$, then an encryption
-    of the sum of the 2 underlying messages will be
-    \begin{align*}
-        c_{Add} = c + c' = (c_0 + c'_0, c_1 + c'_1, \dots , c_d + c'_d) && c_{Add} \in R_q^{D + 1}
-    \end{align*}
-    The decryption of $c_{Add}$ will then be the sum of the unencrypted messages from $c$ and $c'$.
-    \\[2mm]
-    \textbf{Multiplication:} Assume we have 2 ciphertexts $c \in R_q^{D+1}$ and $c' \in R_q^{D'+1}$ and let v be a symbolig value
-    then calculate the updated ciphertext
-    \\
-    $(\hat{c}_0, \hat{c}_1, \dots, \hat{c}_d+d') \in R_q^{D + D' + 1}$ by
-    \begin{align*}
-        c_{mul} = (\sum_{i=0}^D c_i \cdot v^i) \cdot
-                  (\sum_{j=0}^{D'} c'_i \cdot v^i) =
-                   \sum_{i=0}^{D+D'} \hat{c}_i \cdot v^i
-            && c_{mul} \in R_q^{D+D'+1}
-    \end{align*}
-    The output of the multiplication operation will then be $c_{mul} = (\hat{c}_0, \hat{c}_1, \dots, \hat{c}_{D+D'})$
-    
-    \subsection{Public key version}
-	To achieve a public scheme instead, we can make the following changes
-	\begin{itemize}
-		\item In the key generation we generate in addition to the secret key $sk = s \leftarrow^{\$} \chi$, we output a public key
-		        $pk = (a_0 , b_0 = a_0 \cdot s + t \cdot e_0)$, where $a_0 \leftarrow^{\$} R_q, e_0 \leftarrow^{\$}$
-        \item In the encryption algorithm, instead we use 
-        $(a_0 \cdot v + t \cdot e', b_0 \cdot v + t \cdot e'')$ where
-        $v, e' \leftarrow^{\$} \chi$ and $e'' \leftarrow^{\$} \chi '$.
-	\end{itemize}
-    where we have then obtained a public key $pk = (a_0, a_0 \cdot s + t \cdot e_0)$
-    corresponding to the secret key $sk = $.
-    
+\subsubsection{Eval}
+To obtain the homomorphic abilities of the encryption scheme, Zvika Brakerski and Vinod Vaikuntanathan show
+how to obtain homomorphic addition and multiplication of ciphertexts.
+\\[2mm]
+\textbf{Addition:} Assume we have 2 ciphertexts $c \in R_q^{D+1}$ and $c' \in R_q^{D+1}$, then an encryption
+of the sum of the 2 underlying messages will be
+\begin{align*}
+    c_{Add} = c + c' = (c_0 + c'_0, c_1 + c'_1, \dots , c_d + c'_d) &  & c_{Add} \in R_q^{D + 1}
+\end{align*}
+The decryption of $c_{Add}$ will then be the sum of the unencrypted messages from $c$ and $c'$.
+\\[2mm]
+\textbf{Multiplication:} Assume we have 2 ciphertexts $c \in R_q^{D+1}$ and $c' \in R_q^{D'+1}$ and let v be a symbolig value
+then calculate the updated ciphertext
+\\
+$(\hat{c}_0, \hat{c}_1, \dots, \hat{c}_d+d') \in R_q^{D + D' + 1}$ by
+\begin{align*}
+    c_{mul} = (\sum_{i=0}^D c_i \cdot v^i) \cdot
+    (\sum_{j=0}^{D'} c'_i \cdot v^i) =
+    \sum_{i=0}^{D+D'} \hat{c}_i \cdot v^i
+     &  & c_{mul} \in R_q^{D+D'+1}
+\end{align*}
+The output of the multiplication operation will then be $c_{mul} = (\hat{c}_0, \hat{c}_1, \dots, \hat{c}_{D+D'})$
+
+\subsection{Public key version}
+To achieve a public scheme instead, we can make the following changes
+\begin{itemize}
+    \item In the key generation we generate in addition to the secret key $sk = s \leftarrow^{\$} \chi$, we output a public key
+          $pk = (a_0 , b_0 = a_0 \cdot s + t \cdot e_0)$, where $a_0 \leftarrow^{\$} R_q, e_0 \leftarrow^{\$}$
+    \item In the encryption algorithm, instead we use
+          $(a_0 \cdot v + t \cdot e', b_0 \cdot v + t \cdot e'')$ where
+          $v, e' \leftarrow^{\$} \chi$ and $e'' \leftarrow^{\$} \chi '$.
+\end{itemize}
+where we have then obtained a public key $pk = (a_0, a_0 \cdot s + t \cdot e_0)$
+corresponding to the secret key $sk = $.
+
 \end{document}
