@@ -102,6 +102,26 @@ pub fn encrypt(params: &Parameters, m: Polynomial, pk: &PublicKey) -> Ciphertext
     encrypt_det(params, m, pk, (v, e_prime, e_prime_prime))
 }
 
+pub fn encrypt_with_rand(
+    params: &Parameters,
+    m: Polynomial,
+    pk: &PublicKey,
+) -> (Ciphertext, (Polynomial, Polynomial, Polynomial)) {
+    let v = sample_from_gaussian(params.r, params.n);
+    let e_prime = sample_from_gaussian(params.r, params.n);
+    let e_prime_prime = sample_from_gaussian(params.r_prime, params.n);
+
+    (
+        encrypt_det(
+            params,
+            m,
+            pk,
+            (v.clone(), e_prime.clone(), e_prime_prime.clone()),
+        ),
+        (v, e_prime, e_prime_prime),
+    )
+}
+
 #[derive(Debug)]
 pub enum DecryptionError {
     LInfNormTooBig(Integer),
