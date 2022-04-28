@@ -51,8 +51,11 @@ impl Polynomial {
         self.0.iter()
     }
 
-    pub fn coefficient(&self, index: usize) -> &Integer {
-        &self.0[index]
+    pub fn coefficient(&self, index: usize) -> Integer {
+        match self.0.get(index) {
+            Some(v) => v.to_owned(),
+            None => Integer::ZERO,
+        }
     }
 
     pub fn modulo(&self, modulus: &Integer) -> Polynomial {

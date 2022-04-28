@@ -1,4 +1,4 @@
-use num::{integer::sqrt, BigInt, Zero};
+use rug::{ops::Pow, Integer};
 use sha2::digest::{ExtendableOutput, Update, XofReader};
 use sha3::Shake256;
 
@@ -13,19 +13,24 @@ const SEC: usize = 40;
 const V: usize = 2 * SEC + 1;
 
 /// Make a zero-knowledge proof of plaintext knowledge
+#[allow(clippy::needless_range_loop, clippy::type_complexity)]
 pub fn make_zkpopk(
     params: &Parameters,
     x: Vec<Polynomial>,
+    r: Vec<(Polynomial, Polynomial, Polynomial)>,
     c: Vec<Ciphertext>,
     diagonal: bool,
     pk: &PublicKey,
-) -> (Vec<Vec<Polynomial>>, Vec<Vec<BigInt>>, Vec<Vec<BigInt>>) {
-    let tau: BigInt = &params.t / BigInt::from(2_i32);
-    let rho = BigInt::from(2_i32) * BigInt::from(params.r as i64) * sqrt(params.n);
+) -> (Vec<Vec<Polynomial>>, Vec<Vec<Integer>>, Vec<Vec<Integer>>) {
+    let tau = &params.t / Integer::from(2_i32);
+    let rho = Integer::from(2_i32)
+        * Integer::from(params.r as i64)
+        * Integer::sqrt(Integer::from(params.n));
     let d = params.n * 3;
 
-    let y_i_bound = BigInt::from(128_i32) * params.n * tau * BigInt::from(SEC).pow(2);
-    let s_i_bound = BigInt::from(128_i32) * d * rho * BigInt::from(SEC).pow(2);
+    let y_i_bound =
+        Integer::from(128_i32) * Integer::from(params.n) * tau * Integer::from(SEC).pow(2);
+    let s_i_bound = Integer::from(128_i32) * Integer::from(d) * rho * Integer::from(SEC).pow(2);
 
     let mut y = Vec::with_capacity(V);
     let mut s = Vec::with_capacity(V);
@@ -89,8 +94,48 @@ pub fn make_zkpopk(
         z.push(z_row);
     }
 
+    // Create R matrix
+    // This part makes me sad
+    let mut r_mat = Vec::with_capacity(SEC);
+    for (r1, r2, r3) in r.iter() {
+        let mut row = Vec::with_capacity(d);
+
+        for c in r1.coefficients() {
+            row.push(c.to_owned());
+        }
+        while row.len() < params.n {
+            row.push(Integer::ZERO)
+        }
+
+        for c in r2.coefficients() {
+            row.push(c.to_owned());
+        }
+        while row.len() < params.n * 2 {
+            row.push(Integer::ZERO)
+        }
+
+        for c in r3.coefficients() {
+            row.push(c.to_owned());
+        }
+        while row.len() < params.n * 3 {
+            row.push(Integer::ZERO)
+        }
+
+        r_mat.push(row);
+    }
+
+    // Calculate M_e * R
+    let mut m_e_mul_r = vec![vec![Integer::ZERO; d]; V];
+    for (row_index, row) in m_e_mul_r.iter_mut().enumerate() {
+        for (col_index, val) in row.iter_mut().enumerate() {
+            for i in 0..SEC {
+                *val += m_e[i][row_index] * r_mat[i][col_index].clone()
+            }
+        }
+    }
+
     // Calculate t = S + M_e * R
-    let mut t = vec![vec![BigInt::zero(); d]; V];
+    let mut t = vec![vec![Integer::ZERO; d]; V];
     for (t_row_index, t_row) in t.iter_mut().enumerate() {
         let (s_row_1, s_row_2, s_row_3) = &s[t_row_index];
         let mut s_row = s_row_1
@@ -100,10 +145,9 @@ pub fn make_zkpopk(
 
         for (t_col_index, t_val) in t_row.iter_mut().enumerate() {
             let s_val = s_row.next().unwrap().to_owned();
+            let m_e_mul_r_val = &m_e_mul_r[t_row_index][t_col_index];
 
-            let m_e_val = ???
-
-            *t_val = s_val;
+            *t_val = s_val * m_e_mul_r_val;
         }
     }
 
@@ -111,7 +155,7 @@ pub fn make_zkpopk(
 }
 
 /// Verify the validity of a zero-knowledge proof of plaintext knowledge
-pub fn verify_zkpopk(a: Vec<Vec<Polynomial>>, z: Vec<Vec<BigInt>>, t: Vec<Vec<BigInt>>) -> bool {
+pub fn verify_zkpopk(a: Vec<Vec<Polynomial>>, z: Vec<Vec<Integer>>, t: Vec<Vec<Integer>>) -> bool {
     true
 }
 
@@ -159,48 +203,54 @@ fn polynomial_to_bytes(p: &Polynomial) -> Vec<u8> {
 
 #[cfg(test)]
 mod tests {
-    use num::{bigint::RandomBits, BigInt};
     use rand::Rng;
+    use rug::{rand::RandState, Integer};
 
     use crate::{
-        encryption::{encrypt, generate_key_pair, Ciphertext, Parameters, PublicKey, SecretKey},
+        encryption::{
+            encrypt_with_rand, generate_key_pair, Ciphertext, Parameters, PublicKey, SecretKey,
+        },
         poly::Polynomial,
     };
 
     use super::{make_zkpopk, verify_zkpopk, SEC};
 
+    #[allow(clippy::type_complexity)]
     fn setup() -> (
         Parameters,
         PublicKey,
         SecretKey,
         Vec<Polynomial>,
+        Vec<(Polynomial, Polynomial, Polynomial)>,
         Vec<Ciphertext>,
     ) {
         let params = Parameters::default();
         let (pk, sk) = generate_key_pair(&params);
 
         let mut x = Vec::with_capacity(SEC);
+        let mut r = Vec::with_capacity(SEC);
         let mut c = Vec::with_capacity(SEC);
         for _ in 0..SEC {
-            let x_i = Polynomial::new(vec![random_bigint()]);
-            let c_i = encrypt(&params, x_i.clone(), &pk);
+            let x_i = Polynomial::new(vec![random_integer()]);
+            let (c_i, r_i) = encrypt_with_rand(&params, x_i.clone(), &pk);
             x.push(x_i);
+            r.push(r_i);
             c.push(c_i);
         }
 
-        (params, pk, sk, x, c)
+        (params, pk, sk, x, r, c)
     }
 
-    fn random_bigint() -> BigInt {
-        let mut rng = rand::thread_rng();
-        rng.sample(RandomBits::new(256))
+    fn random_integer() -> Integer {
+        let mut rng = RandState::new();
+        Integer::random_bits(256, &mut rng).into()
     }
 
     #[test]
     fn verify_accepts_valid_zkpopk() {
-        let (params, pk, sk, x, c) = setup();
+        let (params, pk, _sk, x, r, c) = setup();
 
-        let (a, z, t) = make_zkpopk(&params, x, c, false, &pk);
+        let (a, z, t) = make_zkpopk(&params, x, r, c, false, &pk);
 
         assert!(verify_zkpopk(a, z, t), "proof was not valid")
     }
