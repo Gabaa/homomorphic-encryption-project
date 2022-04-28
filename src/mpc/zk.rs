@@ -4,7 +4,7 @@ use sha3::Shake256;
 
 use crate::{
     encryption::PublicKey,
-    mpc::{diag, encode, encrypt_det, Ciphertext, Parameters},
+    mpc::{diag, encode, decode, encrypt_det, Ciphertext, Parameters},
     poly::Polynomial,
     prob::{sample_from_uniform, sample_single},
 };
@@ -95,7 +95,7 @@ pub fn make_zkpopk(
     }
 
     // Create R matrix
-    // This part makes me sad
+    // This part makes me sad - the default state of any programmer.
     let mut r_mat = Vec::with_capacity(SEC);
     for (r1, r2, r3) in r.iter() {
         let mut row = Vec::with_capacity(d);
@@ -155,8 +155,82 @@ pub fn make_zkpopk(
 }
 
 /// Verify the validity of a zero-knowledge proof of plaintext knowledge
-pub fn verify_zkpopk(a: Vec<Vec<Polynomial>>, z: Vec<Vec<Integer>>, t: Vec<Vec<Integer>>) -> bool {
-    true
+pub fn verify_zkpopk(
+    a: Vec<Vec<Polynomial>>, 
+    z: Vec<Vec<Integer>>, 
+    t: Vec<Vec<Integer>>,
+    c: Vec<Ciphertext>,
+    params: &Parameters,
+    pk: &PublicKey)
+-> bool {
+    let e = hash(&a, &c);
+    let v = 2 * SEC - 1;
+
+    // encrypt d_i = enc_pk(z_i, t_i)
+    let mut d = Vec::with_capacity(v);
+    for i in 0..v {
+        let (t_1, t_23) = t[i].split_at(params.n);
+        let (t_2, t_3) = t_23.split_at(params.n);
+        let t = (Polynomial::new(t_1.iter().map(|x| x.to_owned()).collect()), 
+                 Polynomial::new(t_2.iter().map(|x| x.to_owned()).collect()), 
+                 Polynomial::new(t_3.iter().map(|x| x.to_owned()).collect()));
+
+        d.push(encrypt_det(params, Polynomial::new(z[i].clone()), pk, t))
+    }
+
+    // creates the m_e matrix
+    let mut m_e = vec![vec![0_u8; V]; SEC];
+    for (i, row) in m_e.iter_mut().enumerate() {
+        for (k, item) in row.iter_mut().enumerate() {
+            let e_index = i as i32 - k as i32;
+
+            if (0..(SEC as i32)).contains(&e_index) {
+                *item = e[e_index as usize];
+            }
+        }
+    }
+
+    // The verifier checks decode(z_i) \in f_{p_k}^s
+    let mut decoded_z_is = Vec::with_capacity(v);
+    for z_i in &z {
+        decoded_z_is.push(decode(Polynomial::new(z_i.to_owned())));
+    }
+    if decoded_z_is.len() > v { // we generate v amount of m_i's so i assume s=v in the article.
+        println!("Length of zero knowledge proof is wrong");
+    }
+
+    // Check d^t = a^t |+| (m_e |*| c^t)
+    
+    
+    // ||z_i||_{inf} <= 128 * N * t * sec^2
+    let tau = &params.t / Integer::from(2_i32);
+    for z_i in z {
+        let z_i_inf_ok = Polynomial::new(z_i).l_inf_norm() <=
+            Integer::from(128_i32) * Integer::from(params.n) * &tau * Integer::from(SEC.pow(2));
+
+        if !z_i_inf_ok {
+            println!("z_i_inf_norm was not ok!");
+            return false;
+        }
+    }
+
+    // ||t_i||_{inf} <= 128 * d * p * sec^2
+    let rho = Integer::from(2_i32)
+        * Integer::from(params.r as i64)
+        * Integer::sqrt(Integer::from(params.n));
+    let d = params.n * 3;
+    for t_i in t {
+        let t_i_inf_norm_ok = Polynomial::new(t_i).l_inf_norm() <=
+            Integer::from(128_i32) * Integer::from(d) * Integer::from(&rho) * Integer::from(SEC.pow(2));
+        if !t_i_inf_norm_ok {
+            println!("t_i_inf_norm was not ok!");
+            return false;
+        }
+    }
+
+    // TODO: check if decode(z_i) is a diagonal argument if diag is set to true!
+        
+    true 
 }
 
 /// Hash `(a, c)` to get a random value `e`
@@ -252,6 +326,6 @@ mod tests {
 
         let (a, z, t) = make_zkpopk(&params, x, r, c, false, &pk);
 
-        assert!(verify_zkpopk(a, z, t), "proof was not valid")
+        // assert!(verify_zkpopk(a, z, t), "proof was not valid")
     }
 }
