@@ -1,4 +1,4 @@
-use num::{BigInt, One, Zero};
+use rug::Integer;
 
 use crate::{
     poly::Polynomial,
@@ -7,7 +7,7 @@ use crate::{
     quotient_ring::*,
 };
 
-use std::cmp;
+use std::{cmp, str::FromStr};
 
 pub type SecretKey = Polynomial;
 pub type PublicKey = (Polynomial, Polynomial);
@@ -15,7 +15,7 @@ pub type Ciphertext = Vec<Polynomial>;
 
 pub struct Parameters {
     pub quotient_ring: Rq,
-    pub t: BigInt,
+    pub t: Integer,
     pub r: f64,
     pub r_prime: f64,
     pub n: usize,
@@ -24,14 +24,14 @@ pub struct Parameters {
 impl Parameters {
     pub fn new<Int>(q: Int, r: f64, r_prime: f64, n: usize, t: Int) -> Parameters
     where
-        Int: Into<BigInt>,
+        Int: Into<Integer>,
     {
         let q = q.into();
         let t = t.into();
 
-        let mut fx_vec = vec![BigInt::zero(); n + 1];
-        fx_vec[0] = BigInt::one();
-        fx_vec[n] = BigInt::one();
+        let mut fx_vec = vec![Integer::new(); n + 1];
+        fx_vec[0] = Integer::from(1);
+        fx_vec[n] = Integer::from(1);
         let fx = Polynomial::from(fx_vec);
         let quotient_ring = Rq::new(q, fx);
 
@@ -60,9 +60,8 @@ impl Default for Parameters {
 // r_prime: 80 >= 2^(0.632 * log2(1024)) = 2^(0.632 * 10)
 #[allow(dead_code)]
 pub fn secure_params() -> Parameters {
-    // TODO: Shouldn't hardcode `q`
-    let c = "7491009436045135886698181243708504421607358929720206973094758479498049015628852031735169966277519969".parse::<BigInt>().unwrap();
-    let t2 = "127".parse::<BigInt>().unwrap();
+    let c = Integer::from_str("7491009436045135886698181243708504421607358929720206973094758479498049015628852031735169966277519969").unwrap();
+    let t2 = Integer::from_str("127").unwrap();
     Parameters::new(c, 3.2, 100.0, 7, t2)
 }
 
@@ -71,8 +70,12 @@ pub fn mpc_secure_params() -> Parameters {
     Parameters::new(80708963, 2.0, 80.0, 12900, 127)
 }
 
-pub fn encrypt_det(params: &Parameters, m: Polynomial, pk: &PublicKey, r: (Polynomial, Polynomial, Polynomial)) -> Ciphertext {
-
+pub fn encrypt_det(
+    params: &Parameters,
+    m: Polynomial,
+    pk: &PublicKey,
+    r: (Polynomial, Polynomial, Polynomial),
+) -> Ciphertext {
     let rq = &params.quotient_ring;
 
     let (a0, b0) = pk;
@@ -101,7 +104,7 @@ pub fn encrypt(params: &Parameters, m: Polynomial, pk: &PublicKey) -> Ciphertext
 
 #[derive(Debug)]
 pub enum DecryptionError {
-    LInfNormTooBig(BigInt),
+    LInfNormTooBig(Integer),
 }
 
 pub fn decrypt(
@@ -129,21 +132,10 @@ pub fn decrypt(
         msg = rq.add(&msg, &ci_mul_sk_veci);
     }
 
-    // Compute msg minus q if x > q/2
-    let msg_minus_q = Polynomial::from(
-        msg.coefficients()
-            .map(|x| {
-                if x > &(&rq.q / 2_i32) {
-                    x - &rq.q
-                } else {
-                    x.to_owned()
-                }
-            })
-            .collect::<Vec<BigInt>>(),
-    )
-    .trim_res();
+    let msg_minus_q = msg.normalized_coefficients(&rq.q);
 
-    if msg_minus_q.l_inf_norm() >= &rq.q / 2_i32 {
+    let q_half: Integer = (&rq.q / 2_i32).into();
+    if msg_minus_q.l_inf_norm() >= q_half {
         return Err(DecryptionError::LInfNormTooBig(msg_minus_q.l_inf_norm()));
     }
 
@@ -206,4 +198,13 @@ pub fn drown_noise(
     let zero = polynomial![0];
     let noisy_zero = encrypt(params_noisy, zero, &pk);
     add(params, &c, &noisy_zero)
+}
+
+pub fn encode(coef: Integer) -> Polynomial {
+    let coefficients = vec![coef];
+    Polynomial::new(coefficients)
+}
+
+pub fn decode(pol: Polynomial) -> Integer {
+    pol.coefficient(0).clone()
 }

@@ -5,13 +5,14 @@ use std::{
     slice::Iter,
 };
 
-use num::{bigint::ToBigInt, BigInt, One, Zero};
+use rug::{ops::RemRounding, Integer};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Polynomial(Vec<BigInt>);
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct Polynomial(Vec<Integer>);
 
 impl Polynomial {
-    pub fn new(coefficients: Vec<BigInt>) -> Polynomial {
+    pub fn new(coefficients: Vec<Integer>) -> Polynomial {
         Polynomial(coefficients)
     }
 
@@ -24,7 +25,7 @@ impl Polynomial {
         while let Some(true) = res
             .0
             .last()
-            .map(|x| *x == BigInt::zero() && res.degree() > 0)
+            .map(|x| *x == Integer::ZERO && res.degree() > 0)
         {
             res.0.pop();
         }
@@ -32,40 +33,56 @@ impl Polynomial {
     }
 
     pub fn shift_poly(&self, n: usize) -> Polynomial {
-        let mut vec = vec![BigInt::zero(); n];
+        let mut vec = vec![Integer::ZERO; n];
         vec.extend(self.0.clone());
         Polynomial::new(vec)
     }
 
-    pub fn l_inf_norm(&self) -> BigInt {
-        let mut norm = BigInt::zero();
+    pub fn l_inf_norm(&self) -> Integer {
+        let mut norm = Integer::ZERO;
         for i in 0..self.degree() + 1 {
-            let (_, data) = self.0[i].to_owned().into_parts();
-            let abs_value = data.to_bigint().expect("unreachable");
+            let abs_value = self.0[i].clone().abs();
             norm = cmp::max(norm, abs_value);
         }
         norm
     }
 
-    pub fn coefficients(&self) -> Iter<BigInt> {
+    pub fn coefficients(&self) -> Iter<Integer> {
         self.0.iter()
     }
 
-    pub fn coefficient(&self, index: usize) -> &BigInt {
+    pub fn coefficient(&self, index: usize) -> &Integer {
         &self.0[index]
     }
 
-    pub fn modulo(&self, modulus: &BigInt) -> Polynomial {
+    pub fn modulo(&self, modulus: &Integer) -> Polynomial {
         let mod_pol = Polynomial(
             self.coefficients()
-                .map(|x| x.modpow(&BigInt::one(), modulus))
+                .map(|x| x.rem_euc(modulus).into())
                 .collect(),
         );
         mod_pol.trim_res()
     }
+
+    /// Normalize all coefficients to be in the range [-q/2, q/2) instead of [0, q).
+    pub fn normalized_coefficients(&self, q: &Integer) -> Polynomial {
+        Polynomial(
+            self.coefficients()
+                .map(|x| {
+                    let q_half: Integer = (q / 2_i32).into();
+                    if x > &q_half {
+                        (x - q).into()
+                    } else {
+                        x.to_owned()
+                    }
+                })
+                .collect(),
+        )
+        .trim_res()
+    }
 }
 
-impl<Int: Into<BigInt> + Clone> From<Vec<Int>> for Polynomial {
+impl<Int: Into<Integer> + Clone> From<Vec<Int>> for Polynomial {
     fn from(val: Vec<Int>) -> Self {
         Polynomial(val.iter().map(|v| v.to_owned().into()).collect())
     }
@@ -75,13 +92,13 @@ impl<Int: Into<BigInt> + Clone> From<Vec<Int>> for Polynomial {
 macro_rules! polynomial {
     [ $( $x:expr ),* ] => {
         {
-            let coefficients = vec![$(num::BigInt::from($x as i32)),*];
+            let coefficients = vec![$(rug::Integer::from($x as i32)),*];
             Polynomial::new(coefficients)
         }
     };
     [ $( $x:expr ),* ; $typ:ty ] => {
         {
-            let coefficients = vec![$(num::BigInt::from($x as $typ)),*];
+            let coefficients = vec![$(rug::Integer::from($x as $typ)),*];
             Polynomial::new(coefficients)
         }
     };
@@ -92,7 +109,7 @@ impl Add for Polynomial {
 
     fn add(self, rhs: Self) -> Self::Output {
         let max = cmp::max(self.degree(), rhs.degree());
-        let mut res = vec![BigInt::zero(); max + 1];
+        let mut res = vec![Integer::ZERO; max + 1];
 
         for (i, coefficient) in self.coefficients().enumerate() {
             res[i] += coefficient;
@@ -110,7 +127,7 @@ impl Sub for Polynomial {
 
     fn sub(self, rhs: Self) -> Self::Output {
         let max = cmp::max(self.degree(), rhs.degree());
-        let mut res = vec![BigInt::zero(); max + 1];
+        let mut res = vec![Integer::ZERO; max + 1];
 
         for (i, coefficient) in self.coefficients().enumerate() {
             res[i] += coefficient;
@@ -127,7 +144,7 @@ impl Neg for Polynomial {
     type Output = Polynomial;
 
     fn neg(self) -> Self::Output {
-        let negated = Polynomial(self.coefficients().map(|x| -x).collect());
+        let negated = Polynomial(self.coefficients().map(|x| (-x).into()).collect());
         negated.trim_res()
     }
 }
@@ -136,7 +153,7 @@ impl Mul for Polynomial {
     type Output = Polynomial;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        let mut res = vec![BigInt::zero(); self.degree() + rhs.degree() + 1];
+        let mut res = vec![Integer::ZERO; self.degree() + rhs.degree() + 1];
 
         for i in 0..self.degree() + 1 {
             for j in 0..rhs.degree() + 1 {
@@ -151,7 +168,7 @@ impl Mul for Polynomial {
 
 impl<Int> Mul<Int> for Polynomial
 where
-    Int: Into<BigInt> + Clone,
+    Int: Into<Integer> + Clone,
 {
     type Output = Polynomial;
 
@@ -177,8 +194,7 @@ impl Display for Polynomial {
 
 #[cfg(test)]
 mod tests {
-
-    use num::BigInt;
+    use rug::Integer;
 
     use crate::poly::Polynomial;
 
@@ -238,7 +254,7 @@ mod tests {
     #[test]
     fn test_mod_coefficients() {
         let poly = polynomial![83, 2, 10, 7, 0, 1, 100; i32];
-        let modulus = BigInt::from(7);
+        let modulus = Integer::from(7);
         assert_eq!(poly.modulo(&modulus), polynomial![6, 2, 3, 0, 0, 1, 2]);
     }
 }

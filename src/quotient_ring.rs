@@ -1,14 +1,14 @@
-use num::{BigInt, Zero};
+use rug::Integer;
 
 use crate::{poly::Polynomial, polynomial};
 
 pub struct Rq {
-    pub q: BigInt,
+    pub q: Integer,
     pub modulo: Polynomial,
 }
 
 impl Rq {
-    pub fn new<Int: Into<BigInt>>(q: Int, modulo: Polynomial) -> Rq {
+    pub fn new<Int: Into<Integer>>(q: Int, modulo: Polynomial) -> Rq {
         Rq {
             q: q.into(),
             modulo,
@@ -23,8 +23,10 @@ impl Rq {
         let mut r = pol.clone();
 
         while r != polynomial![0; i32] && r.degree() >= self.modulo.degree() {
-            let t = r.coefficient(r.degree()) / self.modulo.coefficient(self.modulo.degree());
-            let shifted_pol = (self.modulo.clone() * t).shift_poly(r.degree() - self.modulo.degree());
+            let t: Integer =
+                (r.coefficient(r.degree()) / self.modulo.coefficient(self.modulo.degree())).into();
+            let modulo_mul_t: Polynomial = self.modulo.clone() * t;
+            let shifted_pol = modulo_mul_t.shift_poly(r.degree() - self.modulo.degree());
             r = r - shifted_pol;
         }
         // Reduce coefficients mod q
@@ -43,9 +45,9 @@ impl Rq {
 
     pub fn times<Int>(&self, pol: &Polynomial, t: &Int) -> Polynomial
     where
-        Int: Into<BigInt> + Clone,
+        Int: Into<Integer> + Clone,
     {
-        let into: BigInt = t.to_owned().into();
+        let into: Integer = t.to_owned().into();
         let res = pol.clone() * into;
         self.reduce(&res)
     }
