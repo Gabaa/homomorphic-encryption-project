@@ -42,7 +42,7 @@ To do this the players first each sample $f_i \in \mathbb{F}_{p^k}$, and then br
 Each $P_i$ then runs the ZKPoPK protocol while acting as a prover on the previously generated ciphertext $e_{f_i}$, and if any of these proofs fail, then parties abort.
 Now, each player homomorphically adds each encrypted share
 $$e_f \leftarrow e_{f_1} \boxplus ... \boxplus e_{f_n} $$
-and then homomorphically adds $e_m$ and $e_f$ to get $e_{m + f}$. The players now use $\mathcal{F}_{KeyGenDec}$ to decrypt $e_{m + f}$ so that they get $m + f$. Now $P_1$ sets $m_1 \leftarrow m + f + f_1$, while the rest of the players $P_i$ set $m_i \leftarrow - f_i$.
+and then homomorphically adds $e_m$ and $e_f$ to get $e_{m + f}$. The players now use $\mathcal{F}_{KeyGenDec}$ to decrypt $e_{m + f}$ so that they get $m + f$. Now $P_1$ sets $m_1 \leftarrow m + f - f_1$, while the rest of the players $P_i$ set $m_i \leftarrow - f_i$.
 If $enc = NewCiphertext$, then the players each compute
 $$e'_m \leftarrow Enc_{pk}(m + f) \boxminus e_{f_1} \boxminus ... \boxminus e_{f_n}$$ where default randomness is used for the encryption.
 
