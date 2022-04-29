@@ -26,82 +26,135 @@ The \lstinline{ddec} method from mod.rs is then called with \lstinline{e_m_plus_
 
 Then we set \lstinline{m_i} to be $e_{m + f} - f_i \text{ mod } t$ if the player calling the method is the player with index $0$, and $- f_i \text{ mod } t$ otherwise. If \lstinline{enc = NewCiphertext}, we now encrypt \lstinline{m_plus_f} using \lstinline{encrypt_det} where we use a triple of 1-polynomials instead of the randomness to make encryption deterministic. Now, we use \lstinline{add} from encrypt.rs to homomorphically subtract the encrypted shares $e_{f_i}$ from the encryption of \lstinline{m_plus_f} to get \lstinline{e_m_prime}. Afterwards, we return \lstinline{(Some(e_m_prime), m_i)}
 
-    If \lstinline{enc = NoNewCiphertext}, we instead just return \lstinline{(None, m_i)}.
+If \lstinline{enc = NoNewCiphertext}, we instead just return \lstinline{(None, m_i)}.
 
-    \subsubsection{p\_angle}
-    The p\_angle method takes a \lstinline{Parameters} struct \lstinline{params}, a \lstinline{BigInt} \lstinline{v_i}, a \lstinline{Ciphertext} \lstinline{e_v}, and a \lstinline{PlayerState} \lstinline{state} as input.
+\subsubsection{p\_angle}
+The p\_angle method takes a \lstinline{Parameters} struct \lstinline{params}, an \lstinline{Integer} \lstinline{v_i}, a \lstinline{Ciphertext} \lstinline{e_v}, and a \lstinline{PlayerState} \lstinline{state} as input.
 
-    The first thing done in p\_angle is to homomorphically multiply \lstinline{e_v} and \lstinline{state.e_alpha} to get \lstinline{e_v_mul_alpha}. Then, \lstinline{reshare} is called to get \lstinline{gamma_i}, which is a share of a \lstinline{BigInt}, namely the plaintext in \lstinline{e_v_mul_alpha}. Lastly, the method outputs \lstinline{(v_i, gamma_i)}, which is a share of $\langle v \rangle$.
+The first thing done in p\_angle is to homomorphically multiply \lstinline{e_v} and \lstinline{state.e_alpha} to get \lstinline{e_v_mul_alpha}. Then, \lstinline{reshare} is called to get \lstinline{gamma_i}, which is a share of an \lstinline{Integer}, namely the plaintext in \lstinline{e_v_mul_alpha}. Lastly, the method outputs \lstinline{(v_i, gamma_i)}, which is a share of $\langle v \rangle$.
 
-    As can be seen from the implementation we omit the public $\delta$ value as done in \cite{damgaard2013practical}, such that the MAC's now instead satisfy $\alpha v = \sum_i \gamma(v)_i$.
+As can be seen from the implementation we omit the public $\delta$ value as done in \cite{damgaard2013practical}, such that the MAC's now instead satisfy $\alpha v = \sum_i \gamma(v)_i$.
 
-    \subsubsection{initialize}
-    The initialize method takes a \lstinline{Parameters} struct \lstinline{params}, and a mutable \lstinline{PlayerState} \lstinline{state} as input.
+\subsubsection{initialize}
+The initialize method takes a \lstinline{Parameters} struct \lstinline{params}, and a mutable \lstinline{PlayerState} \lstinline{state} as input.
 
-    First, we sample a uniformly random \lstinline{BigInt} from $[0, t)$ using the \lstinline{sample_single} method with \lstinline{params.t} as input, and set the \lstinline{alpha_i} variable of the player state to this value. This represents the given players share of the global key. We then encrypt \lstinline{state.alpha_i} to get an encrypted share \lstinline{e_alpha_i}. Now, \lstinline{e_alpha_i} is broadcast using \lstinline{state.facilitor}, and each player then uses their facilitator to receive $e_{\alpha_i}$ from the other players. The $e_{\alpha_i}$'s are then homomorphically added to get $e_\alpha$, and the result is then assigned to the \lstinline{e_alpha} variable of \lstinline{state}. %Well ikke helt, men add_encrypted_shares, skal vi nævne det?
-    Finally, we run \lstinline{zpopk} from \lstinline{zk.rs} in a loop $sec$ times.
+First, we sample a uniformly random \lstinline{Integer} from $[0, t)$ using the \lstinline{sample_single} method with \lstinline{params.t} as input, and set the \lstinline{alpha_i} variable of the player state to this value. This represents the given players share of the global key. We then encrypt \lstinline{state.alpha_i} to get an encrypted share \lstinline{e_alpha_i}. Now, \lstinline{e_alpha_i} is broadcast using \lstinline{state.facilitor}, and each player then uses their facilitator to receive $e_{\alpha_i}$ from the other players. The $e_{\alpha_i}$'s are then homomorphically added to get $e_\alpha$, and the result is then assigned to the \lstinline{e_alpha} variable of \lstinline{state}. %Well ikke helt, men add_encrypted_shares, skal vi nævne det?
+Finally, we run \lstinline{zpopk} from \lstinline{zk.rs} in a loop $sec$ times.
 
-    Notice how we do not compute the personal keys $\beta_i$ as done in \cite{damgaard2012multiparty}. As mentioned earlier these are not needed when we use the trick described in section \ref{section: Reuse}.
-    \subsubsection{pair}
-    The pair methods takes a Parameters struct params, and a PlayerState state as input.
+Notice how we do not compute the personal keys $\beta_i$ as done in \cite{damgaard2012multiparty}. As mentioned earlier these are not needed when we use the trick described in section \ref{section: Reuse}.
+\subsubsection{pair}
+The pair methods takes a Parameters struct params, and a PlayerState state as input.
 
-    The method first samples a uniformly random \lstinline{BigInt} \lstinline{r_i} from $Z_t$. Now, \lstinline{r_i} is encrypted to get \lstinline{e_r_i}, which is the broadcast using the facilitator. All players then again use the facilitator to receive the encrypted shares from the other parties, which are then homomorphically added to compute \lstinline{e_r}. Then, we call \lstinline{zkpopk} with \lstinline{e_r_i} as input.
+The method first samples a uniformly random \lstinline{Integer} \lstinline{r_i} from $Z_t$. Now, \lstinline{r_i} is encrypted to get \lstinline{e_r_i}, which is the broadcast using the facilitator. All players then again use the facilitator to receive the encrypted shares from the other parties, which are then homomorphically added to compute \lstinline{e_r}. Then, we call \lstinline{zkpopk} with \lstinline{e_r_i} as input.
 
-    Following this we compute the given players share of $\langle r \rangle$ with a call to \lstinline{p_angle} with \lstinline{r_i} and \lstinline{e_r} as arguments, which returns \lstinline{r_angle}.
+Following this we compute the given players share of $\langle r \rangle$ with a call to \lstinline{p_angle} with \lstinline{r_i} and \lstinline{e_r} as arguments, which returns \lstinline{r_angle}.
 
-    Again, we use the trick explained in section \ref{section: Reuse}, so we don't need the values in the bracket representation, and therefore we just return \lstinline{(r_i, r_angle)}.
+Again, we use the trick explained in section \ref{section: Reuse}, so we don't need the values in the bracket representation, and therefore we just return \lstinline{(r_i, r_angle)}.
 
-    \subsubsection{triple}
-    The triple method takes a \lstinline{Parameters} struct \lstinline{params}, along with a \lstinline{PlayerState} \lstinline{state} as arguments.
+\subsubsection{triple}
+The triple method takes a \lstinline{Parameters} struct \lstinline{params}, along with a \lstinline{PlayerState} \lstinline{state} as arguments.
 
-    First, we sample \lstinline{a_i}, \lstinline{b_i} uniformly at random from $Z_t$, which are both then encrypted, and then encrypted shares are then broadcast.
+First, we sample \lstinline{a_i}, \lstinline{b_i} uniformly at random from $Z_t$, which are both then encrypted, and then encrypted shares are then broadcast.
 
-    Then, when the player receives the encrypted shares of $a$ and $b$ from the other players, then these are homomorphically added to get \lstinline{e_a} and \lstinline{e_b}.
+Then, when the player receives the encrypted shares of $a$ and $b$ from the other players, then these are homomorphically added to get \lstinline{e_a} and \lstinline{e_b}.
 
-    Following this, we generate shares \lstinline{a_angle} and \lstinline{b_angle} with calls to \lstinline{p_angle} using \lstinline{a_i}, \lstinline{e_a} and \lstinline{b_i}, \lstinline{e_b} as input respectively.
+Following this, we generate shares \lstinline{a_angle} and \lstinline{b_angle} with calls to \lstinline{p_angle} using \lstinline{a_i}, \lstinline{e_a} and \lstinline{b_i}, \lstinline{e_b} as input respectively.
 
-    Now, the player calling the method has shares of $\langle a \rangle$ and $\langle b \rangle$, and we need to compute a share of $\langle c \rangle$.
+Now, the player calling the method has shares of $\langle a \rangle$ and $\langle b \rangle$, and we need to compute a share of $\langle c \rangle$.
 
-    To do this we compute \lstinline{e_c} by homomorphically multiplying \lstinline{e_a} and \lstinline{e_b}, and then we call \lstinline{reshare} with \lstinline{e_c} and \lstinline{NewCiphertext} as input to get a new ciphertext \lstinline{e_c_prime} and \lstinline{c_i}, which is a share of c.
+To do this we compute \lstinline{e_c} by homomorphically multiplying \lstinline{e_a} and \lstinline{e_b}, and then we call \lstinline{reshare} with \lstinline{e_c} and \lstinline{NewCiphertext} as input to get a new ciphertext \lstinline{e_c_prime} and \lstinline{c_i}, which is a share of c.
 
-    This allows us to call \lstinline{p_angle} using \lstinline{c_i} and \lstinline{e_c_prime} to get \lstinline{c_angle}.
+This allows us to call \lstinline{p_angle} using \lstinline{c_i} and \lstinline{e_c_prime} to get \lstinline{c_angle}.
 
-    Finally, we return the shares \lstinline{a_angle}, \lstinline{b_angle}, and \lstinline{c_angle}.
+Finally, we return the shares \lstinline{a_angle}, \lstinline{b_angle}, and \lstinline{c_angle}.
 
-    \subsection{Online phase (prep.rs)}
-    The code related to the online phase can be found in prep.rs.
-    \subsubsection{give\_input}
+\subsection{Online phase (prep.rs)}
+The code related to the online phase can be found in prep.rs.
 
+\subsubsection{give\_input}
+This method takes a \lstinline{Parameters} struct \lstinline{params}, an \lstinline{Integer} \lstinline{x_i}, a \lstinline{(Integer, AngleShare)} pair called \lstinline{r_pair}, and a \lstinline{PlayerState} \lstinline{state}.
 
-    \subsubsection{receive\_input}
-    \subsubsection{add}
-    Add simply takes two \lstinline{AngleShare} values \lstinline{x} and \lstinline{y} as input.
+First, the method broadcasts a message \lstinline{BeginInput} to indicate that the player calling the method wants to give some input.
 
-    These are then used to compute \lstinline{(x.0 + y.0, x.1 + y.1)}, and the resulting \lstinline{AngleShare} is then returned.
-    \subsubsection{partial\_opening}
-    To partially open some value $v$ where player $i$ holds share $v_i$, each player calls \lstinline{partial_opening} with a \lstinline{Parameters} struct \lstinline{params}, a \lstinline{BigInt} \lstinline{to_share}, and a \lstinline{PlayerState}  \lstinline{state} as arguments. When partially opening we send all shares to some designated player, and in this case we simply let all players send their share to player $P_1$, who has index $0$.
+Then, the player receives all shares of $r$ from the other players using the facilitator, and opens $r$ by computing $r = r_1 + ... + r_n \mod p$.
 
-    To do this we first send the calling players share of $v$, \lstinline{to_share}, to $P_1$ using the facilitator. Player $P_1$ then computes $v = v_1 + ... + v_n \mod p$, which is subsequently broadcast to all players using the facilitator.
+The value \lstinline{eps = x_i - r} is then computed, and subsequently broadcast to all players.
 
-    Finally, the method returns the value $v$ received from $P_1$.
+The \lstinline{AngleShare} corresponding to $\langle r \rangle + \epsilon$ is then computed and returned.
+\subsubsection{receive\_input}
+The \lstinline{receive_input} method takes a \lstinline{Parameters} struct \lstinline{params}, an \lstinline{Integer} \lstinline{x_i}, a \lstinline{(Integer, AngleShare)} pair called \lstinline{r_pair}, and a \lstinline{PlayerState} \lstinline{state}.
 
-    \subsubsection{triple\_check}
-    The \lstinline{triple_check} method takes a \lstinline{Parameters} struct \lstinline{params}, two \lstinline{MulTriple} values \lstinline{abc_triple, fgh_triple}, a \lstinline{BigInt} \lstinline{t_share} and a mutable \lstinline{PlayerState} \lstinline{state} as arguments.
+The first thing that the method does is to receive a message using the facilitator, and if this is not \lstinline{BeginInput}, then we panic.
 
-    The first thing done is to use the facilitator to broadcast the players share of $t$, \lstinline{t_share}. The player then uses the facilitator to receive shares of $t$ from the other players, and then compute $t = t_1 + ... + t_n \mod p$.
+Following this we take $r_i$ from \lstinline{r_pair}, and send it to the player \lstinline{p_i}, which is the player that is providing input, and thus also the player that sent the initial \lstinline{BeginInput} message.
 
-    Now, we compute (...) and save it in variable \lstinline{rho_share}.
+Now, we receive $\epsilon$ from \lstinline{p_i}, and then use this to compute and return the \lstinline{AngleShare} corresponding to $\langle x_i \rangle = \langle r \rangle + \epsilon$ for the given player.
 
-    \subsubsection{multiply}
-    \subsubsection{maccheck}
-    \subsubsection{output}
-    The \lstinline{output} method is called by a player when that player is ready to output some value $\langle y \rangle$. The method takes a \lstinline{Parameters} struct \lstinline{params}, \lstinline{AngleShare} \lstinline{y_angle}, and a \lstinline{PlayerState} \lstinline{state} as arguments.
+\subsubsection{add}
+Add simply takes two \lstinline{AngleShare} values \lstinline{x} and \lstinline{y} as input.
 
-    To output a value we first call the \lstinline{maccheck} method on \lstinline{state.opened}, to check that the MAC values are correct for all of the values $v$ in the $\langle r \rangle$ representation that have been opened. If this returns false, then the check was unsuccessful and we \lstinline{panic} to abort the protocol.
+These are then used to compute \lstinline{(x.0 + y.0, x.1 + y.1)}, and the resulting \lstinline{AngleShare} is then returned.
+\subsubsection{partial\_opening}
+To partially open some value $v$ where player $i$ holds share $v_i$, each player calls \lstinline{partial_opening} with a \lstinline{Parameters} struct \lstinline{params}, an \lstinline{Integer} \lstinline{to_share}, and a \lstinline{PlayerState}  \lstinline{state} as arguments. When partially opening we send all shares to some designated player, and in this case we simply let all players send their share to player $P_1$, who has index $0$.
 
-    Then we broadcast \lstinline{y_angle.0}, which is the players share $y_i$ of the output value $y$. This is followed by receiving shares from all players, and then computing $y = y_1 + ... + y_n \mod p$.
+To do this we first send the calling players share of $v$, \lstinline{to_share}, to $P_1$ using the facilitator. Player $P_1$ then computes $v = v_1 + ... + v_n \mod p$, which is subsequently broadcast to all players using the facilitator.
 
-    Now, we once again call the \lstinline{maccheck} method but this time we use the \lstinline{(y, y_angle.1)} as input, which is the opened value $y$ and the players corresponding MAC value. If this returns false, then we once again \lstinline{panic} to abort the protocol.
+Finally, the method returns the value $v$ received from $P_1$.
+
+\subsubsection{triple\_check}
+The \lstinline{triple_check} method takes a \lstinline{Parameters} struct \lstinline{params}, two \lstinline{MulTriple} values \lstinline{abc_triple, fgh_triple}, an \lstinline{Integer} \lstinline{t_share} and a mutable \lstinline{PlayerState} \lstinline{state} as arguments.
+
+The first thing done is to use the facilitator to broadcast the players share of $t$, \lstinline{t_share}. The player then uses the facilitator to receive shares of $t$ from the other players, and then compute $t = t_1 + ... + t_n \mod p$.
+
+Now, we compute $t \cdot \langle a \rangle - \langle f \rangle$ and save the resulting \lstinline{AngleShare} in variable \lstinline{rho_share}. Following this we call \lstinline{partial_opening} with \lstinline{rho_share.0} as input to get $\rho$. Lastly, we push \lstinline{(rho, rho_share.1)} to \lstinline{state.opened}, to ensure that we check the MAC of $\rho$ in \lstinline{maccheck}.
+
+Now, we use the same approach as for $\rho$ to compute $\langle b \rangle - \langle g \rangle$ and store the resulting \lstinline{AngleShare} in variable \lstinline{sigma_share}. Then we call \lstinline{partial_opening} with \lstinline{sigma_share.0} as input to get $\sigma$. Then we push \lstinline{(sigma, sigma_share.1)} to \lstinline{state.opened}.
+
+We then compute $t \cdot \langle c \rangle - \langle h \rangle - \sigma \cdot \langle f \rangle - \rho \cdot \langle g \rangle - \sigma \cdot \rho$, call \lstinline{partial_opening} with the resulting \lstinline{AngleShare} as input to get the variable \lstinline{zero}.
+
+The last thing done is to check whether \lstinline{zero} is $0$. If this is the case, then we return \lstinline{Ok}, otherwise we return \lstinline{Err}.
+
+\subsubsection{multiply}
+The \lstinline{multiply} method takes a \lstinline{Parameters} struct \lstinline{params}, two \lstinline{AngleShare} values \lstinline{x} and \lstinline{y}, two \lstinline{MulTriple} values \lstinline{abc_triple} and \lstinline{fgh_triple}, an \lstinline{Integer} \lstinline{t_share}, and a \lstinline{PlayerState} \lstinline{state} as arguments.
+
+First, we call \lstinline{triple_check} with \lstinline{params}, \lstinline{abc_triple}, \lstinline{fgh_triple}, \lstinline{t_share}, and \lstinline{state} as input. If the call to \lstinline{triple_check} returns \lstinline{Err}, then we panic and abort the protocol, otherwise we proceed.
+
+Following this we compute the AngleShare corresponding to $\langle x \rangle - \langle a \rangle$, so that we get \lstinline{eps_share}. We then call \lstinline{partial_opening} with \lstinline{eps_share.0} as input to get \lstinline{eps}. Then we push \lstinline{(eps, eps_share.1)} to \lstinline{state.opened}.
+
+Now we compute the AngleShare corresponding to $\langle y \rangle - \langle b \rangle$, so we get \lstinline{delta_share}, then call \lstinline{partial_opening} with \lstinline{delta_share.0} as input to get \lstinline{delta}. And now we push \lstinline{(delta, delta_share.1)} to \lstinline{state.opened}.
+
+Finally, we compute the \lstinline{AngleShare} corresponding to $\langle z \rangle = \langle c \rangle + \epsilon \langle b \rangle \delta \langle a \rangle + \epsilon \delta$ and return it.
+\subsubsection{maccheck}
+% gen random 32 byte seed
+% gen 32 bytes of randomness for commitment
+% commit
+% receive n commitments
+% broadcast open commitment
+% receive open commitment
+% open commitment
+% xor seeds
+% sample r using final seed
+
+% compute a
+% compute gamma_i and sigma_i
+% convert sigma_i to bytes
+% generate randomness 32 bytes
+% commit to sigma_i bytes
+% receive and store commtiments
+% broadcast open commitment
+% receive open commitment
+% open commitment
+% sum sigma's
+% check if 0
+
+\subsubsection{output}
+The \lstinline{output} method is called by a player when that player is ready to output some value $\langle y \rangle$. The method takes a \lstinline{Parameters} struct \lstinline{params}, \lstinline{AngleShare} \lstinline{y_angle}, and a \lstinline{PlayerState} \lstinline{state} as arguments.
+
+To output a value we first call the \lstinline{maccheck} method on \lstinline{state.opened}, to check that the MAC values are correct for all of the values $v$ in the $\langle r \rangle$ representation that have been opened. If this returns false, then the check was unsuccessful and we \lstinline{panic} to abort the protocol.
+
+Then we broadcast \lstinline{y_angle.0}, which is the players share $y_i$ of the output value $y$. This is followed by receiving shares from all players, and then computing $y = y_1 + ... + y_n \mod p$.
+
+Now, we once again call the \lstinline{maccheck} method but this time we use the \lstinline{(y, y_angle.1)} as input, which is the opened value $y$ and the players corresponding MAC value. If this returns false, then we once again \lstinline{panic} to abort the protocol.
 
 If we did not abort at any point during the method, then we return the final result \lstinline{y}.
 
