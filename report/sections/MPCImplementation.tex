@@ -125,27 +125,27 @@ Now we compute the AngleShare corresponding to $\langle y \rangle - \langle b \r
 
 Finally, we compute the \lstinline{AngleShare} corresponding to $\langle z \rangle = \langle c \rangle + \epsilon \langle b \rangle \delta \langle a \rangle + \epsilon \delta$ and return it.
 \subsubsection{maccheck}
-% gen random 32 byte seed
-% gen 32 bytes of randomness for commitment
-% commit
-% receive n commitments
-% broadcast open commitment
-% receive open commitment
-% open commitment
-% xor seeds
-% sample r using final seed
+The \lstinline{maccheck} method takes a \lstinline{Parameters} struct \lstinline{params}, a \lstinline{Vec<(Integer, Integer)>} of $(a_j, \gamma(a_j)_i)$ pairs named \lstinline{to_check}, and a \lstinline{PlayerState} \lstinline{state} as arguments.
 
-% compute a
-% compute gamma_i and sigma_i
-% convert sigma_i to bytes
-% generate randomness 32 bytes
-% commit to sigma_i bytes
-% receive and store commtiments
-% broadcast open commitment
-% receive open commitment
-% open commitment
-% sum sigma's
-% check if 0
+First, we use the \lstinline{rand} package to sample random $32$-byte values  \lstinline{s_i} and \lstinline{r}.
+
+Then we use the \lstinline{commit} method from \lstinline{commit.rs}, to commit to \lstinline{s_i} using \lstinline{r} as randomness.
+
+Following this we use the facilitator to receive the commitments from all $n$ parties. Then once all of the commitments have been received the parties broadcast the value $o = s_i || r$, such that all parties then open the commitments that they have received and get the seed $s_i$ for all players $i$.
+
+Now, we XOR the received seeds to get $s = s_1 \oplus ... \oplus s_n$. This is followed by using the \lstinline{rand} package and the seed $s$ to sample a vector \lstinline{rng_seed} with $n$ entries and with values in the range $[0, p)$.
+
+Then the method uses the values $a_1, ..., a_t$ stored in \lstinline{state.opened} to compute $a = \sum^t_{j = 1} r_j a_j$. % Typo IN MPC SECTION
+
+After generating $a$ we use it to compute $\gamma_i = \sum^t_{j = 1} r_j \gamma(a_j)_i$ and $\sigma_i = \gamma_i - \alpha_i a$. Then we convert $\sigma_i$ to bytes and store the result in \lstinline{sigma_i_bytes}.
+
+Afterwards we need to commit to \lstinline{sigma_i_bytes}, and to do this we sample $32$ bytes of randomness \lstinline{r} as done earlier. This is followed by committing to \lstinline{sigma_i_bytes} using \lstinline{r} as randomness.
+
+Now we use the facilitator to receive commitments from all $n$ players, and once these have been received we broadcast $o = sigma\_i\_bytes || r$.
+
+Then we use the $o$ values received to open the $\sigma$ commitments received earlier, such that we get bytes corresponding to $\sigma_i$ from all players $i$. Then, we convert the bytes into values of the \lstinline{Integer} type.
+
+Finally, we add the $n$ $\sigma_i$ values received and check that indeed the sum is equal to \lstinline{Integer::ZERO}. If this is the case, then we return true, otherwise we return false.
 
 \subsubsection{output}
 The \lstinline{output} method is called by a player when that player is ready to output some value $\langle y \rangle$. The method takes a \lstinline{Parameters} struct \lstinline{params}, \lstinline{AngleShare} \lstinline{y_angle}, and a \lstinline{PlayerState} \lstinline{state} as arguments.
