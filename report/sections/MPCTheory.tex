@@ -108,7 +108,7 @@ The technique works as follows. First, when we generate the global key we now ju
 \paragraph{Protocol MACCheck}
 First each $P_i$ samples a seed $s_i$ and use $\mathcal{F}_{Commit}$ to broadcast $\tau^s_i \leftarrow Commit(s_i)$. Following this each player opens all commitments using $\mathcal{F}_{Commit}$ to get all $n$ seeds $s_j$. Now, all players set $$s \leftarrow s_1 \oplus ... \oplus s_n$$
 Players then use $s$ as seed to sample a random vector of length $t$ with entries in the interval $[0, p)$. %WAT, t eller p
-All players then first compute $$a \leftarrow \sum^t_{j = 1} r_j \cdot \gamma(a_j)_i$$ where the $a_j$'s are the opened values.
+All players then first compute $$a \leftarrow \sum^t_{j = 1} r_j \cdot a_j$$ where the $a_j$'s are the opened values.
 Now $P_i$ computes $$\gamma_i \leftarrow \sum^t_{j = 1} r_j \cdot \gamma(a_j)_i \text{  and  } \sigma_i \leftarrow \gamma_i - \alpha_i \cdot a$$
 Player $i$ then uses $\mathcal{F}_{Commit}$ to broadcast $\tau^\sigma_i \leftarrow Commit(s_i)$.
 All players invoke $\mathcal{F}_{Commit}$ to open the commitments received to get the $\sigma_j$'s.

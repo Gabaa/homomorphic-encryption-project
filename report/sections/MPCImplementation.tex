@@ -15,6 +15,8 @@ Our implementation of the commitment functionality that is used in the online ph
 
 \subsection{Preprocessing phase (prep.rs)}
 The file prep.rs contains all of the methods that are called in the preprocessing phase to generate values for the online phase.
+
+The file also contains a type definition \lstinline{AngleShare}, which for some value $\langle v \rangle$ is a pair of the form $(v_i, \gamma(v)_i)$ for some player $i$. Additionally, the file also contains a definition \lstinline{MulTriple}, which contains three \lstinline{AngleShare} values, and represent a players shares of the $\langle \cdot \rangle$ values in a multiplicative triple. %TODO: Faktisk i mod.rs åbenbart
 \subsubsection{reshare}
 Reshare takes as input a \lstinline{Parameters} struct \lstinline{params}, a Ciphertext \lstinline{e_m}, a  \lstinline{PlayerState} \lstinline{state}, and an \lstinline{Enc} enum \lstinline{enc}, which can take on values \lstinline{NewCiphertext} or \lstinline{NoNewCiphertext}.
 
@@ -66,7 +68,7 @@ To do this we compute \lstinline{e_c} by homomorphically multiplying \lstinline{
 
 This allows us to call \lstinline{p_angle} using \lstinline{c_i} and \lstinline{e_c_prime} to get \lstinline{c_angle}.
 
-Finally, we return the shares \lstinline{a_angle}, \lstinline{b_angle}, and \lstinline{c_angle}.
+Finally, we return a \lstinline{MulTriple} containing \lstinline{a_angle}, \lstinline{b_angle}, and \lstinline{c_angle}.
 
 \subsection{Online phase (prep.rs)}
 The code related to the online phase can be found in prep.rs.
