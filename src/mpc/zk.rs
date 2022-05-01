@@ -3,7 +3,7 @@ use sha2::digest::{ExtendableOutput, Update, XofReader};
 use sha3::Shake256;
 
 use crate::{
-    encryption::{PublicKey, add},
+    encryption::{PublicKey, add, mul},
     mpc::{diag, encode, decode, encrypt_det, Ciphertext, Parameters},
     poly::Polynomial,
     prob::{sample_from_uniform, sample_single},
@@ -71,8 +71,9 @@ pub fn make_zkpopk(
     }
 
     // Calculate z (such that z^T = y^T + M_e * x^T)
-    let mut z = Vec::with_capacity(params.n);
-    for i in 0..params.n {
+    let mut z = Vec::with_capacity(V);
+    println!("The lenght of the params.n value is: {:?}", params.n);
+    for i in 0..V {
         let mut z_row = Vec::with_capacity(V);
 
         for j in 0..V {
@@ -163,12 +164,13 @@ pub fn verify_zkpopk(
     params: &Parameters,
     pk: &PublicKey)
 -> bool {
+    println!("--- Start debugging!");
+    println!("The length of the z vector is: {:?}", z.len());
     let e = hash(&a, &c);
-    let v = 2 * SEC - 1;
 
     // encrypt d_i = enc_pk(z_i, t_i)
-    let mut d = Vec::with_capacity(v);
-    for i in 0..v {
+    let mut d = Vec::with_capacity(V);
+    for i in 0..V {
         let (t_1, t_23) = t[i].split_at(params.n);
         let (t_2, t_3) = t_23.split_at(params.n);
         let t = (Polynomial::new(t_1.iter().map(|x| x.to_owned()).collect()), 
@@ -191,34 +193,44 @@ pub fn verify_zkpopk(
     }
 
     // The verifier checks decode(z_i) \in f_{p_k}^s
-    let mut decoded_z_is = Vec::with_capacity(v);
+    let mut decoded_z_is = Vec::with_capacity(V);
     for z_i in &z {
         decoded_z_is.push(decode(Polynomial::new(z_i.to_owned())));
     }
-    if decoded_z_is.len() > v { // we generate v amount of m_i's so i assume s=v in the article.
+    println!("the value of v is {:?}", V);
+    if decoded_z_is.len() > V {
         println!("Length of zero knowledge proof is wrong");
     }
 
     // Check d^t = a^t |+| (m_e |*| c^t)
-    for i in 0..v {
+    for i in 0..V {
         let mut sum = Ciphertext::new();
+        println!("Value of sum is {:?}", sum);
         for j in 0..SEC {
             if m_e[j][i] == 1 {
-                sum = add(params, &sum, &c[j]);
+                sum = add(params, &sum, &c[j]); //TODO: burde det her ikke være mul?
             }
         }
+        println!("Value of sum is {:?}", sum);
 
         let test = add(params, &a[i], &sum);
+        println!("value of test: {:?}", test);
+        println!("value of d_i: {:?}", &d[i]);
         
         if test != d[i] {
-            return false;
+            println!("There was a failure in the d_i test!");
+            //return false;
         }
     }
     
     // ||z_i||_{inf} <= 128 * N * t * sec^2
     let tau = &params.t / Integer::from(2_i32);
     for z_i in z {
-        let z_i_inf_ok = Polynomial::new(z_i).l_inf_norm() <=
+        println!("l_inf_norm of z_i is {:?}", Polynomial::new(z_i.clone()).l_inf_norm());
+        println!("leq than {:?}", Integer::from(128_i32) * Integer::from(params.n) * &tau * Integer::from(SEC.pow(2)));
+
+        let z_i_inf_ok = 
+            Polynomial::new(z_i).l_inf_norm() <=
             Integer::from(128_i32) * Integer::from(params.n) * &tau * Integer::from(SEC.pow(2));
 
         if !z_i_inf_ok {
@@ -240,7 +252,6 @@ pub fn verify_zkpopk(
             return false;
         }
     }
-
     // TODO: check if decode(z_i) is a diagonal argument if diag is set to true!
         
     true 
