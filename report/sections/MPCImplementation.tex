@@ -7,9 +7,22 @@
 \begin{document}
 
 \section{MPC protocol}
+We now describe our implementation of an actively secure MPC protocol.
 
-\subsection{$\mathcal{F}_{Com}$ functionality (commit.rs)}
+\subsection{Commitments (commit.rs)}
 Our implementation of the commitment functionality that is used in the online phase can be found in commit.rs.
+
+\subsubsection{commit}
+The commit function simply takes two \lstinline{Vec<u8>} values called \lstinline{v} and \lstinline{r}, along with a \lstinline{PlayerState} \lstinline{state} as input. Then \lstinline{v} is the value that we wish to commit to, while \lstinline{r} is the randomness that we use when committing.
+
+In this method we utilize the implementation of sha256 found in the \lstinline{sha2} package to hash the concatenation of \lstinline{v} and \lstinline{r}, which yields the commitment \lstinline{c}.
+
+\lstinline{c} is then broadcast to all players using the facilitator.
+
+\subsubsection{open}
+This function takes a commitment \lstinline{c} and a value \lstinline{o} as input, and these are both \lstinline{Vec<u8>}. The \lstinline{o} value is then supposed to satisfy that $o = v || r$.
+
+When calling this function it hashes \lstinline{o} using sha256, and then checks whether \lstinline{h(o) = c}. If this is indeed the case, then we return \lstinline{Ok(o)}, and otherwise we return an error.
 
 \subsection{ZKPoPK (zk.rs)}
 
