@@ -3,7 +3,7 @@ use sha2::digest::{ExtendableOutput, Update, XofReader};
 use sha3::Shake256;
 
 use crate::{
-    encryption::PublicKey,
+    encryption::{PublicKey, add},
     mpc::{diag, encode, decode, encrypt_det, Ciphertext, Parameters},
     poly::Polynomial,
     prob::{sample_from_uniform, sample_single},
@@ -200,7 +200,20 @@ pub fn verify_zkpopk(
     }
 
     // Check d^t = a^t |+| (m_e |*| c^t)
-    
+    for i in 0..v {
+        let mut sum = Ciphertext::new();
+        for j in 0..SEC {
+            if m_e[j][i] == 1 {
+                sum = add(params, &sum, &c[j]);
+            }
+        }
+
+        let test = add(params, &a[i], &sum);
+        
+        if test != d[i] {
+            return false;
+        }
+    }
     
     // ||z_i||_{inf} <= 128 * N * t * sec^2
     let tau = &params.t / Integer::from(2_i32);
@@ -324,8 +337,8 @@ mod tests {
     fn verify_accepts_valid_zkpopk() {
         let (params, pk, _sk, x, r, c) = setup();
 
-        let (a, z, t) = make_zkpopk(&params, x, r, c, false, &pk);
+        let (a, z, t) = make_zkpopk(&params, x, r, c.clone(), false, &pk);
 
-        // assert!(verify_zkpopk(a, z, t), "proof was not valid")
+        assert!(verify_zkpopk(a, z, t, c, &params, &pk), "proof was not valid")
     }
 }
