@@ -292,7 +292,8 @@ mod tests {
 
     use crate::{
         encryption::{
-            encrypt_with_rand, generate_key_pair, Ciphertext, Parameters, PublicKey, SecretKey,
+            self, encrypt_with_rand, generate_key_pair, Ciphertext, Parameters, PublicKey,
+            SecretKey,
         },
         poly::Polynomial,
     };
@@ -300,29 +301,29 @@ mod tests {
     use super::{make_zkpopk, verify_zkpopk, SEC};
 
     #[allow(clippy::type_complexity)]
-    fn setup() -> (
-        Parameters,
+    fn setup(
+        params: &Parameters,
+    ) -> (
         PublicKey,
         SecretKey,
         Vec<Polynomial>,
         Vec<(Polynomial, Polynomial, Polynomial)>,
         Vec<Ciphertext>,
     ) {
-        let params = Parameters::default();
-        let (pk, sk) = generate_key_pair(&params);
+        let (pk, sk) = generate_key_pair(params);
 
         let mut x = Vec::with_capacity(SEC);
         let mut r = Vec::with_capacity(SEC);
         let mut c = Vec::with_capacity(SEC);
         for _ in 0..SEC {
             let x_i = Polynomial::new(vec![random_integer()]).modulo(&params.t);
-            let (c_i, r_i) = encrypt_with_rand(&params, x_i.clone(), &pk);
+            let (c_i, r_i) = encrypt_with_rand(params, x_i.clone(), &pk);
             x.push(x_i);
             r.push(r_i);
             c.push(c_i);
         }
 
-        (params, pk, sk, x, r, c)
+        (pk, sk, x, r, c)
     }
 
     fn random_integer() -> Integer {
@@ -332,9 +333,36 @@ mod tests {
 
     #[test]
     fn verify_accepts_valid_zkpopk() {
-        let (params, pk, _sk, x, r, c) = setup();
+        let params = Parameters::default();
+        let (pk, _sk, x, r, c) = setup(&params);
 
         let (a, z, t) = make_zkpopk(&params, x, r, c.clone(), false, &pk);
+
+        assert!(
+            verify_zkpopk(a, z, t, c, &params, &pk),
+            "proof was not valid"
+        )
+    }
+
+    #[test]
+    fn verify_accepts_valid_zkpopk_with_secure_params() {
+        let params = encryption::secure_params();
+        let (pk, _sk, x, r, c) = setup(&params);
+
+        let (a, z, t) = make_zkpopk(&params, x, r, c.clone(), false, &pk);
+
+        assert!(
+            verify_zkpopk(a, z, t, c, &params, &pk),
+            "proof was not valid"
+        )
+    }
+
+    #[test]
+    fn verify_accepts_valid_zkpopk_diagonal() {
+        let params = Parameters::default();
+        let (pk, _sk, x, r, c) = setup(&params);
+
+        let (a, z, t) = make_zkpopk(&params, x, r, c.clone(), true, &pk);
 
         assert!(
             verify_zkpopk(a, z, t, c, &params, &pk),
