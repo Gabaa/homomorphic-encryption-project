@@ -3,14 +3,14 @@ use sha2::digest::{ExtendableOutput, Update, XofReader};
 use sha3::Shake256;
 
 use crate::{
-    encryption::{PublicKey, add, mul},
-    mpc::{diag, encode, decode, encrypt_det, Ciphertext, Parameters},
+    encryption::{add, PublicKey},
+    mpc::{decode, diag, encode, encrypt_det, Ciphertext, Parameters},
     poly::Polynomial,
     prob::{sample_from_uniform, sample_single},
 };
 
 const SEC: usize = 8;
-const V: usize = 2 * SEC + 1;
+const V: usize = 2 * SEC - 1;
 
 /// Make a zero-knowledge proof of plaintext knowledge
 #[allow(clippy::needless_range_loop, clippy::type_complexity)]
@@ -55,52 +55,33 @@ pub fn make_zkpopk(
         a.push(encrypt_det(params, y[i].clone(), pk, s[i].clone()))
     }
 
-    println!("the value of the different y's: {:?}", y);
-
     // Create a SEC-bit bitstring (each bit represented by u8)
     let e = hash(&a, &c);
-
-    // Create M_e from e
-    let mut m_e = vec![vec![0_u8; V]; SEC];
-    for (i, row) in m_e.iter_mut().enumerate() {
-        for (k, item) in row.iter_mut().enumerate() {
-            let e_index = i as i32 - k as i32;
-
-            if (0..(SEC as i32)).contains(&e_index) {
-                *item = e[e_index as usize];
-            }
-        }
-    }
+    let m_e = create_m_e_from_e(e);
 
     // Calculate z (such that z^T = y^T + M_e * x^T)
+    // z : Z^{n x V}
+    // Note that we are creating a vector of columns, not a vector of rows.
     let mut z = Vec::with_capacity(V);
-    println!("The length of the params.n value is: {:?}", params.n);
-    for i in 0..params.n {
-        let mut z_row = Vec::with_capacity(V);
+    for i in 0..V {
+        let mut z_col = Vec::with_capacity(V);
 
-        for j in 0..V {
-            let mut val;
-
+        for j in 0..params.n {
             // Get y^T values
-            let y_col = &y[j];
-            val = y_col.coefficient(i).to_owned();
+            let y_col = &y[i];
+            let mut val = y_col.coefficient(j).to_owned();
 
             // Multiply M_e * x^T and add it
             for k in 0..SEC {
                 let x_k = &x[k];
-                val += m_e[k][j] * x_k.coefficient(i).to_owned();
+                val += m_e[k][i] * x_k.coefficient(j).to_owned();
             }
 
-            z_row.push(val);
+            z_col.push(val);
         }
 
-        z.push(z_row);
+        z.push(z_col);
     }
-    println!("..... z Matrix .....");
-    for row in &z {
-        println!("{:?}", row);
-    }
-    println!(".....");
 
     // Create R matrix
     // This part makes me sad - the default state of any programmer.
@@ -155,7 +136,7 @@ pub fn make_zkpopk(
             let s_val = s_row.next().unwrap().to_owned();
             let m_e_mul_r_val = &m_e_mul_r[t_row_index][t_col_index];
 
-            *t_val = s_val * m_e_mul_r_val;
+            *t_val = s_val + m_e_mul_r_val;
         }
     }
 
@@ -164,54 +145,36 @@ pub fn make_zkpopk(
 
 /// Verify the validity of a zero-knowledge proof of plaintext knowledge
 pub fn verify_zkpopk(
-    a: Vec<Vec<Polynomial>>, 
-    z: Vec<Vec<Integer>>, 
+    a: Vec<Vec<Polynomial>>,
+    z: Vec<Vec<Integer>>,
     t: Vec<Vec<Integer>>,
     c: Vec<Ciphertext>,
     params: &Parameters,
-    pk: &PublicKey)
--> bool {
-    println!("--- Start debugging!");
-    println!("MARCUS");
-    println!("I have received z {:?}", z);
-    println!("The length of the z vector is: {:?}", z.len());
-    let e = hash(&a, &c);
-
+    pk: &PublicKey,
+) -> bool {
     // encrypt d_i = enc_pk(z_i, t_i)
     let mut d = Vec::with_capacity(V);
     for i in 0..V {
         let (t_1, t_23) = t[i].split_at(params.n);
         let (t_2, t_3) = t_23.split_at(params.n);
-        let t = (Polynomial::new(t_1.iter().map(|x| x.to_owned()).collect()), 
-                 Polynomial::new(t_2.iter().map(|x| x.to_owned()).collect()), 
-                 Polynomial::new(t_3.iter().map(|x| x.to_owned()).collect()));
+        let t = (
+            Polynomial::new(t_1.iter().map(|x| x.to_owned()).collect()),
+            Polynomial::new(t_2.iter().map(|x| x.to_owned()).collect()),
+            Polynomial::new(t_3.iter().map(|x| x.to_owned()).collect()),
+        );
 
         d.push(encrypt_det(params, Polynomial::new(z[i].clone()), pk, t))
     }
 
     // creates the m_e matrix
-    let mut m_e = vec![vec![0_u8; V]; SEC];
-    for (i, row) in m_e.iter_mut().enumerate() {
-        for (k, item) in row.iter_mut().enumerate() {
-            let e_index = i as i32 - k as i32;
-
-            if (0..(SEC as i32)).contains(&e_index) {
-                *item = e[e_index as usize];
-            }
-        }
-    }
-    println!("..........");
-    for row in &m_e {
-        println!("{:?}", row);
-    }
-    println!("..........");
+    let e = hash(&a, &c);
+    let m_e = create_m_e_from_e(e);
 
     // The verifier checks decode(z_i) \in f_{p_k}^s
     let mut decoded_z_is = Vec::with_capacity(V);
     for z_i in &z {
         decoded_z_is.push(decode(Polynomial::new(z_i.to_owned())));
     }
-    println!("the value of v is {:?}", V);
     if decoded_z_is.len() > V {
         println!("Length of zero knowledge proof is wrong");
         return false;
@@ -220,35 +183,25 @@ pub fn verify_zkpopk(
     // Check d^t = a^t |+| (m_e |*| c^t)
     for i in 0..V {
         let mut sum = Ciphertext::new();
-        println!("Initial value of sum is {:?}", sum);
-        println!("Value of sum is {:?}", sum);
         for j in 0..SEC {
             if m_e[j][i] == 1 {
                 sum = add(params, &sum, &c[j]);
             }
         }
-        println!("Value of sum is {:?}", sum);
 
         let test = add(params, &a[i], &sum);
-        println!("value of test: {:?}", test);
-        println!("value of d_i: {:?}", &d[i]);
-        
+
         if test != d[i] {
             println!("There was a failure in the d_i test!");
             return false;
         }
     }
-    
+
     // ||z_i||_{inf} <= 128 * N * t * sec^2
     let tau = &params.t / Integer::from(2_i32);
-    println!("---- the value of z is {:?}", z); 
     for z_i in z {
-        //println!("l_inf_norm of z_i is {:?}", Polynomial::new(z_i.clone()).l_inf_norm());
-        //println!("leq than {:?}", Integer::from(128_i32) * Integer::from(params.n) * &tau * Integer::from(SEC.pow(2)));
-
-        let z_i_inf_ok = 
-            Polynomial::new(z_i).l_inf_norm() <=
-            Integer::from(128_i32) * Integer::from(params.n) * &tau * Integer::from(SEC.pow(2));
+        let z_i_inf_ok = Polynomial::new(z_i).l_inf_norm()
+            <= Integer::from(128_i32) * Integer::from(params.n) * &tau * Integer::from(SEC.pow(2));
 
         if !z_i_inf_ok {
             println!("z_i_inf_norm was not ok!");
@@ -262,16 +215,19 @@ pub fn verify_zkpopk(
         * Integer::sqrt(Integer::from(params.n));
     let d = params.n * 3;
     for t_i in t {
-        let t_i_inf_norm_ok = Polynomial::new(t_i).l_inf_norm() <=
-            Integer::from(128_i32) * Integer::from(d) * Integer::from(&rho) * Integer::from(SEC.pow(2));
+        let t_i_inf_norm_ok = Polynomial::new(t_i).l_inf_norm()
+            <= Integer::from(128_i32)
+                * Integer::from(d)
+                * Integer::from(&rho)
+                * Integer::from(SEC.pow(2));
         if !t_i_inf_norm_ok {
             println!("t_i_inf_norm was not ok!");
             return false;
         }
     }
     // TODO: check if decode(z_i) is a diagonal argument if diag is set to true!
-        
-    true 
+
+    true
 }
 
 /// Hash `(a, c)` to get a random value `e`
@@ -316,9 +272,22 @@ fn polynomial_to_bytes(p: &Polynomial) -> Vec<u8> {
     json.as_bytes().to_owned()
 }
 
+fn create_m_e_from_e(e: Vec<u8>) -> Vec<Vec<u8>> {
+    let mut m_e = vec![vec![0_u8; V]; SEC];
+    for (i, row) in m_e.iter_mut().enumerate() {
+        for (k, item) in row.iter_mut().enumerate() {
+            let e_index = i as i32 - k as i32;
+
+            if (0..(SEC as i32)).contains(&e_index) {
+                *item = e[e_index as usize];
+            }
+        }
+    }
+    m_e
+}
+
 #[cfg(test)]
 mod tests {
-    use rand::Rng;
     use rug::{rand::RandState, Integer};
 
     use crate::{
@@ -367,6 +336,9 @@ mod tests {
 
         let (a, z, t) = make_zkpopk(&params, x, r, c.clone(), false, &pk);
 
-        assert!(verify_zkpopk(a, z, t, c, &params, &pk), "proof was not valid")
+        assert!(
+            verify_zkpopk(a, z, t, c, &params, &pk),
+            "proof was not valid"
+        )
     }
 }
