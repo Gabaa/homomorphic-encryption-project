@@ -9,7 +9,7 @@ use crate::{
     prob::{sample_from_uniform, sample_single},
 };
 
-const SEC: usize = 40;
+const SEC: usize = 8;
 const V: usize = 2 * SEC + 1;
 
 /// Make a zero-knowledge proof of plaintext knowledge
@@ -55,6 +55,8 @@ pub fn make_zkpopk(
         a.push(encrypt_det(params, y[i].clone(), pk, s[i].clone()))
     }
 
+    println!("the value of the different y's: {:?}", y);
+
     // Create a SEC-bit bitstring (each bit represented by u8)
     let e = hash(&a, &c);
 
@@ -72,8 +74,8 @@ pub fn make_zkpopk(
 
     // Calculate z (such that z^T = y^T + M_e * x^T)
     let mut z = Vec::with_capacity(V);
-    println!("The lenght of the params.n value is: {:?}", params.n);
-    for i in 0..V {
+    println!("The length of the params.n value is: {:?}", params.n);
+    for i in 0..params.n {
         let mut z_row = Vec::with_capacity(V);
 
         for j in 0..V {
@@ -94,6 +96,11 @@ pub fn make_zkpopk(
 
         z.push(z_row);
     }
+    println!("..... z Matrix .....");
+    for row in &z {
+        println!("{:?}", row);
+    }
+    println!(".....");
 
     // Create R matrix
     // This part makes me sad - the default state of any programmer.
@@ -165,6 +172,8 @@ pub fn verify_zkpopk(
     pk: &PublicKey)
 -> bool {
     println!("--- Start debugging!");
+    println!("MARCUS");
+    println!("I have received z {:?}", z);
     println!("The length of the z vector is: {:?}", z.len());
     let e = hash(&a, &c);
 
@@ -191,6 +200,11 @@ pub fn verify_zkpopk(
             }
         }
     }
+    println!("..........");
+    for row in &m_e {
+        println!("{:?}", row);
+    }
+    println!("..........");
 
     // The verifier checks decode(z_i) \in f_{p_k}^s
     let mut decoded_z_is = Vec::with_capacity(V);
@@ -200,15 +214,17 @@ pub fn verify_zkpopk(
     println!("the value of v is {:?}", V);
     if decoded_z_is.len() > V {
         println!("Length of zero knowledge proof is wrong");
+        return false;
     }
 
     // Check d^t = a^t |+| (m_e |*| c^t)
     for i in 0..V {
         let mut sum = Ciphertext::new();
+        println!("Initial value of sum is {:?}", sum);
         println!("Value of sum is {:?}", sum);
         for j in 0..SEC {
             if m_e[j][i] == 1 {
-                sum = add(params, &sum, &c[j]); //TODO: burde det her ikke være mul?
+                sum = add(params, &sum, &c[j]);
             }
         }
         println!("Value of sum is {:?}", sum);
@@ -219,15 +235,16 @@ pub fn verify_zkpopk(
         
         if test != d[i] {
             println!("There was a failure in the d_i test!");
-            //return false;
+            return false;
         }
     }
     
     // ||z_i||_{inf} <= 128 * N * t * sec^2
     let tau = &params.t / Integer::from(2_i32);
+    println!("---- the value of z is {:?}", z); 
     for z_i in z {
-        println!("l_inf_norm of z_i is {:?}", Polynomial::new(z_i.clone()).l_inf_norm());
-        println!("leq than {:?}", Integer::from(128_i32) * Integer::from(params.n) * &tau * Integer::from(SEC.pow(2)));
+        //println!("l_inf_norm of z_i is {:?}", Polynomial::new(z_i.clone()).l_inf_norm());
+        //println!("leq than {:?}", Integer::from(128_i32) * Integer::from(params.n) * &tau * Integer::from(SEC.pow(2)));
 
         let z_i_inf_ok = 
             Polynomial::new(z_i).l_inf_norm() <=
@@ -329,7 +346,7 @@ mod tests {
         let mut r = Vec::with_capacity(SEC);
         let mut c = Vec::with_capacity(SEC);
         for _ in 0..SEC {
-            let x_i = Polynomial::new(vec![random_integer()]);
+            let x_i = Polynomial::new(vec![random_integer()]).modulo(&params.t);
             let (c_i, r_i) = encrypt_with_rand(&params, x_i.clone(), &pk);
             x.push(x_i);
             r.push(r_i);
