@@ -37,7 +37,7 @@ pub trait Facilicator {
     fn player_number(&self) -> usize;
     fn send(&self, player: usize, msg: &OnlineMessage);
     fn broadcast(&self, msg: &OnlineMessage);
-    fn receive(&self) -> (usize, OnlineMessage);
-    fn receive_many(&self, n: usize) -> Vec<(usize, OnlineMessage)>;
+    fn receive(&self, player: usize) -> OnlineMessage;
+    fn receive_from_all(&self) -> Vec<OnlineMessage>;
     fn stop(self);
 }

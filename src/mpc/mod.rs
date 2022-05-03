@@ -76,22 +76,14 @@ pub fn ddec<F: Facilicator>(
     let msg = OnlineMessage::SharePoly(t_i);
     state.facilitator.broadcast(&msg);
 
-    let mut t_shares = vec![polynomial![0]; state.facilitator.player_count()];
-    let messages = state
-        .facilitator
-        .receive_many(state.facilitator.player_count());
-    for (p_i, msg) in messages {
-        match msg {
-            OnlineMessage::SharePoly(t_j) => {
-                t_shares[p_i] = t_j;
-            }
+    let messages = state.facilitator.receive_from_all();
+    let t_prime = messages
+        .into_iter()
+        .map(|msg| match msg {
+            OnlineMessage::SharePoly(t_j) => t_j,
             _ => panic!("expected SharePoly message, got {:?}", msg),
-        }
-    }
-
-    let t_prime = t_shares
-        .iter()
-        .fold(polynomial![0], |acc, elem| rq.add(&acc, elem));
+        })
+        .fold(polynomial![0], |acc, elem| rq.add(&acc, &elem));
 
     let msg_minus_q = t_prime.normalized_coefficients(&rq.q);
 

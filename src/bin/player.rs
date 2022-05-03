@@ -20,7 +20,7 @@ use rug::Integer;
 struct FacilitatorImpl {
     players: Vec<SocketAddr>,
     player_number: usize,
-    rx: Receiver<(SocketAddr, OnlineMessage)>,
+    receivers: Vec<Receiver<OnlineMessage>>,
     join_handle: JoinHandle<()>,
     stop_signal: Arc<AtomicBool>,
 }
@@ -32,8 +32,16 @@ impl FacilitatorImpl {
             .position(|&addr| addr == listener.local_addr().unwrap())
             .unwrap();
 
-        let (tx, rx) = mpsc::channel();
+        let mut transmitters = Vec::new();
+        let mut receivers = Vec::new();
+        for _ in 0..players.len() {
+            let (tx, rx) = mpsc::channel();
+            transmitters.push(tx);
+            receivers.push(rx);
+        }
         let stop_signal = Arc::new(AtomicBool::new(false));
+
+        let cloned_players = players.clone();
 
         let stop_signal_clone = stop_signal.clone();
         let join_handle = thread::spawn(move || {
@@ -44,7 +52,21 @@ impl FacilitatorImpl {
                     Ok((stream, _)) => {
                         let (msg, sender): (OnlineMessage, SocketAddr) =
                             serde_json::from_reader(stream).unwrap();
-                        tx.send((sender, msg)).unwrap();
+
+                        let player_number = match cloned_players
+                            .iter()
+                            .position(|&player_addr| player_addr == sender)
+                        {
+                            Some(n) => n,
+                            None => {
+                                panic!(
+                                    "Could not find player with addr {} ({:?})",
+                                    sender, cloned_players
+                                )
+                            }
+                        };
+
+                        transmitters[player_number].send(msg).unwrap();
                     }
                     Err(e) if e.kind() == io::ErrorKind::WouldBlock => {}
                     Err(e) => panic!("{}", e),
@@ -55,7 +77,7 @@ impl FacilitatorImpl {
         Self {
             players,
             player_number,
-            rx,
+            receivers,
             join_handle,
             stop_signal,
         }
@@ -84,29 +106,18 @@ impl Facilicator for FacilitatorImpl {
         }
     }
 
-    fn receive(&self) -> (usize, OnlineMessage) {
-        let (addr, msg) = self.rx.recv().unwrap();
+    fn receive(&self, player: usize) -> OnlineMessage {
+        let msg = self.receivers[player].recv().unwrap();
 
-        let player_number = match self
-            .players
-            .iter()
-            .position(|&player_addr| player_addr == addr)
-        {
-            Some(n) => n,
-            None => panic!(
-                "Could not find player with addr {} ({:?})",
-                addr, self.players
-            ),
-        };
-
-        println!("recv from [{:02}] {:?}", player_number, msg);
-        (player_number, msg)
+        println!("recv from [{:02}] {:?}", player, msg);
+        msg
     }
 
-    fn receive_many(&self, n: usize) -> Vec<(usize, OnlineMessage)> {
+    fn receive_from_all(&self) -> Vec<OnlineMessage> {
+        let n = self.player_count();
         let mut msgs = Vec::with_capacity(n);
-        for _ in 0..n {
-            let msg = self.receive();
+        for i in 0..n {
+            let msg = self.receive(i);
             msgs.push(msg);
         }
         msgs
@@ -128,7 +139,7 @@ fn main() -> io::Result<()> {
 
     let input = sample_single(&Integer::from(50));
 
-    let protocol = Protocol::AddAll;
+    let protocol = Protocol::X1MulX2PlusX3;
     protocol.run(state, params, input)
 }
 
@@ -200,7 +211,7 @@ impl Protocol {
                         println!("My input is: {}", input);
                         online::protocol::give_input(&params, input.clone(), r_pair, &state)
                     } else {
-                        online::protocol::receive_input(r_pair, &state)
+                        online::protocol::receive_input(r_pair, i, &state)
                     };
                     input_shares.push(input_share);
                 }
@@ -253,7 +264,7 @@ impl Protocol {
                         println!("My input is: {}", input);
                         online::protocol::give_input(&params, input.clone(), r_pair, &state)
                     } else {
-                        online::protocol::receive_input(r_pair, &state)
+                        online::protocol::receive_input(r_pair, i, &state)
                     };
                     input_shares.push(input_share);
                 }
@@ -314,7 +325,7 @@ impl Protocol {
                         println!("My input is: {}", input);
                         online::protocol::give_input(&params, input.clone(), r_pair, &state)
                     } else {
-                        online::protocol::receive_input(r_pair, &state)
+                        online::protocol::receive_input(r_pair, i, &state)
                     };
                     input_shares.push(input_share);
                 }

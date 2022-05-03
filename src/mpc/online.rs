@@ -29,18 +29,14 @@ pub mod protocol {
         r_pair: (Integer, AngleShare),
         state: &PlayerState<F>,
     ) -> AngleShare {
-        let amount_of_players = state.facilitator.player_count();
         let player_number = state.facilitator.player_number();
 
         // Send intent to share x_i
         let msg = OnlineMessage::BeginInput;
         state.facilitator.broadcast(&msg);
-        match state.facilitator.receive() {
-            (p_i, OnlineMessage::BeginInput) if p_i == player_number => {}
-            (p_i, m) => panic!(
-                "expected BeginInput message from myself, received {:?} from {}",
-                m, p_i
-            ),
+        match state.facilitator.receive(player_number) {
+            OnlineMessage::BeginInput => {}
+            m => panic!("expected BeginInput message from myself, received {:?}", m),
         }
 
         // Send our share to ourselves
@@ -49,16 +45,15 @@ pub mod protocol {
         state.facilitator.send(player_number, &msg);
 
         // [[r]] is opened to P_i
-        let msgs = state.facilitator.receive_many(amount_of_players);
-        let mut r_shares = vec![Integer::ZERO; amount_of_players];
-        for (p_i, msg) in msgs {
-            match msg {
-                OnlineMessage::ShareInteger(r_share) => {
-                    r_shares[p_i] = r_share;
-                }
+        let messages = state.facilitator.receive_from_all();
+        let r_shares = messages
+            .into_iter()
+            .map(|msg| match msg {
+                OnlineMessage::ShareInteger(r_share) => r_share,
                 _ => panic!("expected ShareInteger message, got {:?}", msg),
-            }
-        }
+            })
+            .collect();
+
         let r = open_shares(params, r_shares);
 
         // P_i broadcasts this
@@ -66,7 +61,7 @@ pub mod protocol {
         let eps = x_i - r;
         let msg = OnlineMessage::ShareInteger(eps.clone());
         state.facilitator.broadcast(&msg);
-        let _ = state.facilitator.receive();
+        let _ = state.facilitator.receive(player_number);
 
         if state.facilitator.player_number() == 0 {
             return (
@@ -79,24 +74,25 @@ pub mod protocol {
 
     pub fn receive_input<F: Facilicator>(
         r_pair: (Integer, AngleShare),
+        sharing_player: usize,
         state: &PlayerState<F>,
     ) -> AngleShare {
         // Wait for sharing player to send BeginInput
-        let (p_i, msg) = state.facilitator.receive();
+        let msg = state.facilitator.receive(sharing_player);
         if !matches!(msg, OnlineMessage::BeginInput) {
-            panic!()
+            panic!("expected BeginInput, got {:?}", msg)
         }
 
         // Share r with P_i
         let (r_share, r_angle) = r_pair;
         let msg = OnlineMessage::ShareInteger(r_share);
-        state.facilitator.send(p_i, &msg);
+        state.facilitator.send(sharing_player, &msg);
 
         // Receive eps
-        let (_, msg) = state.facilitator.receive();
+        let msg = state.facilitator.receive(sharing_player);
         let eps = match msg {
             OnlineMessage::ShareInteger(eps) => eps,
-            _ => panic!(),
+            _ => panic!("expected ShareInteger, received {:?}", msg),
         };
 
         if state.facilitator.player_number() == 0 {
@@ -159,8 +155,6 @@ pub mod protocol {
         y_angle: AngleShare,
         state: &PlayerState<F>,
     ) -> Integer {
-        let amount_of_players = state.facilitator.player_count();
-
         if !maccheck(params, state.opened.clone(), state) {
             panic!("MACCheck did not succeed!")
         }
@@ -171,16 +165,14 @@ pub mod protocol {
             .broadcast(&OnlineMessage::ShareInteger(y_share));
 
         // Receive all broadcasted y shares
-        let msgs = state.facilitator.receive_many(amount_of_players);
-        let mut y_shares = vec![Integer::ZERO; amount_of_players];
-        for (p_i, msg) in msgs {
-            match msg {
-                OnlineMessage::ShareInteger(y_share) => {
-                    y_shares[p_i] = y_share;
-                }
+        let messages = state.facilitator.receive_from_all();
+        let y_shares = messages
+            .into_iter()
+            .map(|msg| match msg {
+                OnlineMessage::ShareInteger(y_share) => y_share,
                 _ => panic!("expected ShareInteger message, got {:?}", msg),
-            }
-        }
+            })
+            .collect();
 
         let y = open_shares(params, y_shares);
 
@@ -202,30 +194,25 @@ fn partial_opening<F: Facilicator>(
     to_share: Integer,
     state: &PlayerState<F>,
 ) -> Integer {
-    let amount_of_players = state.facilitator.player_count();
     let msg = OnlineMessage::ShareInteger(to_share);
     // Need to send to a designated player, here we choose player 1, which has index 0
     state.facilitator.send(0, &msg);
     if state.facilitator.player_number() == 0 {
-        let mut shares = vec![Integer::ZERO; amount_of_players];
-        let messages = state.facilitator.receive_many(amount_of_players);
-        for (p_i, received_msg) in messages {
-            match received_msg {
-                OnlineMessage::ShareInteger(received_share) => {
-                    shares[p_i] = received_share;
-                }
+        let messages = state.facilitator.receive_from_all();
+        let shares = messages
+            .into_iter()
+            .map(|msg| match msg {
+                OnlineMessage::ShareInteger(share) => share,
                 _ => panic!("expected ShareInteger message, got {:?}", msg),
-            }
-        }
+            })
+            .collect();
+
         let result = open_shares(params, shares);
         let result_msg = OnlineMessage::ShareInteger(result);
         state.facilitator.broadcast(&result_msg)
     }
 
-    let (from, msg) = state.facilitator.receive();
-    if from != 0 {
-        panic!("Supposed to receive message from player 1, but received from someone else")
-    }
+    let msg = state.facilitator.receive(0);
     match msg {
         OnlineMessage::ShareInteger(received) => received,
         _ => panic!("expected ShareInteger message, got {:?}", msg),
@@ -246,16 +233,14 @@ fn maccheck<F: Facilicator>(
     commit(s_i.clone(), r.clone(), state);
 
     // Store commitments
-    let mut commitments: Vec<Vec<u8>> = vec![vec![]; amount_of_players];
-    for _ in 0..amount_of_players {
-        let (p_i, msg) = state.facilitator.receive();
-        match msg {
-            OnlineMessage::ShareCommitment(commitment_i) => {
-                commitments[p_i] = commitment_i;
-            }
+    let messages = state.facilitator.receive_from_all();
+    let commitments: Vec<Vec<u8>> = messages
+        .into_iter()
+        .map(|msg| match msg {
+            OnlineMessage::ShareCommitment(commitment) => commitment,
             _ => panic!("expected ShareCommitment message, got {:?}", msg),
-        }
-    }
+        })
+        .collect();
 
     // This should actually have been a part of the commitment.rs module
     let mut o = vec![];
@@ -266,17 +251,18 @@ fn maccheck<F: Facilicator>(
         .broadcast(&OnlineMessage::ShareCommitOpen(o));
 
     // This should actually have been a part of the commitment.rs module
-    let mut seeds: Vec<Vec<u8>> = vec![vec![]; amount_of_players];
-    for _ in 0..amount_of_players {
-        let (p_i, msg) = state.facilitator.receive();
-        match msg {
+    let messages = state.facilitator.receive_from_all();
+    let seeds: Vec<Vec<u8>> = messages
+        .into_iter()
+        .enumerate()
+        .map(|(i, msg)| match msg {
             OnlineMessage::ShareCommitOpen(o_i) => {
-                let opened = open(commitments[p_i].clone(), o_i).unwrap();
-                seeds[p_i] = opened.iter().take(32).cloned().collect();
+                let opened = open(commitments[i].clone(), o_i).unwrap();
+                opened.iter().take(32).cloned().collect()
             }
             _ => panic!("expected ShareCommitOpen message, got {:?}", msg),
-        }
-    }
+        })
+        .collect();
 
     // XOR seeds to get s
     let mut s: Vec<u8> = seeds[0].clone();
@@ -322,16 +308,14 @@ fn maccheck<F: Facilicator>(
     commit(sigma_i_bytes.clone(), r.clone(), state);
 
     // Store commitments
-    let mut sigma_commitments: Vec<Vec<u8>> = vec![vec![]; amount_of_players];
-    for _i in 0..amount_of_players {
-        let (p_i, msg) = state.facilitator.receive();
-        match msg {
-            OnlineMessage::ShareCommitment(commitment_i) => {
-                sigma_commitments[p_i] = commitment_i;
-            }
+    let messages = state.facilitator.receive_from_all();
+    let sigma_commitments: Vec<Vec<u8>> = messages
+        .into_iter()
+        .map(|msg| match msg {
+            OnlineMessage::ShareCommitment(commitment) => commitment,
             _ => panic!("expected ShareCommitment message, got {:?}", msg),
-        }
-    }
+        })
+        .collect();
 
     // This should actually have been a part of the commitment.rs module
     let mut o = vec![];
@@ -342,18 +326,19 @@ fn maccheck<F: Facilicator>(
         .broadcast(&OnlineMessage::ShareCommitOpen(o));
 
     // This should actually have been a part of the commitment.rs module
-    let mut sigma_is = vec![Integer::ZERO; amount_of_players];
-    for _ in 0..amount_of_players {
-        let (p_i, msg) = state.facilitator.receive();
-        match msg {
+    let messages = state.facilitator.receive_from_all();
+    let sigma_is: Vec<Integer> = messages
+        .into_iter()
+        .enumerate()
+        .map(|(i, msg)| match msg {
             OnlineMessage::ShareCommitOpen(o_i) => {
-                let opened = open(sigma_commitments[p_i].clone(), o_i).unwrap();
+                let opened = open(sigma_commitments[i].clone(), o_i).unwrap();
                 let digits: Vec<u8> = opened.iter().take(opened.len() - 32).cloned().collect();
-                sigma_is[p_i] = Integer::from_digits(&digits, Order::MsfBe);
+                Integer::from_digits(&digits, Order::MsfBe)
             }
             _ => panic!("expected ShareCommitOpen message, got {:?}", msg),
-        }
-    }
+        })
+        .collect();
 
     // Sum sigma_i's and check that this equals 0
     let mut sigma_sum = Integer::ZERO;
@@ -379,22 +364,19 @@ fn triple_check<F: Facilicator>(
 ) -> Result<(), TripleCheckErr> {
     let (a_angle, b_angle, c_angle) = abc_triple;
     let (f_angle, g_angle, h_angle) = fgh_triple;
-    let amount_of_players = state.facilitator.player_count();
 
     // Open t_bracket
     let msg = OnlineMessage::ShareInteger(t_share);
     state.facilitator.broadcast(&msg);
 
-    let msgs = state.facilitator.receive_many(amount_of_players);
-    let mut t_shares = vec![Integer::ZERO; amount_of_players];
-    for msg in msgs {
-        match msg {
-            (p_i, OnlineMessage::ShareInteger(t_share)) => {
-                t_shares[p_i] = t_share;
-            }
+    let messages = state.facilitator.receive_from_all();
+    let t_shares = messages
+        .into_iter()
+        .map(|msg| match msg {
+            OnlineMessage::ShareInteger(t_share) => t_share,
             _ => panic!("expected ShareInteger message, got {:?}", msg),
-        }
-    }
+        })
+        .collect();
     let t = open_shares(params, t_shares);
 
     // Compute rho
