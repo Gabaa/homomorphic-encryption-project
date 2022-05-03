@@ -76,13 +76,16 @@ pub fn ddec<F: Facilicator>(
     let msg = OnlineMessage::SharePoly(t_i);
     state.facilitator.broadcast(&msg);
 
-    let mut t_shares = Vec::with_capacity(state.facilitator.player_count());
+    let mut t_shares = vec![polynomial![0]; state.facilitator.player_count()];
     let messages = state
         .facilitator
         .receive_many(state.facilitator.player_count());
-    for (_, msg) in messages {
-        if let OnlineMessage::SharePoly(t_j) = msg {
-            t_shares.push(t_j);
+    for (p_i, msg) in messages {
+        match msg {
+            OnlineMessage::SharePoly(t_j) => {
+                t_shares[p_i] = t_j;
+            }
+            _ => panic!("expected SharePoly message, got {:?}", msg),
         }
     }
 

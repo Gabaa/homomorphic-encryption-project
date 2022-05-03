@@ -36,13 +36,16 @@ pub mod protocol {
         let msg = OnlineMessage::ShareCiphertext(e_alpha_i.clone());
         state.facilitator.broadcast(&msg);
 
-        let mut e_alpha_is = Vec::with_capacity(state.facilitator.player_count());
+        let mut e_alpha_is = vec![vec![]; state.facilitator.player_count()];
         let messages = state
             .facilitator
             .receive_many(state.facilitator.player_count());
-        for (_, msg) in messages {
-            if let OnlineMessage::ShareCiphertext(e_i) = msg {
-                e_alpha_is.push(e_i);
+        for (p_i, msg) in messages {
+            match msg {
+                OnlineMessage::ShareCiphertext(e_i) => {
+                    e_alpha_is[p_i] = e_i;
+                }
+                _ => panic!("expected ShareCiphertext message, got {:?}", msg),
             }
         }
 
@@ -68,13 +71,16 @@ pub mod protocol {
         let msg = OnlineMessage::ShareCiphertext(e_r_i.clone());
         state.facilitator.broadcast(&msg);
 
-        let mut e_r_is = Vec::with_capacity(state.facilitator.player_count());
+        let mut e_r_is = vec![vec![]; state.facilitator.player_count()];
         let messages = state
             .facilitator
             .receive_many(state.facilitator.player_count());
-        for (_, msg) in messages {
-            if let OnlineMessage::ShareCiphertext(e_i) = msg {
-                e_r_is.push(e_i);
+        for (p_i, msg) in messages {
+            match msg {
+                OnlineMessage::ShareCiphertext(e_i) => {
+                    e_r_is[p_i] = e_i;
+                }
+                _ => panic!("expected ShareCiphertext message, got {:?}", msg),
             }
         }
 
@@ -102,26 +108,32 @@ pub mod protocol {
         let msg = OnlineMessage::ShareCiphertext(e_a_i.clone());
         state.facilitator.broadcast(&msg);
 
-        let mut e_a_is = Vec::with_capacity(state.facilitator.player_count());
+        let mut e_a_is = vec![vec![]; state.facilitator.player_count()];
         let messages = state
             .facilitator
             .receive_many(state.facilitator.player_count());
-        for (_, msg) in messages {
-            if let OnlineMessage::ShareCiphertext(e_i) = msg {
-                e_a_is.push(e_i);
+        for (p_i, msg) in messages {
+            match msg {
+                OnlineMessage::ShareCiphertext(e_i) => {
+                    e_a_is[p_i] = e_i;
+                }
+                _ => panic!("expected ShareCiphertext message, got {:?}", msg),
             }
         }
 
         let msg = OnlineMessage::ShareCiphertext(e_b_i.clone());
         state.facilitator.broadcast(&msg);
 
-        let mut e_b_is = Vec::with_capacity(state.facilitator.player_count());
+        let mut e_b_is = vec![vec![]; state.facilitator.player_count()];
         let messages = state
             .facilitator
             .receive_many(state.facilitator.player_count());
-        for (_, msg) in messages {
-            if let OnlineMessage::ShareCiphertext(e_i) = msg {
-                e_b_is.push(e_i);
+        for (p_i, msg) in messages {
+            match msg {
+                OnlineMessage::ShareCiphertext(e_i) => {
+                    e_b_is[p_i] = e_i;
+                }
+                _ => panic!("expected ShareCiphertext message, got {:?}", msg),
             }
         }
 
@@ -162,13 +174,16 @@ fn reshare<F: Facilicator>(
     let msg = OnlineMessage::ShareCiphertext(e_f_i.clone());
     state.facilitator.broadcast(&msg);
 
-    let mut e_f_is = Vec::with_capacity(state.facilitator.player_count());
+    let mut e_f_is = vec![vec![]; state.facilitator.player_count()];
     let messages = state
         .facilitator
         .receive_many(state.facilitator.player_count());
-    for (_, msg) in messages {
-        if let OnlineMessage::ShareCiphertext(e_i) = msg {
-            e_f_is.push(e_i);
+    for (p_i, msg) in messages {
+        match msg {
+            OnlineMessage::ShareCiphertext(e_i) => {
+                e_f_is[p_i] = e_i;
+            }
+            _ => panic!("expected ShareCiphertext message, got {:?}", msg),
         }
     }
 

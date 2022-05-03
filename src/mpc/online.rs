@@ -35,7 +35,13 @@ pub mod protocol {
         // Send intent to share x_i
         let msg = OnlineMessage::BeginInput;
         state.facilitator.broadcast(&msg);
-        let _ = state.facilitator.receive();
+        match state.facilitator.receive() {
+            (p_i, OnlineMessage::BeginInput) if p_i == player_number => {}
+            (p_i, m) => panic!(
+                "expected BeginInput message from myself, received {:?} from {}",
+                m, p_i
+            ),
+        }
 
         // Send our share to ourselves
         let (r_share, r_angle) = r_pair;
@@ -44,10 +50,13 @@ pub mod protocol {
 
         // [[r]] is opened to P_i
         let msgs = state.facilitator.receive_many(amount_of_players);
-        let mut r_shares = Vec::with_capacity(amount_of_players);
-        for msg in msgs {
-            if let (_, OnlineMessage::ShareInteger(r_share)) = msg {
-                r_shares.push(r_share)
+        let mut r_shares = vec![Integer::ZERO; amount_of_players];
+        for (p_i, msg) in msgs {
+            match msg {
+                OnlineMessage::ShareInteger(r_share) => {
+                    r_shares[p_i] = r_share;
+                }
+                _ => panic!("expected ShareInteger message, got {:?}", msg),
             }
         }
         let r = open_shares(params, r_shares);
@@ -156,11 +165,6 @@ pub mod protocol {
             panic!("MACCheck did not succeed!")
         }
 
-        if !maccheck(params, vec![y_angle.clone()], state) {
-            panic!("MACCheck did not succeed!")
-        }
-
-        // Broadcast my y_angle share
         let (y_share, _) = y_angle;
         state
             .facilitator
@@ -168,14 +172,24 @@ pub mod protocol {
 
         // Receive all broadcasted y shares
         let msgs = state.facilitator.receive_many(amount_of_players);
-        let mut y_shares = Vec::with_capacity(amount_of_players);
-        for msg in msgs {
-            if let (_, OnlineMessage::ShareInteger(y_share)) = msg {
-                y_shares.push(y_share);
+        let mut y_shares = vec![Integer::ZERO; amount_of_players];
+        for (p_i, msg) in msgs {
+            match msg {
+                OnlineMessage::ShareInteger(y_share) => {
+                    y_shares[p_i] = y_share;
+                }
+                _ => panic!("expected ShareInteger message, got {:?}", msg),
             }
         }
 
-        open_shares(params, y_shares)
+        let y = open_shares(params, y_shares);
+
+        if !maccheck(params, vec![(y.clone(), y_angle.1)], state) {
+            panic!("MACCheck did not succeed!")
+        }
+
+        // Broadcast my y_angle share
+        y
     }
 }
 
@@ -193,11 +207,14 @@ fn partial_opening<F: Facilicator>(
     // Need to send to a designated player, here we choose player 1, which has index 0
     state.facilitator.send(0, &msg);
     if state.facilitator.player_number() == 0 {
-        let mut shares = Vec::with_capacity(amount_of_players);
+        let mut shares = vec![Integer::ZERO; amount_of_players];
         let messages = state.facilitator.receive_many(amount_of_players);
-        for (_, received_msg) in messages {
-            if let OnlineMessage::ShareInteger(received_share) = received_msg {
-                shares.push(received_share);
+        for (p_i, received_msg) in messages {
+            match received_msg {
+                OnlineMessage::ShareInteger(received_share) => {
+                    shares[p_i] = received_share;
+                }
+                _ => panic!("expected ShareInteger message, got {:?}", msg),
             }
         }
         let result = open_shares(params, shares);
@@ -209,11 +226,10 @@ fn partial_opening<F: Facilicator>(
     if from != 0 {
         panic!("Supposed to receive message from player 1, but received from someone else")
     }
-    if let OnlineMessage::ShareInteger(received) = msg {
-        return received;
+    match msg {
+        OnlineMessage::ShareInteger(received) => received,
+        _ => panic!("expected ShareInteger message, got {:?}", msg),
     }
-
-    Integer::ZERO // TODO: Mere clean løsning
 }
 
 fn maccheck<F: Facilicator>(
@@ -233,8 +249,11 @@ fn maccheck<F: Facilicator>(
     let mut commitments: Vec<Vec<u8>> = vec![vec![]; amount_of_players];
     for _ in 0..amount_of_players {
         let (p_i, msg) = state.facilitator.receive();
-        if let OnlineMessage::ShareCommitment(commitment_i) = msg {
-            commitments[p_i] = commitment_i;
+        match msg {
+            OnlineMessage::ShareCommitment(commitment_i) => {
+                commitments[p_i] = commitment_i;
+            }
+            _ => panic!("expected ShareCommitment message, got {:?}", msg),
         }
     }
 
@@ -250,9 +269,12 @@ fn maccheck<F: Facilicator>(
     let mut seeds: Vec<Vec<u8>> = vec![vec![]; amount_of_players];
     for _ in 0..amount_of_players {
         let (p_i, msg) = state.facilitator.receive();
-        if let OnlineMessage::ShareCommitOpen(o_i) = msg {
-            let opened = open(commitments[p_i].clone(), o_i).unwrap();
-            seeds[p_i] = opened.iter().take(32).cloned().collect();
+        match msg {
+            OnlineMessage::ShareCommitOpen(o_i) => {
+                let opened = open(commitments[p_i].clone(), o_i).unwrap();
+                seeds[p_i] = opened.iter().take(32).cloned().collect();
+            }
+            _ => panic!("expected ShareCommitOpen message, got {:?}", msg),
         }
     }
 
@@ -266,7 +288,7 @@ fn maccheck<F: Facilicator>(
     let rng_seed: [u8; 32] = s
         .as_slice()
         .try_into()
-        .expect("Wrong length seed received!");
+        .unwrap_or_else(|_| panic!("Expected seed length {}, got {}!", 32, s.len()));
 
     let rng_seed = Integer::from_digits(&rng_seed, Order::MsfBe);
 
@@ -303,8 +325,11 @@ fn maccheck<F: Facilicator>(
     let mut sigma_commitments: Vec<Vec<u8>> = vec![vec![]; amount_of_players];
     for _i in 0..amount_of_players {
         let (p_i, msg) = state.facilitator.receive();
-        if let OnlineMessage::ShareCommitment(commitment_i) = msg {
-            sigma_commitments[p_i] = commitment_i;
+        match msg {
+            OnlineMessage::ShareCommitment(commitment_i) => {
+                sigma_commitments[p_i] = commitment_i;
+            }
+            _ => panic!("expected ShareCommitment message, got {:?}", msg),
         }
     }
 
@@ -320,10 +345,13 @@ fn maccheck<F: Facilicator>(
     let mut sigma_is = vec![Integer::ZERO; amount_of_players];
     for _ in 0..amount_of_players {
         let (p_i, msg) = state.facilitator.receive();
-        if let OnlineMessage::ShareCommitOpen(o_i) = msg {
-            let opened = open(sigma_commitments[p_i].clone(), o_i).unwrap();
-            let digits: Vec<u8> = opened.iter().take(opened.len() - 32).cloned().collect();
-            sigma_is[p_i] = Integer::from_digits(&digits, Order::MsfBe);
+        match msg {
+            OnlineMessage::ShareCommitOpen(o_i) => {
+                let opened = open(sigma_commitments[p_i].clone(), o_i).unwrap();
+                let digits: Vec<u8> = opened.iter().take(opened.len() - 32).cloned().collect();
+                sigma_is[p_i] = Integer::from_digits(&digits, Order::MsfBe);
+            }
+            _ => panic!("expected ShareCommitOpen message, got {:?}", msg),
         }
     }
 
@@ -358,10 +386,13 @@ fn triple_check<F: Facilicator>(
     state.facilitator.broadcast(&msg);
 
     let msgs = state.facilitator.receive_many(amount_of_players);
-    let mut t_shares = Vec::with_capacity(amount_of_players);
+    let mut t_shares = vec![Integer::ZERO; amount_of_players];
     for msg in msgs {
-        if let (_, OnlineMessage::ShareInteger(t_share)) = msg {
-            t_shares.push(t_share)
+        match msg {
+            (p_i, OnlineMessage::ShareInteger(t_share)) => {
+                t_shares[p_i] = t_share;
+            }
+            _ => panic!("expected ShareInteger message, got {:?}", msg),
         }
     }
     let t = open_shares(params, t_shares);
