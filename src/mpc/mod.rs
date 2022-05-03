@@ -13,6 +13,9 @@ pub type Angle = Vec<Integer>;
 pub type AngleShare = (Integer, Integer);
 pub type MulTriple = (AngleShare, AngleShare, AngleShare);
 
+pub const SEC: usize = 80;
+pub const V: usize = 2 * SEC - 1;
+
 #[derive(Clone, Debug)]
 pub struct PlayerState<F: Facilitator> {
     sk_i1: Polynomial, // Additive shares of sk

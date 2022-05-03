@@ -30,6 +30,12 @@ pub enum OnlineMessage {
     ShareCommitment(Vec<u8>),
     ShareCommitOpen(Vec<u8>),
     BeginInput,
+    ShareZKPoPK {
+        a: Vec<Vec<Polynomial>>,
+        z: Vec<Vec<Integer>>,
+        t: Vec<Vec<Integer>>,
+        c: Vec<Vec<Polynomial>>,
+    },
 }
 
 pub trait Facilitator {

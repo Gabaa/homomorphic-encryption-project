@@ -9,8 +9,7 @@ use crate::{
     prob::{sample_from_uniform, sample_single},
 };
 
-const SEC: usize = 8;
-const V: usize = 2 * SEC - 1;
+use super::{SEC, V};
 
 /// Make a zero-knowledge proof of plaintext knowledge
 #[allow(clippy::needless_range_loop, clippy::type_complexity)]

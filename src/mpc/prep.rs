@@ -1,17 +1,15 @@
 //! Preprocessing phase (Multiparty Computation from Somewhat Homomorphic Encryption, sec. 5)
 
-use crate::mpc::zk::make_zkpopk;
-use crate::mpc::AngleShare;
-use crate::mpc::PlayerState;
-use crate::protocol::OnlineMessage;
+use super::{add_encrypted_shares, zk::make_zkpopk, AngleShare, PlayerState, SEC};
+
 use crate::{
     encryption::*,
     mpc::{ddec, diag},
     poly::Polynomial,
     polynomial,
     prob::*,
+    protocol::{Facilitator, OnlineMessage},
 };
-use crate::{mpc::add_encrypted_shares, protocol::Facilitator};
 
 use rug::{ops::RemRounding, Integer};
 
@@ -22,16 +20,15 @@ pub enum Enc {
 
 /// Represents the preprocessing protocol (fig. 7)
 pub mod protocol {
+    use crate::mpc::zk::verify_zkpopk;
+
     use super::*;
 
     /// Implements the Initialize step
     pub fn initialize<F: Facilitator>(params: &Parameters, state: &mut PlayerState<F>) {
         state.alpha_i = sample_single(&params.t);
-        let e_alpha_i = encrypt(
-            params,
-            encode(diag(params, state.alpha_i.clone())),
-            &state.pk,
-        );
+        let alpha_i_polynomial = encode(diag(params, state.alpha_i.clone()));
+        let (e_alpha_i, r_i) = encrypt_with_rand(params, alpha_i_polynomial.clone(), &state.pk);
 
         let msg = OnlineMessage::ShareCiphertext(e_alpha_i.clone());
         state.facilitator.broadcast(&msg);
@@ -47,13 +44,32 @@ pub mod protocol {
 
         state.e_alpha = add_encrypted_shares(params, e_alpha_is);
 
-        // TODO: ZK proof faked for now
-        let sec = 40; //sec hardcoded for now common values are 40, 80
-                      /* for _ in 0..sec {
-                          if !zkpopk(e_alpha_i.clone()) {
-                              panic!("ZK proof failed!")
-                          }
-                      } */
+        // Create own ZKPoPK
+        // We are running the protocol on (e_alpha_i, ..., e_alpha_i) (sec times)
+        let x = vec![alpha_i_polynomial; SEC];
+        let r = vec![r_i; SEC];
+        let c = vec![e_alpha_i; SEC];
+
+        let (a, z, t) = make_zkpopk(params, x, r, c.clone(), true, &state.pk);
+
+        // Broadcast ZKPoPK to all players
+        let message = OnlineMessage::ShareZKPoPK { a, z, t, c };
+        state.facilitator.broadcast(&message);
+
+        // Verify all received ZKPoPK
+        for (p_i, msg) in state
+            .facilitator
+            .receive_many(state.facilitator.player_count())
+        {
+            match msg {
+                OnlineMessage::ShareZKPoPK { a, z, t, c } => {
+                    if !verify_zkpopk(a, z, t, c, params, &state.pk) {
+                        panic!("ZKPoPK for player {} failed", p_i)
+                    }
+                }
+                _ => panic!("expected ShareZKPoPK, got {:?}", msg),
+            }
+        }
     }
 
     /// Implements the Pair step
