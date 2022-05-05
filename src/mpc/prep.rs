@@ -36,15 +36,14 @@ pub mod protocol {
         let msg = OnlineMessage::ShareCiphertext(e_alpha_i.clone());
         state.facilitator.broadcast(&msg);
 
-        let mut e_alpha_is = Vec::with_capacity(state.facilitator.player_count());
-        let messages = state
-            .facilitator
-            .receive_many(state.facilitator.player_count());
-        for (_, msg) in messages {
-            if let OnlineMessage::ShareCiphertext(e_i) = msg {
-                e_alpha_is.push(e_i);
-            }
-        }
+        let messages = state.facilitator.receive_from_all();
+        let e_alpha_is = messages
+            .into_iter()
+            .map(|msg| match msg {
+                OnlineMessage::ShareCiphertext(e_i) => e_i,
+                _ => panic!("expected ShareCiphertext message, got {:?}", msg),
+            })
+            .collect();
 
         state.e_alpha = add_encrypted_shares(params, e_alpha_is);
 
@@ -68,17 +67,16 @@ pub mod protocol {
         let msg = OnlineMessage::ShareCiphertext(e_r_i.clone());
         state.facilitator.broadcast(&msg);
 
-        let mut e_r_is = Vec::with_capacity(state.facilitator.player_count());
-        let messages = state
-            .facilitator
-            .receive_many(state.facilitator.player_count());
-        for (_, msg) in messages {
-            if let OnlineMessage::ShareCiphertext(e_i) = msg {
-                e_r_is.push(e_i);
-            }
-        }
+        let messages = state.facilitator.receive_from_all();
+        let e_r_is: Vec<Vec<Polynomial>> = messages
+            .into_iter()
+            .map(|msg| match msg {
+                OnlineMessage::ShareCiphertext(e_i) => e_i,
+                _ => panic!("expected ShareCiphertext message, got {:?}", msg),
+            })
+            .collect();
 
-        let e_r = add_encrypted_shares(params, e_r_is.clone());
+        let e_r = add_encrypted_shares(params, e_r_is);
 
         // TODO: ZK proof faked for now
         if !zkpopk(e_r_i) {
@@ -102,28 +100,26 @@ pub mod protocol {
         let msg = OnlineMessage::ShareCiphertext(e_a_i.clone());
         state.facilitator.broadcast(&msg);
 
-        let mut e_a_is = Vec::with_capacity(state.facilitator.player_count());
-        let messages = state
-            .facilitator
-            .receive_many(state.facilitator.player_count());
-        for (_, msg) in messages {
-            if let OnlineMessage::ShareCiphertext(e_i) = msg {
-                e_a_is.push(e_i);
-            }
-        }
+        let messages = state.facilitator.receive_from_all();
+        let e_a_is = messages
+            .into_iter()
+            .map(|msg| match msg {
+                OnlineMessage::ShareCiphertext(e_i) => e_i,
+                _ => panic!("expected ShareCiphertext message, got {:?}", msg),
+            })
+            .collect();
 
         let msg = OnlineMessage::ShareCiphertext(e_b_i.clone());
         state.facilitator.broadcast(&msg);
 
-        let mut e_b_is = Vec::with_capacity(state.facilitator.player_count());
-        let messages = state
-            .facilitator
-            .receive_many(state.facilitator.player_count());
-        for (_, msg) in messages {
-            if let OnlineMessage::ShareCiphertext(e_i) = msg {
-                e_b_is.push(e_i);
-            }
-        }
+        let messages = state.facilitator.receive_from_all();
+        let e_b_is = messages
+            .into_iter()
+            .map(|msg| match msg {
+                OnlineMessage::ShareCiphertext(e_i) => e_i,
+                _ => panic!("expected ShareCiphertext message, got {:?}", msg),
+            })
+            .collect();
 
         let e_a = add_encrypted_shares(params, e_a_is);
         let e_b = add_encrypted_shares(params, e_b_is);
@@ -162,15 +158,14 @@ fn reshare<F: Facilicator>(
     let msg = OnlineMessage::ShareCiphertext(e_f_i.clone());
     state.facilitator.broadcast(&msg);
 
-    let mut e_f_is = Vec::with_capacity(state.facilitator.player_count());
-    let messages = state
-        .facilitator
-        .receive_many(state.facilitator.player_count());
-    for (_, msg) in messages {
-        if let OnlineMessage::ShareCiphertext(e_i) = msg {
-            e_f_is.push(e_i);
-        }
-    }
+    let messages = state.facilitator.receive_from_all();
+    let e_f_is: Vec<Vec<Polynomial>> = messages
+        .into_iter()
+        .map(|msg| match msg {
+            OnlineMessage::ShareCiphertext(e_i) => e_i,
+            _ => panic!("expected ShareCiphertext message, got {:?}", msg),
+        })
+        .collect();
 
     // ZK proof faked for now
     if !zkpopk(e_f_i) {

@@ -10,7 +10,7 @@ use homomorphic_encryption_project::{
     protocol::{KeyMaterial, PrepMessage},
 };
 
-const NUM_PLAYERS: usize = 2;
+const NUM_PLAYERS: usize = 3;
 
 /// A black box that facilitates the communication for the Dealer.
 trait DealerFacilitator {

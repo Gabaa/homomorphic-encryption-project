@@ -58,7 +58,6 @@ impl Default for Parameters {
 // t: 2
 // r: 2 = w * sqrt(log2(1024)) = 0.632 * 3.162
 // r_prime: 80 >= 2^(0.632 * log2(1024)) = 2^(0.632 * 10)
-#[allow(dead_code)]
 pub fn secure_params() -> Parameters {
     let c = Integer::from_str("7491009436045135886698181243708504421607358929720206973094758479498049015628852031735169966277519969").unwrap();
     let t2 = Integer::from_str("127").unwrap();

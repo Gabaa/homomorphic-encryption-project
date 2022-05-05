@@ -1,0 +1,8 @@
+    Finished release [optimized] target(s) in 0.02s
+     Running `target/release/dealer`
+Generating and distributing key material...
+Ready to receive connections...
+127.0.0.1:42035 is ready to start.
+127.0.0.1:38113 is ready to start.
+127.0.0.1:33423 is ready to start.
+3 players have connected.
