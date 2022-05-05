@@ -115,20 +115,20 @@ mod tests {
         assert_eq!(c, ab);
     }
 
-    /* #[test]
+    #[test]
     fn bench_single_mpc_enc() {
         let params = mpc_secure_params();
 
         let (pk, _) = encryption::generate_key_pair(&params);
         encryption::encrypt(&params, polynomial![2], &pk);
-    } */
+    }
 
-    /* #[test]
+    #[test]
     fn bench_single_rqmul() {
         let params = mpc_secure_params();
         let rq = &params.quotient_ring;
         let op1 = prob::sample_from_uniform(&rq.q, params.n);
         let op2 = prob::sample_from_uniform(&rq.q, params.n);
         let test = rq.mul(&op1, &op2);
-    } */
+    }
 }
