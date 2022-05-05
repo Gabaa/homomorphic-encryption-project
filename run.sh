@@ -1,6 +1,8 @@
 #!/bin/bash
 
-mkdir logs
+if [[ ! -d "logs" ]]; then
+    mkdir "logs"
+fi
 
 cargo build --release
 cargo run --bin dealer --release > logs/dealer.log 2>&1 &
