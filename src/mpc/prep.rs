@@ -57,14 +57,12 @@ pub mod protocol {
         state.facilitator.broadcast(&message);
 
         // Verify all received ZKPoPK
-        for (p_i, msg) in state
-            .facilitator
-            .receive_many(state.facilitator.player_count())
-        {
+        let messages = state.facilitator.receive_from_all();
+        for (i, msg) in messages.into_iter().enumerate() {
             match msg {
                 OnlineMessage::ShareZKPoPK { a, z, t, c } => {
                     if !verify_zkpopk(a, z, t, c, params, &state.pk) {
-                        panic!("ZKPoPK for player {} failed", p_i)
+                        panic!("ZKPoPK for player {} failed", i)
                     }
                 }
                 _ => panic!("expected ShareZKPoPK, got {:?}", msg),
