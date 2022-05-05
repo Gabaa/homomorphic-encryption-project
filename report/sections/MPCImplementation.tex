@@ -118,9 +118,9 @@ When calling this function it hashes \lstinline{o} using sha256, and then checks
 \subsection{Online phase (prep.rs)}
 The code related to the online phase can be found in prep.rs. The implementation of this phase is based on the online protocol in \cite{damgaard2013practical}, but in that protocol the triple check is done in preprocessing, while we do it in the online phase as in \cite{damgaard2012multiparty}.
 
-The two functions \lstinline{give_input} and \lstinline{receive_input} corresponds to th...
-The \lstinline{add} function corresponds to the add step of the protocol.
-The \lstinline{multiply} function
+The two functions \lstinline{give_input} and \lstinline{receive_input} together correspond to the Input step of the protocol.
+The \lstinline{add}, \lstinline{multiply}, and \lstinline{output} functions correspond to the steps of the same names.
+The function \lstinline{maccheck} corresponds to the MACCheck protocol, and \lstinline{triple_check} is used as a subroutine in \lstinline{multiply} to check for validity of a multiplicative triple.
 
 \subsubsection{give\_input}
 This function takes a \lstinline{Parameters} struct \lstinline{params}, an \lstinline{Integer} \lstinline{x_i}, a \lstinline{(Integer, AngleShare)} pair called \lstinline{r_pair}, and a \lstinline{PlayerState} \lstinline{state}.
