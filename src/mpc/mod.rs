@@ -1,4 +1,5 @@
 use rug::{ops::RemRounding, Integer};
+use std::num::sqrt;
 
 use crate::{encryption::*, polynomial, protocol::KeyMaterial};
 use crate::{poly::*, protocol::Facilicator};
@@ -65,8 +66,15 @@ pub fn ddec<F: Facilicator>(
         sum
     };
 
-    //Random element does not currently have a bounded l_inf norm
-    let norm_bound = Integer::from(2) ^ Integer::from(32);
+    let bound_C_m = 8.6;
+    let r_squared = params.r * params.r;
+    let n_squared = params.n * params.n;
+    let bound_B = params.t/Integer::from(2) +
+        params.t * Integer::from(4 * bound_C_m * r_squared * n_squared + 2 * sqrt(params.n) * params.r +
+        4 * bound_C_m * r_squared * n_squared);
+    let two_exp_sec = Integer::from(2) ^ Integer::from(SEC)
+
+    let norm_bound = two_exp_sec * bound_B/(Integer::from(state.facilitator.player_count()) * params.t);
     let t_i = rq.add(
         &v_i,
         &rq.times(&sample_from_uniform(&norm_bound, params.n), &params.t), // norm_bound is placeholder, since q needs to be a lot higher for this to work properly
