@@ -144,11 +144,11 @@ pub fn make_zkpopk(
 
 /// Verify the validity of a zero-knowledge proof of plaintext knowledge
 pub fn verify_zkpopk(
+    params: &Parameters,
     a: Vec<Vec<Polynomial>>,
     z: Vec<Vec<Integer>>,
     t: Vec<Vec<Integer>>,
     c: Vec<Ciphertext>,
-    params: &Parameters,
     pk: &PublicKey,
 ) -> bool {
     // encrypt d_i = enc_pk(z_i, t_i)
@@ -338,7 +338,7 @@ mod tests {
         let (a, z, t) = make_zkpopk(&params, x, r, c.clone(), false, &pk);
 
         assert!(
-            verify_zkpopk(a, z, t, c, &params, &pk),
+            verify_zkpopk(&params, a, z, t, c, &pk),
             "proof was not valid"
         )
     }
@@ -351,7 +351,7 @@ mod tests {
         let (a, z, t) = make_zkpopk(&params, x, r, c.clone(), false, &pk);
 
         assert!(
-            verify_zkpopk(a, z, t, c, &params, &pk),
+            verify_zkpopk(&params, a, z, t, c, &pk),
             "proof was not valid"
         )
     }
@@ -364,7 +364,7 @@ mod tests {
         let (a, z, t) = make_zkpopk(&params, x, r, c.clone(), true, &pk);
 
         assert!(
-            verify_zkpopk(a, z, t, c, &params, &pk),
+            verify_zkpopk(&params, a, z, t, c, &pk),
             "proof was not valid"
         )
     }

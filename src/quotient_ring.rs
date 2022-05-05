@@ -23,8 +23,7 @@ impl Rq {
         let mut r = pol.clone();
 
         while r != polynomial![0; i32] && r.degree() >= self.modulo.degree() {
-            let t: Integer =
-                (r.coefficient(r.degree()) / self.modulo.coefficient(self.modulo.degree())).into();
+            let t = r.coefficient(r.degree()) / self.modulo.coefficient(self.modulo.degree());
             let modulo_mul_t: Polynomial = self.modulo.clone() * t;
             let shifted_pol = modulo_mul_t.shift_poly(r.degree() - self.modulo.degree());
             r = r - shifted_pol;

@@ -225,5 +225,5 @@ pub fn encode(coef: Integer) -> Polynomial {
 }
 
 pub fn decode(pol: Polynomial) -> Integer {
-    pol.coefficient(0).clone()
+    pol.coefficient(0)
 }
