@@ -13,7 +13,39 @@ For this protocol we did not implement the cyclotomic polynomial optimisation de
 This also means that we cannot do entry-wise multiplications like done in \cite{damgaard2012multiparty}.
 Therefore, to encode an element $a \in \mathbb{F}_{p^k}$ to an element in $R_q$, we simply return \lstinline{Polynomial::new(vec![a])}, which is the \lstinline{Polynomial} corresponding to $f(x) = a$. To decode a polynomial $f(x) = a \in R_q$, we simply return the \lstinline{Integer} $a$.
 
-\subsection{ZKPoPK (zk.rs)}
+\subsection{Dealer and Player}
+
+There are two types of actors in this system, the \textit{dealer} and the \textit{player}.
+
+The \textit{dealer} acts as a trusted party for establishing connections between all parties and, once all parties have connected, provides the parties with key material (i.e. a public key and shares to the corresponding secret key), enabling distributed decryption.
+For practical purposes, all players only need to know the address of the dealer, who will then forward the receiving addresses of all players to each other, enabling point-to-point communication.
+
+All other parties in the protocol are \textit{players}.
+A player contributes some private input to the function being computed, in the end receiving only the result and no other information.
+
+To prepare for computing the agreed function, all players connect to the dealer, sending a "Start" message with their address for receiving TCP connections, and getting back a list of players who have already connected to the dealer (along with themselves).
+Each player's position in this list indicates their "player number", which is relevant for some parts of the protocol.
+When all players have connected, and all of the key material has been distributed, the dealer shuts down, as it is no longer needed.
+
+\subsubsection{Facilitator}
+
+The \lstinline{Facilitator} is a small, but central component that enables communication between the parties while running the protocol.
+While it is not a theoretically important part of the system, it ended up being used in almost all other components, and will therefore be summarized here.
+
+After the dealer has shut down, each player uses a \lstinline{Facilitator} to communicate with the other players, providing functions for broadcasting or sending point-to-point messages (\lstinline{broadcast} and \lstinline{send}), as well as for receiving messages from a designated player or from all players at once (\lstinline{receive} and \lstinline{receive_from_all}).
+
+To ensure that all messages are received in the desired order, sending a message is handled entirely synchronously for the player (i.e. the \lstinline{send} function is handled in the main thread, and therefore will not return until the message has been accepted by the other party).
+
+Oppositely, receiving messages is handled by a dedicated thread that holds a \lstinline{TCPListener} (the one for which the address was published).
+Once a messages is received, it is added to a channel corresponding to the player that sent the message, ready to be read whenever the receiving player is ready.
+If no message is ready, the \lstinline{receive} function blocks until a message is received.
+
+The system currently does not have any mechanism for verifying the origin of messages, as a new connection is opened on a new port each time a player wants to send a message to another player.
+Therefore, each player sends along their own identity when sending a message, which would obviously be insecure in a production-ready system.
+This issue could be resolved in many ways, for example using public-key cryptography and authenticated channels.
+
+\subsection{ZKPoPK (mpc/zk.rs)}
+
 In zk.rs the zero knowledge proof of plaintext is implemented for each party to run.
 The zero-knowledge proof has been implemented as in figure 10 of ``multiparty computation from somewhat homomorphic encryption''~\cite{damgaard2012multiparty}.
 The file is divided into 2 different functions.
@@ -39,8 +71,8 @@ To verify the proof we call the function verify\_zkopk, which takes as input 6 a
 verify\_zkopk will return a boolean indicating whether or not the proof was valid.
 % TODO: vores matrix beregninger har dimensioner omvendt, men det er fikset ved at gå anderledes igennem matrixen.
 
-\subsection{Preprocessing phase (prep.rs)}
-The file prep.rs contains all of the functions that are called in the preprocessing phase to generate values for the online phase.
+\subsection{Preprocessing phase (mpc/prep.rs)}
+The file \lstinline{prep.rs} contains all of the functions that are called in the preprocessing phase to generate values for the online phase.
 
 The functions \lstinline{reshare} and \lstinline{p_angle} correspond to the Reshare and PAngle protocols explained previously, while \lstinline{initialize}, \lstinline{pair}, and \lstinline{triple} correspond to three steps of the Prep protocol.
 
@@ -99,7 +131,7 @@ This allows us to call \lstinline{p_angle} using \lstinline{c_i} and \lstinline{
 
 Finally, we return a \lstinline{MulTriple} containing \lstinline{a_angle}, \lstinline{b_angle}, and \lstinline{c_angle}.
 
-\subsection{Commitments (commit.rs)}
+\subsection{Commitments (mpc/commit.rs)}
 For the online phase we also need a commitment functionality as described in \cite{damgaard2013practical}.
 Our implementation of this functionality can be found in commit.rs. This file contains the methods \lstinline{commit} and \lstinline{open}, which are explained in greater detail below.
 
@@ -115,8 +147,8 @@ This function takes a commitment \lstinline{c} and a value \lstinline{o} as inpu
 
 When calling this function it hashes \lstinline{o} using sha256, and then checks whether \lstinline{h(o) = c}. If this is indeed the case, then we return \lstinline{Ok(o)}, and otherwise we return an error.
 
-\subsection{Online phase (prep.rs)}
-The code related to the online phase can be found in prep.rs. The implementation of this phase is based on the online protocol in \cite{damgaard2013practical}, but in that protocol the triple check is done in preprocessing, while we do it in the online phase as in \cite{damgaard2012multiparty}.
+\subsection{Online phase (mpc/online.rs)}
+The code related to the online phase can be found in \lstinline{mpc/online.rs}. The implementation of this phase is based on the online protocol in \cite{damgaard2013practical}, but in that protocol the triple check is done in preprocessing, while we do it in the online phase as in \cite{damgaard2012multiparty}.
 
 The two functions \lstinline{give_input} and \lstinline{receive_input} together correspond to the Input step of the protocol.
 The \lstinline{add}, \lstinline{multiply}, and \lstinline{output} functions correspond to the steps of the same names.
