@@ -11,35 +11,39 @@
 
 \section{Ring-LWE cryptosystem}
 
-\subsection{Polynomials (\lstinline{poly.rs})}
+\subsection{Polynomials (poly.rs)}
 
 Since our public-key encryption scheme uses polynomials to represent most of the values (messages, ciphertexts, secret keys, and public keys), we implemented a simple \lstinline{Polynomial} data structure, along with the most common operations we will perform on it.
 
 Internally, a \lstinline{Polynomial} is simply a \lstinline{Vec} (a contiguous growable array type) of \lstinline{Integer} values, each representing a coefficient in the polynomial.
 
-We implemented operations for adding, subtracting, negating, and multiplying (with both constants and other polynomials), and functions for trimming the polynomial (removing trailing zero-coefficients), right-shifting the coefficients (from lower to higher degrees), retrieving the $\ell_\infty$, calculating the modulo, and normalizing the coefficients to be in the range $[-q/2, q/2)$ instead of $[0, q)$, which is necessary during decryption.
+We implemented operations for adding, subtracting, negating, and multiplying (with both constants and other polynomials), and functions for trimming the polynomial (removing trailing zero-coefficients), right-shifting the coefficients (from lower to higher degrees), retrieving the $\ell_\infty$ value, calculating the modulo, and normalizing the coefficients to be in the range $[-q/2, q/2)$ instead of $[0, q)$, which is necessary during decryption.
 
-\subsection{Quotient ring (\lstinline{quotient_ring.rs})}
+\subsection{Quotient ring (quotient\_ring.rs)}
 
 Encryption, decryption, and key generation involves adding, subtracting, multiplying, and negating elements in the quotient ring $R_q = \mathbb{Z}_q[x]/\langle x^n + 1 \rangle$. To be able to do these computations we made a quotient ring implementation, which can be found in \lstinline{quotient_ring.rs}.
 
 \subsubsection{\lstinline{Rq}}
 
-The quotient ring module contains a struct definition \lstinline{Rq}, which represents an instantiation of a quotient ring $Z_q[x]/\langle f(x) \rangle$. It therefore has fields $q$ and $modulo$, where $q$ is a \lstinline{BigInt}, and $modulo$ is a \lstinline{Polynomial} representing $f(x)$. The \lstinline{new} function takes $q$ and $modulo$ as input, and is used to make a new instantiation of \lstinline{Rq}.
+The quotient ring module contains a struct definition \lstinline{Rq}.
+This struct represents an instantiation of a quotient ring $\mathbb{Z}_q[x]  \langle f(x) \rangle$.
+It therefore has fields $q$ and $modulo$, where $q$ is an \lstinline{Integer}, and $modulo$ is a \lstinline{Polynomial} representing $f(x)$. The \lstinline{new} function takes $q$ and $modulo$ as input, and is used to make a new instantiation of \lstinline{Rq}.
 
 \subsubsection{\lstinline{reduce}}
 
 The \lstinline{reduce} method found in the quotient ring module is called on an \lstinline{Rq} struct, takes a polynomial \lstinline{pol} as input, and returns the normal form of the element \lstinline{pol} with respect to \lstinline{modulo}.
 
-To achieve this the method first does polynomial long division with \lstinline{pol} as the dividend and the \lstinline{modulo} from the \lstinline{Rq} struct as the divisor. The remainder computed in this way is then stored in the variable $r$.
+To achieve this, the method first performs polynomial long division with \lstinline{pol} as the dividend and the \lstinline{modulo} from the \lstinline{Rq} struct as the divisor. The remainder computed in this way is then stored in the variable $r$.
 
-Lastly, we reduce the coefficients of the resulting polynomial $r$ modulo $q$, by using the remainder operation($\%$) defined in the \lstinline{poly.rs} module, and then return the result.
+Lastly, we reduce the coefficients of the resulting polynomial $r$ modulo $q$, by using the \lstinline{modulo} method defined in the \lstinline{poly.rs} module, and then return the result.
 
-\subsubsection{\lstinline{add}, \lstinline{times}, \lstinline{neg}, \lstinline{mul}}
+\subsubsection{\lstinline{add}, \lstinline{sub}, \lstinline{times}, \lstinline{neg}, \lstinline{mul}}
 
-The methods \lstinline{add}, \lstinline{times}, \lstinline{neg}, \lstinline{mul} are called on an \lstinline{Rq} struct. These methods first use the addition, scalar multiplication, negation, and polynomial multiplication methods defined in the the \lstinline{poly.rs} module on the input. Then a reduce call is done with the result as input to get a new $R_q$ element.
+The methods \lstinline{add}, \lstinline{sub}, \lstinline{times}, \lstinline{neg}, \lstinline{mul} are called on an \lstinline{Rq} struct.
+These methods first use the addition, scalar multiplication, negation, and polynomial multiplication methods (or some combination thereof), as defined in the the \lstinline{poly.rs} module on the input.
+Then, \lstinline{reduce} is called, and the result is returned.
 
-\subsection{Public-key encryption scheme (\lstinline{encryption.rs})}
+\subsection{Public-key encryption scheme (encryption.rs)}
 
 The encryption scheme, as usual, has three major components:
 
@@ -55,7 +59,7 @@ The \lstinline{generate_key_pair} function takes as input an instance of the \ls
 This struct essentially just defines the parameters that nearly all functions in the encryption scheme use in some form or another.
 This includes $r$, $n$, $q$, $t$, and the quotient ring $R_q$, which are all relevant for the key generation function.
 
-The function starts by sampling polynomials $sk$ and $e_0$ from a Gaussian distribution with standard deviation $r$, and the polynomial $a_0$ uniformly from $\mathbb{Z}_q$.
+The function starts by sampling polynomials $sk$ and $e_0$ from a Gaussian distribution with standard deviation $r$, and the polynomial $a_0$ uniformly from $R_q$.
 
 It then calculates the public-key as $pk = (a_0, a_0 \cdot sk + e_0 \cdot t)$, and finally returns the key pair $(pk, sk)$.
 
@@ -81,11 +85,10 @@ We only create the first $|c|$ entries of the secret key vector, as those are th
 We then initialize a polynomial $msg = 0$, which will become the decrypted message.
 Then, iterating over each element $c_i$ in the ciphertext, we add $c_i \cdot \mathbf{s}_i$ to $msg$, where $\mathbf{s}_i$ is the $i$'th entry (zero-indexed) in the secret key vector.
 
-\todo{Skal nok lige have nogle andre til at tilpasse denne - jeg har sv{\ae}rt ved at finde ud af hvordan man forklarer det.}
-Currently, the message has coefficients in $\mathbb{Z}_q$, but we need them to be in the range $-\frac{q}{2}$ to $\frac{q}{2}$.
-\todo{Er det inklusive eller eksklusive i intervallet?}
-Therefore, we iterate through all coefficients $x$ and map them to the new range such that if $x > \frac{q}{2}$, then we let $x' = x - q$, and otherwise $x' = x$.
+Since the message has coefficients in $\mathbb{Z}_q$, but we need them to be in the interval from $-\frac{q}{2}$ to $\frac{q}{2}$, we call the \lstinline{normalized_coefficients} method on the $msg$ polynomial at this point.
 
-Finally, we reduce the message modulo $t$ to remove the $e \cdot t$ part of the encryption, and return the result.
+At this point, we want to ensure that the $\ell_\infty$ for the message is at most $\frac{q}{2}$. If not, decryption cannot work.
+
+If the check succeeds, we reduce the message modulo $t$ to remove the $e \cdot t$ part of the encryption, and then we return the result.
 
 \end{document}
