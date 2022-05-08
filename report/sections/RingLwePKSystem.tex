@@ -17,8 +17,9 @@ We'll shortly describe the encryption scheme here but will omit proofs and detai
 Both system will be over the message space of $R_t = \mathbb{Z}_t[x] / \langle f(x) \rangle $.
 
 \subsection{Polynomial learning with errors}
-The polynomial learning with errors problem is made as a decision problem
-and is defined by in the Hermite normal form as the following.
+The polynomial learning with errors problem decision problem variant is defined for an instantiation
+of a function f, a modulo q and a error distribution $\chi$ and given at most l samples written as $PLWE_{f, q, \chi}^(l)$
+It is defined in the hermite normal form as
 \\[2mm]
 \textbf{The PLWE Assumption - Hermite Normal Form.}
 for all $\kappa \in \mathbb{N}$, let $f(x) = f_{\kappa}(x) \in \mathbb{Z}[x]$
@@ -31,6 +32,12 @@ $$
 $$
 where s is sampled from $\chi$, $a_i$ is uniform in $R_q$, the error polynomials
 $e_i$ are sampled from $\chi$ and $u_i$ are random ring elements from $R_q$.
+We will allow up to l samples for the decision problem where the only limitation on l is that it should
+be polynomial.
+\\[5mm]
+Beside the decision variant, the PLWE problem could also be stated in terms of a search problem, one in which
+an adversary have to find the secret vector $s \in R_q$. But we will focus on the decision problem, as this
+is more commonly used in cryptography.
 
 \subsection{Symmetric version}
 Let $\kappa$ be the security parameter and let further q and t be prime numbers where $t \in \mathbb{Z}_n^*$.
@@ -88,15 +95,23 @@ $(\hat{c}_0, \hat{c}_1, \dots, \hat{c}_d+d') \in R_q^{D + D' + 1}$ by
 The output of the multiplication operation will then be $c_{mul} = (\hat{c}_0, \hat{c}_1, \dots, \hat{c}_{D+D'})$
 
 \subsection{Public key version}
+%TODO: måske der skal skrives noget om lemma 4?
 To achieve a public scheme instead, we can make the following changes
 \begin{itemize}
-    \item In the key generation we generate in addition to the secret key $sk = s \leftarrow^{\$} \chi$, we output a public key
-          $pk = (a_0 , b_0 = a_0 \cdot s + t \cdot e_0)$, where $a_0 \leftarrow^{\$} R_q, e_0 \leftarrow^{\$}$
-    \item In the encryption algorithm, instead we use
-          $(a_0 \cdot v + t \cdot e', b_0 \cdot v + t \cdot e'')$ where
-          $v, e' \leftarrow^{\$} \chi$ and $e'' \leftarrow^{\$} \chi '$.
-\end{itemize}
+    \item In the key generation we generate in addition to the secret key $sk = s \leftarrow^{\$} \chi$, a public key
+        $pk = (a_0 , b_0 = a_0 \cdot s + t \cdot e_0)$, where $a_0 \leftarrow^{\$} R_q, e_0 \leftarrow^{\$} \chi$
+    \item In the encryption algorithm, we can instead use
+        $(a_0 \cdot v + t \cdot e', b_0 \cdot v + t \cdot e'')$ where
+        $v, e' \leftarrow^{\$} \chi$ and $e'' \leftarrow^{\$} \chi '$.
+\end{itemize} 
 where we have then obtained a public key $pk = (a_0, a_0 \cdot s + t \cdot e_0)$
-corresponding to the secret key $sk = $.
+corresponding to the secret key sk.
+
+\subsection{Choosing parameters and attacking the PLWE}
+% hvert element i PLWE can også ses om n LWE elementer
+% Disse kan løses med en algoritme der BKZ som giver en bit sikkerhed på 0.292 * \beta
+% vi kan bruge toolet på https://notebooks.gesis.org/binder/jupyter/user/malb-lattice-estimator-u1sng1gm/notebooks/prompt.ipynb til at finde gode
+%		data set at bruge.
+One of the best known attacks against PLWE is BKZ written by 
 
 \end{document}
