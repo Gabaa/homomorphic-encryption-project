@@ -60,8 +60,8 @@ impl Default for Parameters {
 // r_prime: 80 >= 2^(0.632 * log2(1024)) = 2^(0.632 * 10)
 pub fn secure_params() -> Parameters {
     let c = Integer::from_str("7491009436045135886698181243708504421607358929720206973094758479498049015628852031735169966277519969").unwrap();
-    let t2 = Integer::from_str("127").unwrap();
-    Parameters::new(c, 3.2, 100.0, 7, t2)
+    let t2 = Integer::from_str("4090434771271357819").unwrap();
+    Parameters::new(c, 3.2, 3.2, 8, t2)
 }
 
 pub fn mpc_secure_params() -> Parameters {
