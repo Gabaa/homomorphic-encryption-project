@@ -53,6 +53,8 @@ The encryption scheme, as usual, has three major components:
   \item and the \lstinline{decrypt} function
 \end{itemize}
 
+In addition to this we also have two functions responsible for the homomorphic operations, namely \lstinline{add} and \lstinline{mul}.
+
 \subsubsection{\lstinline{generate_key_pair}}
 
 The \lstinline{generate_key_pair} function takes as input an instance of the \lstinline{Parameters} struct.
@@ -90,5 +92,17 @@ Since the message has coefficients in $\mathbb{Z}_q$, but we need them to be in 
 At this point, we want to ensure that the $\ell_\infty$ for the message is at most $\frac{q}{2}$. If not, decryption cannot work.
 
 If the check succeeds, we reduce the message modulo $t$ to remove the $e \cdot t$ part of the encryption, and then we return the result.
+
+\subsubsection{add}
+The \lstinline{add} function homomorphically adds the two ciphertexts \lstinline{c1} and \lstinline{c2} given as input along with a \lstinline{Parameters} struct.
+
+To do this computation the function simply creates a new \lstinline{Vec} of length \lstinline{max(c1.len(), c2.len()}. Following this the function iterates over the two ciphertexts and for each entry $i$, it adds \lstinline{c1[i]} and \lstinline{c2[i]} to entry $i$ in the newly created \lstinline{Vec} using \lstinline{add} from \lstinline{quotient_ring.rs}. After iterating over all entries the resulting \lstinline{Vec} is returned.
+
+\subsubsection{mul}
+The \lstinline{mul} function homomorphically multiplies the two ciphertexts \lstinline{c1} and \lstinline{c2}, which it takes as input along with a \lstinline{Parameters} struct.
+
+First, a new \lstinline{Vec} called \lstinline{res} is initialized.
+For each entry $i$ in \lstinline{c1} and each entry $j$ in \lstinline{c2} the function adds $c1[i] \cdot c2[j]$ to the entry \lstinline{res[i + j]}, where the addition and multiplication is done using \lstinline{add} and \lstinline{mul} from \lstinline{quotient_ring.rs}.
+Afterwards \lstinline{res} is returned.
 
 \end{document}

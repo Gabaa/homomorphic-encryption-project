@@ -70,11 +70,6 @@ pub fn mpc_secure_params() -> Parameters {
     Parameters::new(80708963, 2.0, 80.0, 12900, 127)
 }
 
-// This has been found by using the lattice estimator from Martin Albrecht.
-pub fn secure_256bit_params() -> Parameters {
-    Parameters::new(80708963, 2.0, 80.0, 2048, 127)
-}
-
 pub fn encrypt_det(
     params: &Parameters,
     m: Polynomial,
