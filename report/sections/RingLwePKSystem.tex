@@ -3,6 +3,31 @@
 \documentclass[../main.tex]{subfiles}
 \graphicspath{{\subfix{../images/}}}
 
+\lstdefinelanguage{Sage}[]{Python}
+{morekeywords={False,sage,True},sensitive=true}
+\lstset{
+  frame=none,
+  showtabs=False,
+  showspaces=False,
+  showstringspaces=False,
+  commentstyle={\ttfamily\color{dgreencolor}},
+  keywordstyle={\ttfamily\color{dbluecolor}\bfseries},
+  stringstyle={\ttfamily\color{dgraycolor}\bfseries},
+  language=Sage,
+  basicstyle={\fontsize{10pt}{10pt}\ttfamily},
+  aboveskip=0.3em,
+  belowskip=0.1em,
+  numbers=left,
+  numberstyle=\footnotesize
+}
+\definecolor{dblackcolor}{rgb}{0.0,0.0,0.0}
+\definecolor{dbluecolor}{rgb}{0.01,0.02,0.7}
+\definecolor{dgreencolor}{rgb}{0.2,0.4,0.0}
+\definecolor{dgraycolor}{rgb}{0.30,0.3,0.30}
+\newcommand{\dblue}{\color{dbluecolor}\bf}
+\newcommand{\dred}{\color{dredcolor}\bf}
+\newcommand{\dblack}{\color{dblackcolor}\bf}
+
 % Document
 \begin{document}
 
@@ -25,9 +50,9 @@ be a polynomial of degree n = n($\kappa$), let $q = q(\kappa) \in \mathbb{Z}$
 be a prime integer, let the ring $R = \mathbb{Z}[x] / \langle f(x) \rangle$
 and $R_q = R / qR$ with $\chi$ denoting a distribution over the ring R.
 Then the Polynomial learning with error ($PLWE_{f,q,\chi}$) assumption can be defined as
-$$
+\[
     \{ (a_i, a_i \cdot s + e_i) \}_{i \in [l]} \approx^{c} \{(a_i, u_i) \}_{i \in [l]}\}
-$$
+\]
 where s is sampled from $\chi$, $a_i$ is uniform in $R_q$, the error polynomials
 $e_i$ are sampled from $\chi$ and $u_i$ are random ring elements from $R_q$.
 We will allow up to l samples for the decision problem where the only limitation on l is that it should
@@ -118,7 +143,8 @@ corresponding to the secret key sk.
         The choice of function f(x) is normally set to be a cyclotomic-polynomial, meaning that it should be on the form
         of $f(x) = x^n + 1$ where n should be chosen as $n = 2^k$ for $k \in \mathbb{N}$.
         By doing so we get a lot of algebraic properties which opens for optimizations as described in section % TODO: sæt lige ref.
-        and adds to the security. Therefore we will without further discussion choose f(x) as a cyclotomic-polynomial function.
+        and adds to the security.
+        Therefore we will without further discussion choose f(x) as a cyclotomic-polynomial function.
 
     \subsubsection{Reducing RLWE to LWE samples}
         Another important property to see is that any RLWE sample of the form $(a, s \cdot a + e)$ 
@@ -137,15 +163,17 @@ corresponding to the secret key sk.
 		while still holding the degree of the function f(x) to a minimum for performance reasons.
 		The tool will use a lot of lattice based mathemathics to actually calculate the amount of security, which will be given
 		to us in the form of a number $\beta$, this $\beta$ will then be used to test the amount of security.
+        For the precise usage of the tool we have used the following sage script
+        \lstinputlisting[language=Python]{sage-scripts/estimator.sage}
+        Then we can here variate the parameteres of our modulus q, the degree of the cyclotomic-polynomial n
+        our noise distributions on r and r' (Xs, Xe) and the value of m typically provided by the authors.
 
     \subsubsection{Best known attack}
 		The best known attack on the LWE scheme, which by combination of the earlier mentioned method to combine RLWE
 		into n LWE samples also gives an attack on RLWE, is the BKZ lattice reduction algorithm.
 		We will not be going into how BKZ works, but will mention that the amount of security from the BKZ algorithm
 		has been showed in the "new hope" paper \cite{usenix16} written by Erdem ALkim and Thomas poppelman to be
-		% TODO: indsæt lige paper.
 		\[ 2^{0.292 \cdot \beta} \]
 		Where we can get the value of $\beta$ from the testing tool.
-
 
 \end{document}

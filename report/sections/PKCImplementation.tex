@@ -89,14 +89,16 @@ Then, iterating over each element $c_i$ in the ciphertext, we add $c_i \cdot \ma
 
 Since the message has coefficients in $\mathbb{Z}_q$, but we need them to be in the interval from $-\frac{q}{2}$ to $\frac{q}{2}$, we call the \lstinline{normalized_coefficients} method on the $msg$ polynomial at this point.
 
-At this point, we want to ensure that the $\ell_\infty$ for the message is at most $\frac{q}{2}$. If not, decryption cannot work.
+At this point, we want to ensure that the $\ell_\infty$ for the message is at most $\frac{q}{2}$.
+If not, decryption cannot work.
 
 If the check succeeds, we reduce the message modulo $t$ to remove the $e \cdot t$ part of the encryption, and then we return the result.
 
 \subsubsection{add}
 The \lstinline{add} function homomorphically adds the two ciphertexts \lstinline{c1} and \lstinline{c2} given as input along with a \lstinline{Parameters} struct.
 
-To do this computation the function simply creates a new \lstinline{Vec} of length \lstinline{max(c1.len(), c2.len()}. Following this the function iterates over the two ciphertexts and for each entry $i$, it adds \lstinline{c1[i]} and \lstinline{c2[i]} to entry $i$ in the newly created \lstinline{Vec} using \lstinline{add} from \lstinline{quotient_ring.rs}. After iterating over all entries the resulting \lstinline{Vec} is returned.
+To do this computation the function simply creates a new \lstinline{Vec} of length \lstinline{max(c1.len(), c2.len()}.
+Following this the function iterates over the two ciphertexts and for each entry $i$, it adds \lstinline{c1[i]} and \lstinline{c2[i]} to entry $i$ in the newly created \lstinline{Vec} using \lstinline{add} from \lstinline{quotient_ring.rs}. After iterating over all entries the resulting \lstinline{Vec} is returned.
 
 \subsubsection{mul}
 The \lstinline{mul} function homomorphically multiplies the two ciphertexts \lstinline{c1} and \lstinline{c2}, which it takes as input along with a \lstinline{Parameters} struct.
