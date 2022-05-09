@@ -131,9 +131,8 @@ corresponding to the secret key sk.
 
     \subsubsection{Parameter testing tool}
         Martin Albrecht, professor at the university of Royal Holloway in London, is the current maintainer of an
-		opensource project geared towards choosing secure parameters for the RLWE encryption scheme.
+		opensource project~\cite{estimations-tool} geared towards choosing secure parameters for the RLWE encryption scheme.
 		By using this tool, we will be able to calculate the amount of security by using the lattice reduction algorithm BKZ.
-		% TODO: indsæt ref https://github.com/malb/lattice-estimator	
 		We'll be using this tool to evaluate the amount of security that one would need to actually secure the algorithm,
 		while still holding the degree of the function f(x) to a minimum for performance reasons.
 		The tool will use a lot of lattice based mathemathics to actually calculate the amount of security, which will be given
@@ -143,9 +142,9 @@ corresponding to the secret key sk.
 		The best known attack on the LWE scheme, which by combination of the earlier mentioned method to combine RLWE
 		into n LWE samples also gives an attack on RLWE, is the BKZ lattice reduction algorithm.
 		We will not be going into how BKZ works, but will mention that the amount of security from the BKZ algorithm
-		has been showed in the "new hope" paper \cite{} written by Erdem ALkim and Thomas poppelman to be
+		has been showed in the "new hope" paper \cite{usenix16} written by Erdem ALkim and Thomas poppelman to be
 		% TODO: indsæt lige paper.
-		$$ 2^{0.292 \cdot \beta} $$ 
+		\[ 2^{0.292 \cdot \beta} \]
 		Where we can get the value of $\beta$ from the testing tool.
 
 
