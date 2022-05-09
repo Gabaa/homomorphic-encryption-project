@@ -113,17 +113,47 @@ Finally, to make sure that all players end up with $y$ the commitments to $y_i$ 
 %In section D of the paper the authors give example parameter sets and explain how to choose the parameters, s.t. the previously described Ring-LWE public key encryption scheme meets the requirements of the MPC protocol.
 
 \section{Reuse of unrevealed secret-shared data} \label{section: Reuse}
-In \cite{damgaard2013practical} a technique that allows for reuse of unrevealed secret-shared data is used. This technique revolves around not having to open $[\![ \alpha ]\!]$, and in fact we do not even need the $[\![ \cdot ]\!]$ representation when using this technique.
+In \cite{damgaard2013practical} a technique that allows for reuse of unrevealed secret-shared data is used.
+This technique revolves around not having to open $[\![ \alpha ]\!]$, and in fact we do not even need the $[\![ \cdot ]\!]$ representation when using this technique.
 
-The technique works as follows. First, when we generate the global key we now just need each player $P_i$ to have a share $\alpha_i$ of $\alpha$. In the output step the player will then instead of the current MAC check instead invoke the new MACCheck protocol on all of the values in the $\langle \cdot \rangle$ representation that have been opened, and if this succeeds the player invokes MACCheck on the output value $\langle y \rangle$. The MACCheck protocol works as follows:
+The technique works as follows.
+First, when we generate the global key we now just need each player $P_i$ to have a share $\alpha_i$ of $\alpha$. In the output step the player will then instead of the current MAC check instead invoke the new MACCheck protocol on all of the values in the $\langle \cdot \rangle$ representation that have been opened, and if this succeeds the player invokes MACCheck on the output value $\langle y \rangle$. The MACCheck protocol works as follows:
 \paragraph{Protocol MACCheck}
 First each $P_i$ samples a seed $s_i$ and use $\mathcal{F}_{Commit}$ to broadcast $\tau^s_i \leftarrow Commit(s_i)$. Following this each player opens all commitments using $\mathcal{F}_{Commit}$ to get all $n$ seeds $s_j$. Now, all players set $$s \leftarrow s_1 \oplus ... \oplus s_n$$
 Players then use $s$ as seed to sample a random vector of length $t$ with entries in the interval $[0, p)$. %WAT, t eller p
 All players then first compute $$a \leftarrow \sum^t_{j = 1} r_j \cdot a_j$$ where the $a_j$'s are the opened values.
-Now $P_i$ computes $$\gamma_i \leftarrow \sum^t_{j = 1} r_j \cdot \gamma(a_j)_i \text{  and  } \sigma_i \leftarrow \gamma_i - \alpha_i \cdot a$$
+Now $P_i$ computes
+\begin{align*}
+    \gamma_i \leftarrow \sum^t_{j = 1} r_j \cdot \gamma(a_j)_i \text{  and  } \sigma_i \leftarrow \gamma_i - \alpha_i \cdot a
+\end{align*}
 Player $i$ then uses $\mathcal{F}_{Commit}$ to broadcast $\tau^\sigma_i \leftarrow Commit(s_i)$.
 All players invoke $\mathcal{F}_{Commit}$ to open the commitments received to get the $\sigma_j$'s.
 Finally, the players check that $\sigma_1 + ... + \sigma_n = 0$, and if this is not the case, then they abort.
 
+
+\section{Choosing parameters for our MPC system}
+    When choosing our parameter sets for the MPC system it is important to think not only of the security but also of
+    the practicality of the systems.
+    In the article \cite{damgaard2012multiparty} from Ivan et al.
+    we are provided with certain limitations on the parameters which we will sketch here.
+    We will omit the proofs and justification as those are outside the scope of our project.
+    Let N be the degree of our polynomial f(x) in the RLWE encryption scheme as mentioned in section % TODO: cite the section.
+    let r be the randomness used while encrypting, SEC be 40, the amount of players n be 3 with $c_{SEC}, Y$ and $Z$ be
+    be given by the formulas
+    \begin{align*}
+        c_{sec} &= 9 \cdot N^2 \cdot SEC^4 \cdot 2^{SEC + 8} \\
+        Y       &= \frac{p}{2} + p \cdot (4 \cdot C_{m-bound} \cdot r^2 \cdot N^2 \cdot 2 \cdot \sqrt{N} \cdot r + 4 \cdot C_{m-bound} \cdot r^2 \cdot N^2) \\
+        Z       &= C_{m-bound} \cdot N^2 \cdot n^2 \cdot c_{sec}^2 \cdot Y^2 + n \cdot c_{sec} \cdot Y
+    \end{align*}
+    Then they write concesily in the article that the following inequalities for q and r should be help.
+    \begin{align*}
+        q > 2 \cdot Z \cdot (1 + 2^{sec}) \\
+        r > max{3.2, 1.5 \cdot \gamma^{-t'} \cdot q^{1 - \frac{N}{t'}}}
+    \end{align*}
+    As this was a pain to write, we wrote a small script to search for parameters for us to use which can be seen below.
+    \lstinputlisting[language=Python]{code-snippets/estimator.sage}
+    From the script we found that values for q and r of
+    % TODO: få lige skrevet resten af det her, skal lige have snakket med Kasper om hvordan det er meningen det skal være.
+    % der er noget med parametrene der ikke stemmer overens og det skal vi måske lige have snakket med Ivan om.
 
 \end{document}
