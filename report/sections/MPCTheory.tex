@@ -30,8 +30,19 @@ $$[\![ a ]\!] = ((a_1, ..., a_n), (\beta_i, \gamma(a)^i_1, ..., \gamma(a)^i_n)_{
 where $a = \sum_i a_i$ and $a\beta_i = \sum_j \gamma(a)^j_i$. Thus the $\gamma(a)^j_i$ values are used to authenticate $a$ under $P_i$'s personal key $\beta_i$. Each player $P_i$ then has the shares $(a_i, \beta_i, \gamma(a)^i_1, ..., \gamma(a)^i_n)$. To open a $[\![ \cdot ]\!]$ value each player $P_j$ sends $a_j, \gamma(a)^j_i$ to $P_i$, who checks that $a\beta_i = \sum_j \gamma(a)^j_i$. Afterwards $P_i$ can compute $a = \sum_i a_i$.
 
 \subsection{Abstract SHE scheme and instantiation}
-The cryptosystem used as the SHE scheme in the protocol has to have certain properties to be admissible. The authors of the MPC protocol present a concrete instantiation of such an abstract SHE scheme, using the Ring-LWE based public key encryption scheme by Zvika Brakerski and Vinod Vaikuntanathan \cite{brakerski2011fully} described in section x.x. To be able to use this scheme we have to define the functions $encode: (\mathbb{F}_{p^k})^s \mapsto \mathbb{Z}^N$ and $decode: \mathbb{Z}^N \mapsto (\mathbb{F}_{p^k})^s$ where $M = (\mathbb{F}_{p^k})^s$ denotes the message space.
+The cryptosystem used as the SHE scheme in the protocol has to have certain properties to be admissible. The authors of the MPC protocol present a concrete instantiation of such an abstract SHE scheme, using the Ring-LWE based public key encryption scheme by Zvika Brakerski and Vinod Vaikuntanathan \cite{brakerski2011fully} described in section \ref{section: RLWE theory}.
 
+\paragraph{encode and decode}
+To be able to use this scheme we have to define the function \textbf{encode}, which maps elements in the plaintext space $M = (\mathbb{F}_{p^k})^s$ to elements in a ring $R$, which is equivalent to $\mathbb{Z}^N$. In addition to this we also need to define a function \textbf{decode}, which maps elements in $\mathbb{Z}^N$ to $M$, s.t. $\textbf{decode}(\textbf{encode}(m)) = m$ for $m \in M$.
+
+To do this we first have to pick a polynomial for the quotient ring $R_t = \mathbb{Z}_q[X]/\langle f(x) \rangle$ used by the cryptosystem. Picking $f(x)$ in a specific way allows an optimization, which makes it possible to do entrywise multiplication, such that we can perform $N$ multiplications in parallel.
+To do this we pick $f(x)$ to be the $m$'th cyclotomic polynomial $f(x)$ of degree $N = \phi(m)$, s.t. modulo $t$ the polynomial $f(x)$ factors into $l'$ irreducible factors of degree $k'$, where $l' \geq s$ and $k$ divides $k'$.
+
+We can then define the function $\phi: M \rightarrow R_t$ which embeds $M$ into $R_t$. We also define $\iota : R_t \rightarrow \mathbb{Z}^N$, which maps the coefficients from the polynomial given as input to a vector of length $N$ with coefficients in the range $(-t/2, ..., t/2]$.
+
+Finally, we define $\textbf{encode}(\textbf{m}) = \iota(\phi(\textbf{m}))$ and $\textbf{decode}(\textbf{x}) = \phi^{-1}(\textbf{x} \; (\text{mod } t))$.
+
+\paragraph{key distribution and distributed decryption}
 In addition to the aforementioned requirements, we also want the cryptosystem to implement a functionality $\mathcal{F}_{KeyGenDec}$. This functionality will on receiving ''start'' from all honest players generate a keypair $(pk, sk)$, and then distribute $pk$ to the players and store $sk$. The players can then use the functionality to cooperate in decrypting a ciphertext encrypted under $pk$.
 
 \subsection{Preprocessing phase} \label{subsection: Prep}
