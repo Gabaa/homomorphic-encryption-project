@@ -1,0 +1,23 @@
+warning: variable `bound_C_m` should have a snake case name
+  --> src/mpc/mod.rs:71:9
+   |
+71 |     let bound_C_m = 8.6;
+   |         ^^^^^^^^^ help: convert the identifier to snake case (notice the capitalization): `bound_c_m`
+   |
+   = note: `#[warn(non_snake_case)]` on by default
+
+warning: variable `bound_B` should have a snake case name
+  --> src/mpc/mod.rs:74:9
+   |
+74 |     let bound_B = &params.t / Integer::from(2_i32) +
+   |         ^^^^^^^ help: convert the identifier to snake case: `bound_b`
+
+warning: `homomorphic-encryption-project` (lib) generated 2 warnings
+    Finished release [optimized] target(s) in 0.01s
+     Running `target/release/dealer`
+Generating and distributing key material...
+Ready to receive connections...
+[::1]:63292 is ready to start.
+[::1]:63295 is ready to start.
+[::1]:63300 is ready to start.
+3 players have connected.
