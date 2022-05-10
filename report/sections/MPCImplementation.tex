@@ -58,6 +58,32 @@ The \lstinline{PlayerState} struct is also frequently used in our implementation
 
 It includes the key material received from the dealer $(pk, s_{i,1}, s_{i,2})$, our share of the global MAC key $\alpha_i$, the encrypted global key $e_\alpha$, a list of pairs $(a, \gamma(a)_i)$ (where $a$ is a value that has been opened, and $\gamma(a)_i$ is our share of $\alpha a$), and a \lstinline{Facilitator} instance.
 
+\subsection{Implementation of $\mathcal{F}_{KeyGenDec}$}
+\subsubsection*{ddec}
+The \lstinline{ddec} function implements the distributed decryption part of the $\mathcal{F}_{KeyGenDec}$ functionality described earlier. The function takes a \lstinline{Parameters} struct \lstinline{params}, a \lstinline{PlayerState} \lstinline{state}, and a mutable \lstinline{Ciphertext} \lstinline{c} as arguments.
+
+First we check if \lstinline{c} contains $3$ elements, and if this is not the case then we pad the ciphertext with a $0$, since we need there to be three entries for the following computations.
+
+If it is $P_1$ calling the method, then we use our quotient ring implementation to compute
+\begin{center}
+    \lstinline{v_i = c[0] + state.sk_i1 * c[1] + state.sk_i2 * c[2]}
+\end{center}
+otherwise we compute
+\begin{center}
+    \lstinline{v_i = state.sk_i1 * c[1] + state.sk_i2 * c[2]}
+\end{center}
+
+Now we use \lstinline{sample_from_uniform} to sample a polynomial with $\ell_\infty$ norm bounded by $2^{sec} \cdot B/(n \cdot p)$, meaning that the coefficients are in the interval $[0, 2^{sec} \cdot B/(n \cdot p)]$, where $B$ is a bound on the $\ell_\infty$ norm of $t$.
+The reason why we let the coefficients depend on $B$, is that we do not want to add too much noise, since this would result in decryption returning the incorrect result.
+
+We then add $p$ times the polynomial that we just sampled to $v_i$, so that we get $t_i$. Adding this randomness corresponds to drowning the noise of the ciphertext as described in the section on circuit security.
+
+Following this we broadcast $t_i$, and then receive the other players shares, which allows us to compute $t' = t_1 + ... + t_n \mod p$.
+
+We then normalize the coefficients of $t'$ to get \lstinline{msg_minus_q} like done in \lstinline{decrypt}, so that they are in the interval $[-q/2, q/2)$.
+
+Finally, we compute \lstinline{msg_mod_q.modulo(&params.t)}, then call decode on the result to get an Integer which we return.
+
 \subsection{ZKPoPK (mpc/zk.rs)}
 
 In zk.rs the zero knowledge proof of plaintext is implemented for each party to run.
