@@ -13,7 +13,7 @@ use homomorphic_encryption_project::{
     encryption::{secure_params, Parameters},
     mpc::{online, prep, PlayerState},
     prob::sample_single,
-    protocol::{Facilicator, KeyMaterial, OnlineMessage, PrepMessage},
+    protocol::{Facilitator, KeyMaterial, OnlineMessage, PrepMessage},
 };
 use rug::Integer;
 
@@ -84,7 +84,7 @@ impl FacilitatorImpl {
     }
 }
 
-impl Facilicator for FacilitatorImpl {
+impl Facilitator for FacilitatorImpl {
     fn player_count(&self) -> usize {
         self.players.len()
     }

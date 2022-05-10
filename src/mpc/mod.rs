@@ -2,7 +2,7 @@ use rug::{ops::RemRounding, Integer};
 // use std::num::Float;
 
 use crate::{encryption::*, polynomial, protocol::KeyMaterial};
-use crate::{poly::*, protocol::Facilicator};
+use crate::{poly::*, protocol::Facilitator};
 use crate::{prob::sample_from_uniform, protocol::OnlineMessage};
 use rug::ops::Pow;
 
@@ -15,10 +15,11 @@ pub type Angle = Vec<Integer>;
 pub type AngleShare = (Integer, Integer);
 pub type MulTriple = (AngleShare, AngleShare, AngleShare);
 
-const SEC: u32 = 40;
+pub const SEC: usize = 40;
+pub const V: usize = 2 * SEC - 1;
 
 #[derive(Clone, Debug)]
-pub struct PlayerState<F: Facilicator> {
+pub struct PlayerState<F: Facilitator> {
     sk_i1: Polynomial, // Additive shares of sk
     sk_i2: Polynomial, // Additive shares of sk^2
     pk: PublicKey,
@@ -28,7 +29,7 @@ pub struct PlayerState<F: Facilicator> {
     pub facilitator: F,
 }
 
-impl<F: Facilicator> PlayerState<F> {
+impl<F: Facilitator> PlayerState<F> {
     pub fn new(facilitator: F, key_material: KeyMaterial) -> Self {
         Self {
             sk_i1: key_material.sk_i1,
@@ -47,7 +48,7 @@ impl<F: Facilicator> PlayerState<F> {
 }
 
 /// Function for "dec" functionality in Fkey_gen_dec figure 3 of the MPC article.
-pub fn ddec<F: Facilicator>(
+pub fn ddec<F: Facilitator>(
     params: &Parameters,
     state: &PlayerState<F>,
     mut c: Ciphertext,
@@ -72,12 +73,17 @@ pub fn ddec<F: Facilicator>(
     let bound_C_m = 8.6;
     let r_squared = params.r * params.r;
     let n_squared = params.n * params.n;
-    let bound_B = &params.t / Integer::from(2_i32) +
-        &params.t * Integer::from((4_f64 * bound_C_m * r_squared * (n_squared as f64) + 2_f64 * (params.n as f64).sqrt() * params.r +
-        4_f64 * bound_C_m * r_squared * (n_squared as f64)) as i64);
-    let two_exp_sec = Integer::from(2_i32).pow(SEC);
+    let bound_B = &params.t / Integer::from(2_i32)
+        + &params.t
+            * Integer::from(
+                (4_f64 * bound_C_m * r_squared * (n_squared as f64)
+                    + 2_f64 * (params.n as f64).sqrt() * params.r
+                    + 4_f64 * bound_C_m * r_squared * (n_squared as f64)) as i64,
+            );
+    let two_exp_sec = Integer::from(2_i32).pow(SEC as u32);
 
-    let norm_bound = two_exp_sec * bound_B / (Integer::from(state.facilitator.player_count()) * &params.t);
+    let norm_bound =
+        two_exp_sec * bound_B / (Integer::from(state.facilitator.player_count()) * &params.t);
     println!("norm_bound is {:?}", norm_bound);
     let t_i = rq.add(
         &v_i,

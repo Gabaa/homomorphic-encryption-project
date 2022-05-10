@@ -8,4 +8,5 @@
 /report/sections/*.pdf
 /report/sections/*.gz
 
-/logs/*.log
+/logs/
+*.log

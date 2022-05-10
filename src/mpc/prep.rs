@@ -1,17 +1,19 @@
 //! Preprocessing phase (Multiparty Computation from Somewhat Homomorphic Encryption, sec. 5)
 
-use crate::mpc::zk::zkpopk;
-use crate::mpc::AngleShare;
-use crate::mpc::PlayerState;
-use crate::protocol::OnlineMessage;
+use super::{
+    add_encrypted_shares,
+    zk::{make_zkpopk, verify_zkpopk},
+    AngleShare, PlayerState, SEC,
+};
+
 use crate::{
     encryption::*,
     mpc::{ddec, diag},
     poly::Polynomial,
     polynomial,
     prob::*,
+    protocol::{Facilitator, OnlineMessage},
 };
-use crate::{mpc::add_encrypted_shares, protocol::Facilicator};
 
 use rug::{ops::RemRounding, Integer};
 
@@ -25,13 +27,10 @@ pub mod protocol {
     use super::*;
 
     /// Implements the Initialize step
-    pub fn initialize<F: Facilicator>(params: &Parameters, state: &mut PlayerState<F>) {
+    pub fn initialize<F: Facilitator>(params: &Parameters, state: &mut PlayerState<F>) {
         state.alpha_i = sample_single(&params.t);
-        let e_alpha_i = encrypt(
-            params,
-            encode(diag(params, state.alpha_i.clone())),
-            &state.pk,
-        );
+        let alpha_i_polynomial = encode(diag(params, state.alpha_i.clone()));
+        let (e_alpha_i, r_i) = encrypt_with_rand(params, alpha_i_polynomial.clone(), &state.pk);
 
         let msg = OnlineMessage::ShareCiphertext(e_alpha_i.clone());
         state.facilitator.broadcast(&msg);
@@ -47,22 +46,17 @@ pub mod protocol {
 
         state.e_alpha = add_encrypted_shares(params, e_alpha_is);
 
-        // TODO: ZK proof faked for now
-        let sec = 40; //sec hardcoded for now common values are 40, 80
-        for _ in 0..sec {
-            if !zkpopk(e_alpha_i.clone()) {
-                panic!("ZK proof failed!")
-            }
-        }
+        run_zkpopk_for_single(params, state, alpha_i_polynomial, r_i, e_alpha_i);
     }
 
     /// Implements the Pair step
-    pub fn pair<F: Facilicator>(
+    pub fn pair<F: Facilitator>(
         params: &Parameters,
         state: &PlayerState<F>,
     ) -> (Integer, AngleShare) {
         let r_i = sample_single(&params.t);
-        let e_r_i = encrypt(params, encode(r_i.clone()), &state.pk);
+        let r_i_polynomial = encode(r_i.clone());
+        let (e_r_i, r_r_i) = encrypt_with_rand(params, r_i_polynomial.clone(), &state.pk);
 
         let msg = OnlineMessage::ShareCiphertext(e_r_i.clone());
         state.facilitator.broadcast(&msg);
@@ -78,24 +72,23 @@ pub mod protocol {
 
         let e_r = add_encrypted_shares(params, e_r_is);
 
-        // TODO: ZK proof faked for now
-        if !zkpopk(e_r_i) {
-            panic!("ZK proof failed!")
-        }
+        run_zkpopk_for_single(params, state, r_i_polynomial, r_r_i, e_r_i);
 
         let r_angle = p_angle(params, r_i.clone(), e_r, state);
         (r_i, r_angle)
     }
 
     /// Implements the Triple step
-    pub fn triple<F: Facilicator>(
+    pub fn triple<F: Facilitator>(
         params: &Parameters,
         state: &PlayerState<F>,
     ) -> (AngleShare, AngleShare, AngleShare) {
         let a_i = sample_single(&params.t);
         let b_i = sample_single(&params.t);
-        let e_a_i = encrypt(params, encode(a_i.clone()), &state.pk);
-        let e_b_i = encrypt(params, encode(b_i.clone()), &state.pk);
+        let a_i_polynomial = encode(a_i.clone());
+        let (e_a_i, r_a_i) = encrypt_with_rand(params, a_i_polynomial.clone(), &state.pk);
+        let b_i_polynomial = encode(b_i.clone());
+        let (e_b_i, r_b_i) = encrypt_with_rand(params, b_i_polynomial.clone(), &state.pk);
 
         let msg = OnlineMessage::ShareCiphertext(e_a_i.clone());
         state.facilitator.broadcast(&msg);
@@ -124,13 +117,8 @@ pub mod protocol {
         let e_a = add_encrypted_shares(params, e_a_is);
         let e_b = add_encrypted_shares(params, e_b_is);
 
-        // TODO: ZK proof faked for now
-        if !zkpopk(e_a_i) {
-            panic!("ZK proof failed!")
-        }
-        if !zkpopk(e_b_i) {
-            panic!("ZK proof failed!")
-        }
+        run_zkpopk_for_single(params, state, a_i_polynomial, r_a_i, e_a_i);
+        run_zkpopk_for_single(params, state, b_i_polynomial, r_b_i, e_b_i);
 
         let a_angle = p_angle(params, a_i, e_a.clone(), state);
         let b_angle = p_angle(params, b_i, e_b.clone(), state);
@@ -146,14 +134,15 @@ pub mod protocol {
 }
 
 /// Implements Protocol Reshare (fig. 4)
-fn reshare<F: Facilicator>(
+fn reshare<F: Facilitator>(
     params: &Parameters,
     e_m: &Ciphertext,
     state: &PlayerState<F>,
     enc: Enc,
 ) -> (Option<Ciphertext>, Integer) {
     let f_i = sample_single(&params.t);
-    let e_f_i = encrypt(params, encode(f_i.clone()), &state.pk);
+    let f_i_polynomial = encode(f_i.clone());
+    let (e_f_i, r_f_i) = encrypt_with_rand(params, f_i_polynomial.clone(), &state.pk);
 
     let msg = OnlineMessage::ShareCiphertext(e_f_i.clone());
     state.facilitator.broadcast(&msg);
@@ -167,16 +156,11 @@ fn reshare<F: Facilicator>(
         })
         .collect();
 
-    // ZK proof faked for now
-    if !zkpopk(e_f_i) {
-        panic!("ZK proof failed!")
-    }
+    run_zkpopk_for_single(params, state, f_i_polynomial, r_f_i, e_f_i);
 
-    // This is done by each player
     let e_f = add_encrypted_shares(params, e_f_is.clone());
     let e_m_plus_f = add(params, e_m, &e_f);
 
-    // Done by each player
     let m_plus_f = ddec(params, state, e_m_plus_f);
 
     let m_i = if state.facilitator.player_number() == 0 {
@@ -191,7 +175,7 @@ fn reshare<F: Facilicator>(
             encode(m_plus_f),
             &state.pk,
             (polynomial![1], polynomial![1], polynomial![1]),
-        ); //Hvilket randomness???
+        );
         for e_f_i in e_f_is {
             e_m_prime = add(
                 params,
@@ -207,7 +191,7 @@ fn reshare<F: Facilicator>(
 }
 
 /// Implements Protocol PAngle (fig. 6)
-fn p_angle<F: Facilicator>(
+fn p_angle<F: Facilitator>(
     params: &Parameters,
     v_i: Integer,
     e_v: Ciphertext,
@@ -218,6 +202,39 @@ fn p_angle<F: Facilicator>(
     let (_, gamma_i) = reshare(params, &e_v_mul_alpha, player_state, Enc::NoNewCiphertext); // each player Pi gets a share γi of α·v
     let v_angle: AngleShare = (v_i, gamma_i);
     v_angle
+}
+
+fn run_zkpopk_for_single<F: Facilitator>(
+    params: &Parameters,
+    state: &PlayerState<F>,
+    x_i: Polynomial,
+    r_i: (Polynomial, Polynomial, Polynomial),
+    c_i: Ciphertext,
+) {
+    // Create own ZKPoPK
+    // We are running the protocol on (x_i, ..., x_i) (sec times)
+    let x = vec![x_i; SEC];
+    let r = vec![r_i; SEC];
+    let c = vec![c_i; SEC];
+
+    let (a, z, t) = make_zkpopk(params, x, r, c.clone(), true, &state.pk);
+
+    // Broadcast ZKPoPK to all players
+    let message = OnlineMessage::ShareZKPoPK { a, z, t, c };
+    state.facilitator.broadcast(&message);
+
+    // Verify all received ZKPoPK
+    let messages = state.facilitator.receive_from_all();
+    for (i, msg) in messages.into_iter().enumerate() {
+        match msg {
+            OnlineMessage::ShareZKPoPK { a, z, t, c } => {
+                if !verify_zkpopk(params, a, z, t, c, &state.pk) {
+                    panic!("ZKPoPK for player {} failed", i)
+                }
+            }
+            _ => panic!("expected ShareZKPoPK, got {:?}", msg),
+        }
+    }
 }
 
 /* #[cfg(test)]
