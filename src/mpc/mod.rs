@@ -1,8 +1,10 @@
 use rug::{ops::RemRounding, Integer};
+// use std::num::Float;
 
 use crate::{encryption::*, polynomial, protocol::KeyMaterial};
 use crate::{poly::*, protocol::Facilicator};
 use crate::{prob::sample_from_uniform, protocol::OnlineMessage};
+use rug::ops::Pow;
 
 pub mod commitment;
 pub mod online;
@@ -12,6 +14,8 @@ pub mod zk;
 pub type Angle = Vec<Integer>;
 pub type AngleShare = (Integer, Integer);
 pub type MulTriple = (AngleShare, AngleShare, AngleShare);
+
+const SEC: u32 = 40;
 
 #[derive(Clone, Debug)]
 pub struct PlayerState<F: Facilicator> {
@@ -65,8 +69,16 @@ pub fn ddec<F: Facilicator>(
         sum
     };
 
-    //Random element does not currently have a bounded l_inf norm
-    let norm_bound = Integer::from(2) ^ Integer::from(32);
+    let bound_C_m = 8.6;
+    let r_squared = params.r * params.r;
+    let n_squared = params.n * params.n;
+    let bound_B = &params.t / Integer::from(2_i32) +
+        &params.t * Integer::from((4_f64 * bound_C_m * r_squared * (n_squared as f64) + 2_f64 * (params.n as f64).sqrt() * params.r +
+        4_f64 * bound_C_m * r_squared * (n_squared as f64)) as i64);
+    let two_exp_sec = Integer::from(2_i32).pow(SEC);
+
+    let norm_bound = two_exp_sec * bound_B / (Integer::from(state.facilitator.player_count()) * &params.t);
+    println!("norm_bound is {:?}", norm_bound);
     let t_i = rq.add(
         &v_i,
         &rq.times(&sample_from_uniform(&norm_bound, params.n), &params.t), // norm_bound is placeholder, since q needs to be a lot higher for this to work properly
