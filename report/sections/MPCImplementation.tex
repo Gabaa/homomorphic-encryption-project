@@ -26,6 +26,14 @@ A player contributes some private input to the function being computed, in the e
 To prepare for computing the agreed function, all players connect to the dealer, sending a "Start" message with their address for receiving TCP connections, and getting back a list of players who have already connected to the dealer (along with themselves).
 Each player's position in this list indicates their "player number", which is relevant for some parts of the protocol.
 When all players have connected, and all of the key material has been distributed, the dealer shuts down, as it is no longer needed.
+This is also described in figure \ref{fig:dealer-player}.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{Player-Dealer.png}
+    \caption{A sequence diagram describing the protocol for player initialization using the trusted dealer.}
+    \label{fig:dealer-player}
+\end{figure}
 
 \subsubsection{Facilitator}
 
