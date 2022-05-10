@@ -94,8 +94,8 @@ impl Facilitator for FacilitatorImpl {
     }
 
     fn send(&self, player: usize, msg: &OnlineMessage) {
-        println!("send to   [{:02}] {:?}", player, msg);
-
+        //println!("send to   [{:02}] {:?}", player, msg);
+        //println!("{:?}", self.players[player]);
         let stream = TcpStream::connect(self.players[player]).unwrap();
         serde_json::to_writer(stream, &(msg, self.players[self.player_number])).unwrap();
     }
@@ -109,7 +109,7 @@ impl Facilitator for FacilitatorImpl {
     fn receive(&self, player: usize) -> OnlineMessage {
         let msg = self.receivers[player].recv().unwrap();
 
-        println!("recv from [{:02}] {:?}", player, msg);
+        //println!("recv from [{:02}] {:?}", player, msg);
         msg
     }
 
