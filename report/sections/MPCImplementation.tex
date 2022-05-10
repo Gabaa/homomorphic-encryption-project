@@ -44,6 +44,12 @@ The system currently does not have any mechanism for verifying the origin of mes
 Therefore, each player sends along their own identity when sending a message, which would obviously be insecure in a production-ready system.
 This issue could be resolved in many ways, for example using public-key cryptography and authenticated channels.
 
+\subsubsection{PlayerState}
+
+The \lstinline{PlayerState} struct is also frequently used in our implementation. Similarly to the \lstinline{Parameters} struct, it is a container for most of the values that need to be known by the player for most of the MPC protocol.
+
+It includes the key material received from the dealer $(pk, s_{i,1}, s_{i,2})$, our share of the global MAC key $\alpha_i$, the encrypted global key $e_\alpha$, a list of pairs $(a, \gamma(a)_i)$ (where $a$ is a value that has been opened, and $\gamma(a)_i$ is our share of $\alpha a$), and a \lstinline{Facilitator} instance.
+
 \subsection{ZKPoPK (mpc/zk.rs)}
 
 In zk.rs the zero knowledge proof of plaintext is implemented for each party to run.
