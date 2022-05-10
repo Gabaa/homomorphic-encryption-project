@@ -21,7 +21,7 @@ We implemented operations for adding, subtracting, negating, and multiplying (wi
 
 \subsection{Quotient ring (quotient\_ring.rs)}
 
-Encryption, decryption, and key generation involves adding, subtracting, multiplying, and negating elements in the quotient ring $R_q = \mathbb{Z}_q[x]/\langle x^n + 1 \rangle$. To be able to do these computations we made a quotient ring implementation, which can be found in \lstinline{quotient_ring.rs}.
+Encryption, decryption, and key generation involves adding, subtracting, multiplying, and negating elements in the quotient ring $R_q = \mathbb{Z}_q[x]/\langle x^N + 1 \rangle$. To be able to do these computations we made a quotient ring implementation, which can be found in \lstinline{quotient_ring.rs}.
 
 \subsubsection{\lstinline{Rq}}
 
@@ -59,11 +59,11 @@ In addition to this we also have two functions responsible for the homomorphic o
 
 The \lstinline{generate_key_pair} function takes as input an instance of the \lstinline{Parameters} struct.
 This struct essentially just defines the parameters that nearly all functions in the encryption scheme use in some form or another.
-This includes $r$, $n$, $q$, $t$, and the quotient ring $R_q$, which are all relevant for the key generation function.
+This includes $r$, $N$, $q$, $p$, and the quotient ring $R_q$, which are all relevant for the key generation function.
 
 The function starts by sampling polynomials $sk$ and $e_0$ from a Gaussian distribution with standard deviation $r$, and the polynomial $a_0$ uniformly from $R_q$.
 
-It then calculates the public-key as $pk = (a_0, a_0 \cdot sk + e_0 \cdot t)$, and finally returns the key pair $(pk, sk)$.
+It then calculates the public-key as $pk = (a_0, a_0 \cdot sk + e_0 \cdot p)$, and finally returns the key pair $(pk, sk)$.
 
 \subsubsection{\lstinline{encrypt}}
 
@@ -71,10 +71,10 @@ The \lstinline{encrypt} function takes a \lstinline{Parameters} instance, as des
 
 We extract the two polynomials of the public key, $a_0$ and $b_0$.
 
-First, we make sure that the message polynomial we are trying to encrypt is in $R_t$.
+First, we make sure that the message polynomial we are trying to encrypt is in $R_p$.
 Then, we sample polynomials $v$ and $e'$ from a Gaussian distribution with standard deviation $r$, and the polynomial $e''$ from a Gaussian distribution with standard deviation $r'$ (which is also defined in the \lstinline{Parameters} struct).
 
-We then calculate $a = a_0 \cdot v + e' \cdot t$ and $b = b_0 \cdot v + e'' \cdot t$.
+We then calculate $a = a_0 \cdot v + e' \cdot t$ and $b = b_0 \cdot v + e'' \cdot p$.
 Finally, we create the ciphertext as a \lstinline{Vec} $c = [b + m, a]$ and return it.
 
 \subsubsection{\lstinline{decrypt}}
@@ -92,7 +92,7 @@ Since the message has coefficients in $\mathbb{Z}_q$, but we need them to be in 
 At this point, we want to ensure that the $\ell_\infty$ for the message is at most $\frac{q}{2}$.
 If not, decryption cannot work.
 
-If the check succeeds, we reduce the message modulo $t$ to remove the $e \cdot t$ part of the encryption, and then we return the result.
+If the check succeeds, we reduce the message modulo $p$ to remove the $e \cdot p$ part of the encryption, and then we return the result.
 
 \subsubsection{add}
 The \lstinline{add} function homomorphically adds the two ciphertexts \lstinline{c1} and \lstinline{c2} given as input along with a \lstinline{Parameters} struct.

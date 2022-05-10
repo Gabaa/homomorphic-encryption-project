@@ -37,7 +37,7 @@ Zvika Brakerski and Vinod Vaikuntanathan \cite{brakerski2011fully}
 they describe a method for converting the Ring Learnig with errors (RingLWE) problem into an encryption scheme
 which reduces to the worst-case hardness of problems on ideal lattices.
 We'll shortly describe the encryption scheme here but will omit proofs and detailed discussions.
-Both system will be over the message space of $R_t = \mathbb{Z}_t[x] / \langle f(x) \rangle $.
+Both system will be over the message space of $R_p = \mathbb{Z}_p[x] / \langle f(x) \rangle $.
 
 \subsection{Polynomial learning with errors}
 The polynomial learning with errors problem decision problem variant is defined for an instantiation
@@ -46,7 +46,7 @@ It is defined in the hermite normal form as
 \\[2mm]
 \textbf{The PLWE Assumption - Hermite Normal Form.}
 for all $\kappa \in \mathbb{N}$, let $f(x) = f_{\kappa}(x) \in \mathbb{Z}[x]$
-be a polynomial of degree n = n($\kappa$), let $q = q(\kappa) \in \mathbb{Z}$
+be a polynomial of degree N = N($\kappa$), let $q = q(\kappa) \in \mathbb{Z}$
 be a prime integer, let the ring $R = \mathbb{Z}[x] / \langle f(x) \rangle$
 and $R_q = R / qR$ with $\chi$ denoting a distribution over the ring R.
 Then the Polynomial learning with error ($PLWE_{f,q,\chi}$) assumption can be defined as
@@ -63,8 +63,8 @@ an adversary have to find the secret vector $s \in R_q$. But we will focus on th
 is more commonly used in cryptography.
 
 \subsection{Symmetric version}
-Let $\kappa$ be the security parameter and let further q and t be prime numbers where $t \in \mathbb{Z}_n^*$.
-We also need a polynomial of degree n $f(x) \in \mathbb{Z}[x]$ and an error distribution $\chi$ over the ring
+Let $\kappa$ be the security parameter and let further p and q be prime numbers where $p \in \mathbb{Z}_N^*$.
+We also need a polynomial of degree N: $f(x) \in \mathbb{Z}[x]$ and an error distribution $\chi$ over the ring
 $R_q = \mathbb{Z}_q[x] / \langle f(x) \rangle$, then we can define the following operations for a somewhat homomorphic
 encryption scheme.
 
@@ -74,9 +74,9 @@ Then given the security parameter $\kappa$ sample a ring element s uniformly at 
 secret key vector by $(s^0, s^1, s^2, \dots, s^D) \in R_q^{D+1}$.
 
 \subsubsection{Encryption}
-Rememer that all messages are encodeable in our message space $R_t$, thus we will encode our message m as a n degree
+Rememer that all messages are encodeable in our message space $R_p$, thus we will encode our message m as a n degree
 polynomium with coefficients modulo t.
-To encrypt we sample $(a, b = a \cdot s + t \cdot e)$ where $a \leftarrow^\$ R_q$ and $e \leftarrow^\$ \chi$,
+To encrypt we sample $(a, b = a \cdot s + p \cdot e)$ where $a \leftarrow^\$ R_q$ and $e \leftarrow^\$ \chi$,
 then compute
 \begin{align*}
     c_0 \coloneqq b + m &  & c_1 \coloneqq -a
@@ -91,7 +91,7 @@ Define the inner product over $R_q$ as
 \end{align*}
 Then to decrypt, simply set m as the inner product of c and s and take modulo t.
 \begin{align*}
-    m = \langle c, s \rangle \bmod t
+    m = \langle c, s \rangle \bmod p
 \end{align*}
 m will then be the decrypted message.
 
@@ -123,12 +123,12 @@ The output of the multiplication operation will then be $c_{mul} = (\hat{c}_0, \
 To achieve a public scheme instead, we can make the following changes
 \begin{itemize}
     \item In the key generation we generate in addition to the secret key $sk = s \leftarrow^{\$} \chi$, a public key
-        $pk = (a_0 , b_0 = a_0 \cdot s + t \cdot e_0)$, where $a_0 \leftarrow^{\$} R_q, e_0 \leftarrow^{\$} \chi$
+        $pk = (a_0 , b_0 = a_0 \cdot s + p \cdot e_0)$, where $a_0 \leftarrow^{\$} R_q, e_0 \leftarrow^{\$} \chi$
     \item In the encryption algorithm, we can instead use
-        $(a_0 \cdot v + t \cdot e', b_0 \cdot v + t \cdot e'')$ where
+        $(a_0 \cdot v + t \cdot e', b_0 \cdot v + p \cdot e'')$ where
         $v, e' \leftarrow^{\$} \chi$ and $e'' \leftarrow^{\$} \chi '$.
 \end{itemize} 
-where we have then obtained a public key $pk = (a_0, a_0 \cdot s + t \cdot e_0)$
+where we have then obtained a public key $pk = (a_0, a_0 \cdot s + p \cdot e_0)$
 corresponding to the secret key sk.
 
 \subsection{On the security of PLWE}
@@ -141,7 +141,7 @@ corresponding to the secret key sk.
 
     \subsubsection{On the choice of functions f(x)}
         The choice of function f(x) is normally set to be a cyclotomic-polynomial, meaning that it should be on the form
-        of $f(x) = x^n + 1$ where n should be chosen as $n = 2^k$ for $k \in \mathbb{N}$, do note that this is not the only
+        of $f(x) = x^N + 1$ where n should be chosen as $N = 2^k$ for $k \in \mathbb{N}$, do note that this is not the only
         way that a polynomial can be chosen as cyclotomic, but for our use case this will suffice.
         By doing so we get a lot of algebraic properties which opens for optimizations as described in section % TODO: sæt lige ref.
         and adds to the security.
@@ -154,7 +154,7 @@ corresponding to the secret key sk.
         \begin{align*}
             (A_a, \textbf{b} = \textbf{s}^T \cdot A_a + \textbf{e}^T)
         \end{align*}
-        Where $\textbf{b} \in (\mathbb{R} / q\mathbb{Z})^n$ and $e \in \mathbb{R}^n$.
+        Where $\textbf{b} \in (\mathbb{R} / q\mathbb{Z})^N$ and $e \in \mathbb{R}^N$.
 
     \subsubsection{Parameter testing tool}
         Martin Albrecht, professor at the university of Royal Holloway in London, is the current maintainer of an

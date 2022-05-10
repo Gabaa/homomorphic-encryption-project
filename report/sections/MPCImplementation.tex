@@ -11,7 +11,7 @@ We now describe our implementation of an actively secure MPC protocol.
 
 For this protocol we did not implement the cyclotomic polynomial optimisation described earlier, so $s = 1$, meaning that we are working in $\mathbb{F}_{p^k}$.
 This also means that we cannot do entry-wise multiplications like done in \cite{damgaard2012multiparty}.
-Therefore, to encode an element $a \in \mathbb{F}_{p^k}$ to an element in $R_q$, we simply return \lstinline{Polynomial::new(vec![a])}, which is the \lstinline{Polynomial} corresponding to $f(x) = a$. To decode a polynomial $f(x) = a \in R_q$, we simply return the \lstinline{Integer} $a$.
+Therefore, to encode an element $a \in \mathbb{F}_{p^k}$ to an element in $R_p$, we simply return \lstinline{Polynomial::new(vec![a])}, which is the \lstinline{Polynomial} corresponding to $f(x) = a$. To decode a polynomial $f(x) = a \in R_p$, we simply return the \lstinline{Integer} $a$.
 
 \subsection{Dealer and Player}
 
@@ -82,7 +82,7 @@ Following this we broadcast $t_i$, and then receive the other players shares, wh
 
 We then normalize the coefficients of $t'$ to get \lstinline{msg_minus_q} like done in \lstinline{decrypt}, so that they are in the interval $[-q/2, q/2)$.
 
-Finally, we compute \lstinline{msg_mod_q.modulo(&params.t)}, then call decode on the result to get an Integer which we return.
+Finally, we compute \lstinline{msg_mod_q.modulo(&params.p)}, then call decode on the result to get an Integer which we return.
 
 \subsection{ZKPoPK (mpc/zk.rs)}
 
@@ -121,13 +121,13 @@ The file also contains a type definition \lstinline{AngleShare}, which for some 
 \subsubsection{reshare}
 The first function, \lstinline{reshare}, takes as input a \lstinline{Parameters} struct \lstinline{params}, a Ciphertext \lstinline{e_m}, a  \lstinline{PlayerState} \lstinline{state}, and an \lstinline{Enc} enum \lstinline{enc}, which can take on values \lstinline{NewCiphertext} or \lstinline{NoNewCiphertext}.
 
-The first thing done in this function is to sample a value \lstinline{f_i} uniformly from $Z_t$ using \lstinline{sample_single} from \lstinline{prob.rs}. Then, \lstinline{f_i} is encrypted to get \lstinline{e_f_i}.
+The first thing done in this function is to sample a value \lstinline{f_i} uniformly from $Z_p$ using \lstinline{sample_single} from \lstinline{prob.rs}. Then, \lstinline{f_i} is encrypted to get \lstinline{e_f_i}.
 %Mangler ZK
 The facilitator is then used to broadcast \lstinline{e_f_i}, and subsequently receive the encrypted shares from the other parties, which are then homomorphically added to get \lstinline{e_f}. Then, we compute \lstinline{e_m_plus_f = add(params, e_m, &e_f)}.
 
 The \lstinline{ddec} function from mod.rs is then called with \lstinline{e_m_plus_f} as input to get the plaintext \lstinline{m_plus_f}.
 
-Then we set \lstinline{m_i} to be $e_{m + f} - f_i \text{ mod } t$ if the player calling the function is the player with index $0$, and $- f_i \text{ mod } t$ otherwise. If \lstinline{enc = NewCiphertext}, we now encrypt \lstinline{m_plus_f} using \lstinline{encrypt_det} where we use a triple of 1-polynomials instead of the randomness to make encryption deterministic. Now, we use \lstinline{add} from encrypt.rs to homomorphically subtract the encrypted shares $e_{f_i}$ from the encryption of \lstinline{m_plus_f} to get \lstinline{e_m_prime}. Afterwards, we return \lstinline{(Some(e_m_prime), m_i)}
+Then we set \lstinline{m_i} to be $e_{m + f} - f_i \text{ mod } p$ if the player calling the function is the player with index $0$, and $- f_i \text{ mod } p$ otherwise. If \lstinline{enc = NewCiphertext}, we now encrypt \lstinline{m_plus_f} using \lstinline{encrypt_det} where we use a triple of 1-polynomials instead of the randomness to make encryption deterministic. Now, we use \lstinline{add} from encrypt.rs to homomorphically subtract the encrypted shares $e_{f_i}$ from the encryption of \lstinline{m_plus_f} to get \lstinline{e_m_prime}. Afterwards, we return \lstinline{(Some(e_m_prime), m_i)}
 
 If \lstinline{enc = NoNewCiphertext}, we instead just return \lstinline{(None, m_i)}.
 
@@ -141,14 +141,14 @@ As can be seen from the implementation we omit the public $\delta$ value as done
 \subsubsection{initialize}
 The initialize function takes a \lstinline{Parameters} struct \lstinline{params}, and a mutable \lstinline{PlayerState} \lstinline{state} as input.
 
-First, we sample a uniformly random \lstinline{Integer} from $[0, t)$ using the \lstinline{sample_single} function with \lstinline{params.t} as input, and set the \lstinline{alpha_i} variable of the player state to this value. This represents the given players share of the global key. We then encrypt \lstinline{state.alpha_i} to get an encrypted share \lstinline{e_alpha_i}. Now, \lstinline{e_alpha_i} is broadcast using \lstinline{state.facilitor}, and each player then uses their facilitator to receive $e_{\alpha_i}$ from the other players. The $e_{\alpha_i}$'s are then homomorphically added to get $e_\alpha$, and the result is then assigned to the \lstinline{e_alpha} variable of \lstinline{state}. %Well ikke helt, men add_encrypted_shares, skal vi nævne det?
+First, we sample a uniformly random \lstinline{Integer} from $Z_p$ using the \lstinline{sample_single} function with \lstinline{params.p} as input, and set the \lstinline{alpha_i} variable of the player state to this value. This represents the given players share of the global key. We then encrypt \lstinline{state.alpha_i} to get an encrypted share \lstinline{e_alpha_i}. Now, \lstinline{e_alpha_i} is broadcast using \lstinline{state.facilitor}, and each player then uses their facilitator to receive $e_{\alpha_i}$ from the other players. The $e_{\alpha_i}$'s are then homomorphically added to get $e_\alpha$, and the result is then assigned to the \lstinline{e_alpha} variable of \lstinline{state}. %Well ikke helt, men add_encrypted_shares, skal vi nævne det?
 Finally, we run \lstinline{zpopk} from \lstinline{zk.rs} in a loop $sec$ times.
 
 Notice how we do not compute the personal keys $\beta_i$ as done in \cite{damgaard2012multiparty}. As mentioned earlier these are not needed when we use the trick described in section \ref{section: Reuse}.
 \subsubsection{pair}
 The \lstinline{pair} function takes a Parameters struct params, and a PlayerState state as input.
 
-The function first samples a uniformly random \lstinline{Integer} \lstinline{r_i} from $Z_t$. Now, \lstinline{r_i} is encrypted to get \lstinline{e_r_i}, which is the broadcast using the facilitator. All players then again use the facilitator to receive the encrypted shares from the other parties, which are then homomorphically added to compute \lstinline{e_r}. Then, we call \lstinline{zkpopk} with \lstinline{e_r_i} as input.
+The function first samples a uniformly random \lstinline{Integer} \lstinline{r_i} from $Z_p$. Now, \lstinline{r_i} is encrypted to get \lstinline{e_r_i}, which is the broadcast using the facilitator. All players then again use the facilitator to receive the encrypted shares from the other parties, which are then homomorphically added to compute \lstinline{e_r}. Then, we call \lstinline{zkpopk} with \lstinline{e_r_i} as input.
 
 Following this we compute the given players share of $\langle r \rangle$ with a call to \lstinline{p_angle} with \lstinline{r_i} and \lstinline{e_r} as arguments, which returns \lstinline{r_angle}.
 
@@ -157,7 +157,7 @@ Again, we use the trick explained in section \ref{section: Reuse}, so we don't n
 \subsubsection{triple}
 The triple function takes a \lstinline{Parameters} struct \lstinline{params}, along with a \lstinline{PlayerState} \lstinline{state} as arguments.
 
-First, we sample \lstinline{a_i}, \lstinline{b_i} uniformly at random from $Z_t$, which are both then encrypted, and the encrypted shares are then broadcast.
+First, we sample \lstinline{a_i}, \lstinline{b_i} uniformly at random from $Z_p$, which are both then encrypted, and the encrypted shares are then broadcast.
 
 Then, when the player receives the encrypted shares of $a$ and $b$ from the other players, then these are homomorphically added to get \lstinline{e_a} and \lstinline{e_b}.
 
@@ -248,7 +248,7 @@ Now we compute the AngleShare corresponding to $\langle y \rangle - \langle b \r
 
 Finally, we compute the \lstinline{AngleShare} corresponding to $\langle z \rangle = \langle c \rangle + \epsilon \langle b \rangle \delta \langle a \rangle + \epsilon \delta$ and return it.
 \subsubsection{maccheck}
-The \lstinline{maccheck} function takes a \lstinline{Parameters} struct \lstinline{params}, a \lstinline{Vec<(Integer, Integer)>} of $(a_j, \gamma(a_j)_i)$ pairs named \lstinline{to_check}, and a \lstinline{PlayerState} \lstinline{state} as arguments.
+The \lstinline{maccheck} function takes a \lstinline{Parameters} struct \lstinline{params}, a \lstinline{Vec<(Integer, Integer)>} of $t$ $(a_j, \gamma(a_j)_i)$ pairs named \lstinline{to_check}, and a \lstinline{PlayerState} \lstinline{state} as arguments.
 
 First, we use the \lstinline{rand} package to sample random $32$-byte values  \lstinline{s_i} and \lstinline{r}.
 
@@ -256,9 +256,9 @@ Then we use the \lstinline{commit} function from \lstinline{commit.rs}, to commi
 
 Following this we use the facilitator to receive the commitments from all $n$ parties. Then once all of the commitments have been received the parties broadcast the value $o = s_i || r$, such that all parties then open the commitments that they have received and get the seed $s_i$ for all players $i$.
 
-Now, we XOR the received seeds to get $s = s_1 \oplus ... \oplus s_n$. This is followed by using the \lstinline{rand} package and the seed $s$ to sample a vector \lstinline{rng_seed} with $n$ entries and with values in the range $[0, p)$.
+Now, we XOR the received seeds to get $s = s_1 \oplus ... \oplus s_n$. This is followed by using the \lstinline{rand} package and the seed $s$ to sample a vector \lstinline{r} with $t$ entries and with values in the range $[0, p)$.
 
-Then the function uses the values $a_1, ..., a_t$ stored in \lstinline{state.opened} to compute $a = \sum^t_{j = 1} r_j a_j$. % Typo IN MPC SECTION
+Then the function uses the values $a_1, ..., a_t$ stored in \lstinline{state.opened} to compute $a = \sum^t_{j = 1} r_j a_j$.
 
 After generating $a$ we use it to compute $\gamma_i = \sum^t_{j = 1} r_j \gamma(a_j)_i$ and $\sigma_i = \gamma_i - \alpha_i a$. Then we convert $\sigma_i$ to bytes and store the result in \lstinline{sigma_i_bytes}.
 
