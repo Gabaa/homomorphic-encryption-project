@@ -10,7 +10,7 @@ use std::{
 };
 
 use homomorphic_encryption_project::{
-    encryption::{secure_params, Parameters},
+    encryption::{secure_params, params_8degree, params_512degree, Parameters},
     mpc::{online, prep, PlayerState},
     prob::sample_single,
     protocol::{Facilicator, KeyMaterial, OnlineMessage, PrepMessage},
@@ -134,7 +134,7 @@ fn main() -> io::Result<()> {
 
     let facilitator = FacilitatorImpl::new(players, listener);
 
-    let params = secure_params();
+    let params = params_512degree();
     let state = PlayerState::new(facilitator, key_material);
 
     let input = sample_single(&Integer::from(50));
