@@ -127,12 +127,16 @@ Player $i$ then uses $\mathcal{F}_{Commit}$ to broadcast $\tau^\sigma_i \leftarr
 All players invoke $\mathcal{F}_{Commit}$ to open the commitments received to get the $\sigma_j$'s.
 Finally, the players check that $\sigma_1 + ... + \sigma_n = 0$, and if this is not the case, then they abort.
 
+\section{Zero-knowledge proof}
+
 
 \section{Choosing parameters for our MPC system}
     When choosing our parameter sets for the MPC system it is important to think not only of the security but also of
     the practicality of the systems.
     In the article \cite{damgaard2012multiparty} from Ivan et al.
-    we are provided with certain limitations on the parameters which we will sketch here.
+	they give examples of parameters where the degree of the polynomial is arounder 12900, much to high for our system to handle
+	as we do not have the cyclotomic-polynomial optimization as descibed in section % TODO: indsæt lige ref til cyclo optimering afsnit.
+	However we are provided with certain limitations on the parameters as well, which we have to bend a bit to test that the system works and as such we will sketch the calculations for the parameters here.
     We will omit the proofs and justification as those are outside the scope of our project.
     Let N be the degree of our polynomial f(x) in the RLWE encryption scheme as mentioned in section % TODO: cite the section.
     let r be the randomness used while encrypting, SEC be 40, the amount of players n be 3 with $c_{SEC}, Y$ and $Z$ be
@@ -142,15 +146,26 @@ Finally, the players check that $\sigma_1 + ... + \sigma_n = 0$, and if this is 
         Y       &= \frac{p}{2} + p \cdot (4 \cdot C_{m-bound} \cdot r^2 \cdot N^2 \cdot 2 \cdot \sqrt{N} \cdot r + 4 \cdot C_{m-bound} \cdot r^2 \cdot N^2) \\
         Z       &= C_{m-bound} \cdot N^2 \cdot n^2 \cdot c_{sec}^2 \cdot Y^2 + n \cdot c_{sec} \cdot Y
     \end{align*}
-    Then they write concesily in the article that the following inequalities for q and r should be help.
+    Then they write concesily in the article that the following inequalities for q and r should be held.
     \begin{align*}
         q > 2 \cdot Z \cdot (1 + 2^{sec}) \\
-        r > max{3.2, 1.5 \cdot \gamma^{-t'} \cdot q^{1 - \frac{N}{t'}}}
+        r > max\{3.2, 1.5 \cdot \gamma^{-t'} \cdot q^{1 - \frac{N}{t'}}\}
     \end{align*}
-    As this was a pain to write, we wrote a small script to search for parameters for us to use which can be seen below.
-    \lstinputlisting[language=Python]{code-snippets/estimator.sage}
-    From the script we found that values for q and r of
-    % TODO: få lige skrevet resten af det her, skal lige have snakket med Kasper om hvordan det er meningen det skal være.
-    % der er noget med parametrene der ikke stemmer overens og det skal vi måske lige have snakket med Ivan om.
+    As this was a pain to write, we wr8ote a small script to search for parameters for us to use which can be seen below.
+    \lstinputlisting[language=Python]{code-snippets/param-searach.py}
+	With the script we found that a 
+	512 degree polynomial would result in q being of 313 bits in size and our randomness (used for encryption in the mpc protocol) should be above $3.85 \cdot 10^{73}$.
+	While these values provides something of a pretty good security, the generated value for the randomness r is way to high to be
+	practical in any way.
+	So to have a smaller degree of the polynomial f(x), as to have better performance, from section % TODO: indsæt reference.
+	we need to increase the value of q and r.
+	Using this enormous value of r, we would find ourselves in a situation in which the l-inf-norm would be way to high, which
+	would generate to much noise for us to decrypt and as a consequence, we have to use a smaller value of r.
+	\\[5mm]
+	Using the tool from provided by Martin Albrecht and described in section % TODO: indsæt reference til tool
+	we have found that the the following parameteres using a polynomial of degree 1024 provides 128 bit of security
+	% \lstinputlisting[language=Rust]{code-snippets/params-1024-degree.rs} % TODO: få lige rust styling sat ind.
+	Using these parameters to run the system, we found that it was possible to actually run the system and get some
+	test data as can be seen in section % TODO: indsæt reference til test data section.
 
 \end{document}

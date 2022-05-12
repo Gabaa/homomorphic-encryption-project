@@ -1,0 +1,39 @@
+\begin{thebibliography}{1}
+
+\bibitem{estimations-tool}
+Martin Albrecht.
+\newblock Security estimates for lattice problems.
+
+\bibitem{brakerski2011fully}
+Zvika Brakerski and Vinod Vaikuntanathan.
+\newblock Fully homomorphic encryption from ring-lwe and security for key
+  dependent messages.
+\newblock In {\em Annual cryptology conference}, pages 505--524. Springer,
+  2011.
+
+\bibitem{damgaard2013practical}
+Ivan Damg{\aa}rd, Marcel Keller, Enrique Larraia, Valerio Pastro, Peter Scholl,
+  and Nigel~P Smart.
+\newblock Practical covertly secure mpc for dishonest majority--or: breaking
+  the spdz limits.
+\newblock In {\em European Symposium on Research in Computer Security}, pages
+  1--18. Springer, 2013.
+
+\bibitem{damgaard2012multiparty}
+Ivan Damg{\aa}rd, Valerio Pastro, Nigel Smart, and Sarah Zakarias.
+\newblock Multiparty computation from somewhat homomorphic encryption.
+\newblock In {\em Annual Cryptology Conference}, pages 643--662. Springer,
+  2012.
+
+\bibitem{usenix16}
+Thomas~Pöppelmann Erdem~Alkim.
+\newblock Post-quantum key exchange—a new hope.
+\newblock 2016.
+
+\bibitem{gentry2009fully}
+Craig Gentry.
+\newblock Fully homomorphic encryption using ideal lattices.
+\newblock In {\em Proceedings of the forty-first annual ACM symposium on Theory
+  of computing}, pages 169--178, 2009.
+
+\end{thebibliography}
