@@ -28,7 +28,7 @@ pub mod protocol {
 
     /// Implements the Initialize step
     pub fn initialize<F: Facilitator>(params: &Parameters, state: &mut PlayerState<F>) {
-        state.alpha_i = sample_single(&params.t);
+        state.alpha_i = sample_single(&params.p);
         let alpha_i_polynomial = encode(diag(params, state.alpha_i.clone()));
         let (e_alpha_i, r_i) = encrypt_with_rand(params, alpha_i_polynomial.clone(), &state.pk);
 
@@ -54,7 +54,7 @@ pub mod protocol {
         params: &Parameters,
         state: &PlayerState<F>,
     ) -> (Integer, AngleShare) {
-        let r_i = sample_single(&params.t);
+        let r_i = sample_single(&params.p);
         let r_i_polynomial = encode(r_i.clone());
         let (e_r_i, r_r_i) = encrypt_with_rand(params, r_i_polynomial.clone(), &state.pk);
 
@@ -83,8 +83,8 @@ pub mod protocol {
         params: &Parameters,
         state: &PlayerState<F>,
     ) -> (AngleShare, AngleShare, AngleShare) {
-        let a_i = sample_single(&params.t);
-        let b_i = sample_single(&params.t);
+        let a_i = sample_single(&params.p);
+        let b_i = sample_single(&params.p);
         let a_i_polynomial = encode(a_i.clone());
         let (e_a_i, r_a_i) = encrypt_with_rand(params, a_i_polynomial.clone(), &state.pk);
         let b_i_polynomial = encode(b_i.clone());
@@ -140,7 +140,7 @@ fn reshare<F: Facilitator>(
     state: &PlayerState<F>,
     enc: Enc,
 ) -> (Option<Ciphertext>, Integer) {
-    let f_i = sample_single(&params.t);
+    let f_i = sample_single(&params.p);
     let f_i_polynomial = encode(f_i.clone());
     let (e_f_i, r_f_i) = encrypt_with_rand(params, f_i_polynomial.clone(), &state.pk);
 
@@ -164,9 +164,9 @@ fn reshare<F: Facilitator>(
     let m_plus_f = ddec(params, state, e_m_plus_f);
 
     let m_i = if state.facilitator.player_number() == 0 {
-        (m_plus_f.clone() - f_i).rem_euc(&params.t)
+        (m_plus_f.clone() - f_i).rem_euc(&params.p)
     } else {
-        (-f_i).rem_euc(&params.t)
+        (-f_i).rem_euc(&params.p)
     };
 
     if matches!(enc, Enc::NewCiphertext) {
@@ -260,8 +260,8 @@ mod tests {
         }
 
         assert_eq!(
-            (a * b).modpow(&Integer::from(1), &params.t),
-            c.modpow(&Integer::from(1), &params.t)
+            (a * b).modpow(&Integer::from(1), &params.p),
+            c.modpow(&Integer::from(1), &params.p)
         )
     }
 
@@ -275,7 +275,7 @@ mod tests {
 
         let mut r_is = vec![Integer::ZERO; amount_of_players];
         for i in 0..amount_of_players {
-            r_is[i] = sample_single(&params.t)
+            r_is[i] = sample_single(&params.p)
         }
         let mut e_r_is = vec![vec![]; amount_of_players];
         for i in 0..amount_of_players {
@@ -300,7 +300,7 @@ mod tests {
         let mut sigma = Integer::ZERO;
         for i in 0..amount_of_players {
             sigma =
-                (sigma + angle[amount_of_players + i].clone()).modpow(&Integer::from(1), &params.t);
+                (sigma + angle[amount_of_players + i].clone()).modpow(&Integer::from(1), &params.p);
         }
         let a = open_shares(&params, angle, amount_of_players);
         let mut alpha_is = vec![Integer::ZERO; amount_of_players];
@@ -308,7 +308,7 @@ mod tests {
             alpha_is[i] = initialized_players[i].alpha_i.clone();
         }
         let alpha = open_shares(&params, alpha_is, amount_of_players);
-        let res = (alpha * a).modpow(&Integer::from(1), &params.t);
+        let res = (alpha * a).modpow(&Integer::from(1), &params.p);
         assert_eq!(res, sigma)
     }
 }

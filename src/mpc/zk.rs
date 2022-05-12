@@ -21,7 +21,7 @@ pub fn make_zkpopk(
     diagonal: bool,
     pk: &PublicKey,
 ) -> (Vec<Vec<Polynomial>>, Vec<Vec<Integer>>, Vec<Vec<Integer>>) {
-    let tau = &params.t / Integer::from(2_i32);
+    let tau = &params.p / Integer::from(2_i32);
     let rho = Integer::from(2_i32)
         * Integer::from(params.r as i64)
         * Integer::sqrt(Integer::from(params.n));
@@ -36,13 +36,13 @@ pub fn make_zkpopk(
 
     let mut a = Vec::with_capacity(V);
     for i in 0..V {
-        let mut m_i = sample_single(&params.t);
+        let mut m_i = sample_single(&params.p);
         if diagonal {
             m_i = diag(params, m_i)
         }
         let encoded_m_i = encode(m_i);
-        let u_i = sample_from_uniform(&((y_i_bound.clone() / params.t.clone()) - 1_i32), params.n)
-            * params.t.clone();
+        let u_i = sample_from_uniform(&((y_i_bound.clone() / params.p.clone()) - 1_i32), params.n)
+            * params.p.clone();
         y.push(encoded_m_i + u_i);
 
         s.push((
@@ -122,7 +122,7 @@ pub fn make_zkpopk(
         }
     }
 
-    // Calculate t = S + M_e * R
+    // Calculate T = S + M_e * R
     let mut t = vec![vec![Integer::ZERO; d]; V];
     for (t_row_index, t_row) in t.iter_mut().enumerate() {
         let (s_row_1, s_row_2, s_row_3) = &s[t_row_index];
@@ -197,7 +197,7 @@ pub fn verify_zkpopk(
     }
 
     // ||z_i||_{inf} <= 128 * N * t * sec^2
-    let tau = &params.t / Integer::from(2_i32);
+    let tau = &params.p / Integer::from(2_i32);
     for z_i in z {
         let z_i_inf_ok = Polynomial::new(z_i).l_inf_norm()
             <= Integer::from(128_i32) * Integer::from(params.n) * &tau * Integer::from(SEC.pow(2));
@@ -315,7 +315,7 @@ mod tests {
         let mut r = Vec::with_capacity(SEC);
         let mut c = Vec::with_capacity(SEC);
         for _ in 0..SEC {
-            let x_i = Polynomial::new(vec![random_integer()]).modulo(&params.t);
+            let x_i = Polynomial::new(vec![random_integer()]).modulo(&params.p);
             let (c_i, r_i) = encrypt_with_rand(params, x_i.clone(), &pk);
             x.push(x_i);
             r.push(r_i);

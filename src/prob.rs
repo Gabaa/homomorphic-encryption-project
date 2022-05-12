@@ -56,9 +56,9 @@ pub fn sample_from_uniform(q: &Integer, n: usize) -> Polynomial {
     Polynomial::from(samples)
 }
 
-pub fn sample_single(t: &Integer) -> Integer {
+pub fn sample_single(i: &Integer) -> Integer {
     let mut rand_gen = OsRngRandGen;
     let mut rand_state = RandState::new_custom(&mut rand_gen);
 
-    t.to_owned().random_below(&mut rand_state)
+    i.to_owned().random_below(&mut rand_state)
 }

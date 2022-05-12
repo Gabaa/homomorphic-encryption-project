@@ -284,7 +284,7 @@ fn maccheck<F: Facilitator>(
 
     let mut r = Vec::with_capacity(t);
     for _ in 0..t {
-        let r_i = params.t.clone().random_below(&mut rand_state);
+        let r_i = params.p.clone().random_below(&mut rand_state);
         r.push(r_i);
     }
 
@@ -292,15 +292,15 @@ fn maccheck<F: Facilitator>(
     let mut a = Integer::ZERO;
     for j in 0..t {
         let a_j = to_check[j].clone().0;
-        a = (a + r[j].clone() * a_j).rem_euc(&params.t);
+        a = (a + r[j].clone() * a_j).rem_euc(&params.p);
     }
 
     // Player i computes gamma_i and sigma_i
     let mut gamma_i = Integer::ZERO;
     for j in 0..t {
-        gamma_i = (gamma_i + r[j].clone() * to_check[j].clone().1).rem_euc(&params.t);
+        gamma_i = (gamma_i + r[j].clone() * to_check[j].clone().1).rem_euc(&params.p);
     }
-    let sigma_i = (gamma_i - state.alpha_i.clone() * a).rem_euc(&params.t);
+    let sigma_i = (gamma_i - state.alpha_i.clone() * a).rem_euc(&params.p);
 
     // Convert sigma_i to bytes, sample randomness, and commit to sigma_i
     let sigma_i_bytes = sigma_i.to_digits(Order::MsfBe);
@@ -343,7 +343,7 @@ fn maccheck<F: Facilitator>(
     // Sum sigma_i's and check that this equals 0
     let mut sigma_sum = Integer::ZERO;
     for sigma_i in sigma_is.iter().take(amount_of_players) {
-        sigma_sum = (sigma_sum + sigma_i).rem_euc(&params.t);
+        sigma_sum = (sigma_sum + sigma_i).rem_euc(&params.p);
     }
 
     sigma_sum == Integer::ZERO

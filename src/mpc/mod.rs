@@ -73,8 +73,8 @@ pub fn ddec<F: Facilitator>(
     let bound_C_m = 8.6;
     let r_squared = params.r * params.r;
     let n_squared = params.n * params.n;
-    let bound_B = &params.t / Integer::from(2_i32)
-        + &params.t
+    let bound_B = &params.p / Integer::from(2_i32)
+        + &params.p
             * Integer::from(
                 (4_f64 * bound_C_m * r_squared * (n_squared as f64)
                     + 2_f64 * (params.n as f64).sqrt() * params.r
@@ -83,11 +83,11 @@ pub fn ddec<F: Facilitator>(
     let two_exp_sec = Integer::from(2_i32).pow(SEC as u32);
 
     let norm_bound =
-        two_exp_sec * bound_B / (Integer::from(state.facilitator.player_count()) * &params.t);
+        two_exp_sec * bound_B / (Integer::from(state.facilitator.player_count()) * &params.p);
     println!("norm_bound is {:?}", norm_bound);
     let t_i = rq.add(
         &v_i,
-        &rq.times(&sample_from_uniform(&norm_bound, params.n), &params.t), // norm_bound is placeholder, since q needs to be a lot higher for this to work properly
+        &rq.times(&sample_from_uniform(&norm_bound, params.n), &params.p), // norm_bound is placeholder, since q needs to be a lot higher for this to work properly
     );
 
     // Assume public decryption
@@ -105,13 +105,13 @@ pub fn ddec<F: Facilitator>(
 
     let msg_minus_q = t_prime.normalized_coefficients(&rq.q);
 
-    decode(msg_minus_q.modulo(&params.t))
+    decode(msg_minus_q.modulo(&params.p))
 }
 
 pub fn open_shares(params: &Parameters, shares: Vec<Integer>) -> Integer {
     let mut r = Integer::ZERO;
     for share in &shares {
-        r = (r + share).rem_euc(&params.t);
+        r = (r + share).rem_euc(&params.p);
     }
     r
 }

@@ -42,11 +42,11 @@ impl Rq {
         self.reduce(&res)
     }
 
-    pub fn times<Int>(&self, pol: &Polynomial, t: &Int) -> Polynomial
+    pub fn times<Int>(&self, pol: &Polynomial, i: &Int) -> Polynomial
     where
         Int: Into<Integer> + Clone,
     {
-        let into: Integer = t.to_owned().into();
+        let into: Integer = i.to_owned().into();
         let res = pol.clone() * into;
         self.reduce(&res)
     }

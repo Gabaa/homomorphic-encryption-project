@@ -15,19 +15,19 @@ pub type Ciphertext = Vec<Polynomial>;
 
 pub struct Parameters {
     pub quotient_ring: Rq,
-    pub t: Integer,
+    pub p: Integer,
     pub r: f64,
     pub r_prime: f64,
     pub n: usize,
 }
 
 impl Parameters {
-    pub fn new<Int>(q: Int, r: f64, r_prime: f64, n: usize, t: Int) -> Parameters
+    pub fn new<Int>(q: Int, r: f64, r_prime: f64, n: usize, p: Int) -> Parameters
     where
         Int: Into<Integer>,
     {
         let q = q.into();
-        let t = t.into();
+        let p = p.into();
 
         let mut fx_vec = vec![Integer::new(); n + 1];
         fx_vec[0] = Integer::from(1);
@@ -40,7 +40,7 @@ impl Parameters {
             r,
             r_prime,
             n,
-            t,
+            p,
         }
     }
 }
@@ -55,78 +55,76 @@ impl Default for Parameters {
 // security level (quantum): 128 bits
 // q: 27 bit prime, ex. 80708963
 // n: 1024
-// t: 2
+// p: 2
 // r: 2 = w * sqrt(log2(1024)) = 0.632 * 3.162
 // r_prime: 80 >= 2^(0.632 * log2(1024)) = 2^(0.632 * 10)
 pub fn secure_params() -> Parameters {
     //let c = Integer::from_str("7491009436045135886698181243708504421607358929720206973094758479498049015628852031735169966277519969").unwrap();
     //let t2 = Integer::from_str("4090434771271357819").unwrap();
     let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
-    let t = Integer::from_str("64").unwrap();
-    Parameters::new(q, 3.2, 3.2, 8, t)
+    let p = Integer::from_str("64").unwrap();
+    Parameters::new(q, 3.2, 3.2, 8, p)
 }
 
 pub fn mpc_secure_params() -> Parameters {
     // q not accurate, still should reflect real performance
     let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
-    let t = Integer::from_str("64").unwrap();
-    Parameters::new(q, 3.2, 3.2, 512, t)
+    let p = Integer::from_str("64").unwrap();
+    Parameters::new(q, 3.2, 3.2, 512, p)
 }
-
 
 pub fn params_8degree() -> Parameters {
     let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
-    let t = Integer::from_str("127").unwrap();
-    Parameters::new(q, 3.2, 3.2, 8, t)
+    let p = Integer::from_str("127").unwrap();
+    Parameters::new(q, 3.2, 3.2, 8, p)
 }
 
 pub fn params_16degree() -> Parameters {
     let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
-    let t = Integer::from_str("127").unwrap();
-    Parameters::new(q, 3.2, 3.2, 16, t)
+    let p = Integer::from_str("127").unwrap();
+    Parameters::new(q, 3.2, 3.2, 16, p)
 }
 
 pub fn params_32degree() -> Parameters {
     let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
-    let t = Integer::from_str("127").unwrap();
-    Parameters::new(q, 3.2, 3.2, 32, t)
+    let p = Integer::from_str("127").unwrap();
+    Parameters::new(q, 3.2, 3.2, 32, p)
 }
 
 pub fn params_64degree() -> Parameters {
     let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
-    let t = Integer::from_str("127").unwrap();
-    Parameters::new(q, 3.2, 3.2, 64, t)
+    let p = Integer::from_str("127").unwrap();
+    Parameters::new(q, 3.2, 3.2, 64, p)
 }
 
 pub fn params_128degree() -> Parameters {
     let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
-    let t = Integer::from_str("127").unwrap();
-    Parameters::new(q, 3.2, 3.2, 128, t)
+    let p = Integer::from_str("127").unwrap();
+    Parameters::new(q, 3.2, 3.2, 128, p)
 }
 
 pub fn params_256degree() -> Parameters {
     let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
-    let t = Integer::from_str("127").unwrap();
-    Parameters::new(q, 3.2, 3.2, 256, t)
+    let p = Integer::from_str("127").unwrap();
+    Parameters::new(q, 3.2, 3.2, 256, p)
 }
-
 
 pub fn params_512degree() -> Parameters {
     let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
-    let t = Integer::from_str("127").unwrap();
-    Parameters::new(q, 3.2, 3.2, 512, t)
+    let p = Integer::from_str("127").unwrap();
+    Parameters::new(q, 3.2, 3.2, 512, p)
 }
 
 pub fn params_1024degree() -> Parameters {
     let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
-    let t = Integer::from_str("127").unwrap();
-    Parameters::new(q, 3.2, 3.2, 1024, t)
+    let p = Integer::from_str("127").unwrap();
+    Parameters::new(q, 3.2, 3.2, 1024, p)
 }
 
 pub fn params_2048degree() -> Parameters {
     let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
-    let t = Integer::from_str("127").unwrap();
-    Parameters::new(q, 3.2, 3.2, 2048, t)
+    let p = Integer::from_str("127").unwrap();
+    Parameters::new(q, 3.2, 3.2, 2048, p)
 }
 
 pub fn encrypt_det(
@@ -141,12 +139,12 @@ pub fn encrypt_det(
     let (v, e_prime, e_prime_prime) = r;
 
     let a0_mul_v = rq.mul(a0, &v);
-    let t_mul_e_prime = rq.times(&e_prime, &params.t);
-    let a = rq.add(&a0_mul_v, &t_mul_e_prime);
+    let p_mul_e_prime = rq.times(&e_prime, &params.p);
+    let a = rq.add(&a0_mul_v, &p_mul_e_prime);
 
     let b0_mul_v = rq.mul(b0, &v);
-    let t_mul_e_prime_prime = rq.times(&e_prime_prime, &params.t);
-    let b = rq.add(&b0_mul_v, &t_mul_e_prime_prime);
+    let p_mul_e_prime_prime = rq.times(&e_prime_prime, &params.p);
+    let b = rq.add(&b0_mul_v, &p_mul_e_prime_prime);
 
     let c0 = rq.add(&b, &m);
     let c1 = rq.neg(&a);
@@ -219,7 +217,7 @@ pub fn decrypt(
     }
 
     // Reduce polynomial modulo the coefficients
-    Ok(msg_minus_q.modulo(&params.t))
+    Ok(msg_minus_q.modulo(&params.p))
 }
 
 pub fn generate_key_pair(params: &Parameters) -> (PublicKey, SecretKey) {
@@ -230,7 +228,7 @@ pub fn generate_key_pair(params: &Parameters) -> (PublicKey, SecretKey) {
     let e0 = sample_from_gaussian(params.r, params.n);
 
     let elem1 = rq.mul(&a0, &sk);
-    let elem2 = rq.times(&e0, &params.t);
+    let elem2 = rq.times(&e0, &params.p);
     let pk = (a0, rq.add(&elem1, &elem2));
 
     (pk, sk)
