@@ -1,6 +1,6 @@
 \documentclass[11pt,openright]{report}
 
-\usepackage[latin1]{inputenc}
+\usepackage[utf8]{inputenc}
 \usepackage[american]{babel}
 \usepackage{a4}
 \usepackage{url}
@@ -23,6 +23,7 @@
 \usepackage{mathtools}
 \usepackage{todonotes}
 
+\graphicspath{{images/}{../images/}}
 \usepackage{subfiles} % Best loaded last in the preamble
 	
 \renewcommand*\sfdefault{lmss}
@@ -32,16 +33,16 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\pagestyle{empty} 
-\pagenumbering{roman} 
+\pagestyle{empty}
+\pagenumbering{roman}
 \vspace*{\fill}\noindent{\rule{\linewidth}{1mm}\\[4ex]
 {\Huge\sf Multiparty Computation based on Ring-LWE}\\[4ex] %Bare midlertidig titel
 {\huge\sf Mikkel Gaba, Marcus Sellebjerg, Kasper Ils{\o}e}\\[2ex]
 \noindent\rule{\linewidth}{1mm}\\[4ex]
 \noindent{\Large\sf Project Report (10 ECTS) in Computer Science\\[1ex]
-Advisor: Ivan Damg{\aa}rd \\[1ex]
-Department of Computer Science, Aarhus University\\[1ex]  
-May 22th, 2022 \\[15ex]}\\[\fill]}
+  Advisor: Ivan Damg{\aa}rd \\[1ex]
+  Department of Computer Science, Aarhus University\\[1ex]
+  May 22th, 2022 \\[15ex]}\\[\fill]}
 \epsfig{file=logo.eps}\clearpage
 \linespread{1.15}
 
@@ -110,7 +111,11 @@ May 22th, 2022 \\[15ex]}\\[\fill]}
 \chapter{Implementation}
 \label{ch:main2}
 
+\subfile{sections/ImplementationIntro}
+
 \subfile{sections/PKCImplementation}
+
+\subfile{sections/MPCImplementation}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -128,7 +133,7 @@ May 22th, 2022 \\[15ex]}\\[\fill]}
 
 \cleardoublepage
 \addcontentsline{toc}{chapter}{Bibliography}
-\bibliographystyle{plain} 
+\bibliographystyle{plain}
 \bibliography{refs}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

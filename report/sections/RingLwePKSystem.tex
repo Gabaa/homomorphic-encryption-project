@@ -1,86 +1,180 @@
-%! Author = sellebjergen
-%! Date = 25/02/2022
+% !TeX root = ../main.tex
 
-% TODO: Måske der skal indsættes et eksempel af de her 2? Burde være ganske let at gøre, da vi kan bruge implementationen
-
-% Preamble
 \documentclass[../main.tex]{subfiles}
 \graphicspath{{\subfix{../images/}}}
 
+\lstdefinelanguage{Sage}[]{Python}
+{morekeywords={False,sage,True},sensitive=true}
+\lstset{
+  frame=none,
+  showtabs=False,
+  showspaces=False,
+  showstringspaces=False,
+  commentstyle={\ttfamily\color{dgreencolor}},
+  keywordstyle={\ttfamily\color{dbluecolor}\bfseries},
+  stringstyle={\ttfamily\color{dgraycolor}\bfseries},
+  language=Sage,
+  basicstyle={\fontsize{10pt}{10pt}\ttfamily},
+  aboveskip=0.3em,
+  belowskip=0.1em,
+  numbers=left,
+  numberstyle=\footnotesize
+}
+\definecolor{dblackcolor}{rgb}{0.0,0.0,0.0}
+\definecolor{dbluecolor}{rgb}{0.01,0.02,0.7}
+\definecolor{dgreencolor}{rgb}{0.2,0.4,0.0}
+\definecolor{dgraycolor}{rgb}{0.30,0.3,0.30}
+\newcommand{\dblue}{\color{dbluecolor}\bf}
+\newcommand{\dred}{\color{dredcolor}\bf}
+\newcommand{\dblack}{\color{dblackcolor}\bf}
+
 % Document
 \begin{document}
-    \section{Encoding messages as polynomials} \label{sec:encoding-messages-as-polynomials}
-    Encoding messages as polynomials follows simply by the fact that a letter can be represented by a number.
-    These numbers can then be combined into a vector which can be encoded as a polynomial.
-    As an example take the message: ``CRYPTO'', using the ASCII table, this message can be represented by the
-    vector $[67, 82, 89, 80, 84, 79]$.
-    This vector can be represented as a polynomial by $67 + 82x + 89x^2 + 80x^^ + 84x^4 + 79x^5$.
-    Trivially we can also decode any polynomial into a message, by reverting these steps one by one.
 
-    \section{Ring LWE - A somewhat homomorphic encryption scheme}
-    In the paper ``Fully Homomorphic Encryption from Ring-LWE and Security for Key Dependent Messages'' written by
-    Zvika Brakerski and Vinod Vaikuntanathan \cite{brakerski2011fully}
-    they describe a method for converting the Ring Learnig with errors (RingLWE) problem into an encryption scheme
-    which reduces to the worst-case hardness of problems on ideal lattices.
-    We'll shortly describe the encryption scheme here but will omit proofs and detailed discussions.
-    Both system will be over the message space of $R_t = \mathbb{Z}_t[x] / \langle f(x) \rangle $.
+\section{Ring LWE - A somewhat homomorphic encryption scheme} \label{section: RLWE theory}
+In the paper ``Fully Homomorphic Encryption from Ring-LWE and Security for Key Dependent Messages'' written by
+Zvika Brakerski and Vinod Vaikuntanathan \cite{brakerski2011fully}
+they describe a method for converting the Ring Learnig with errors (RingLWE) problem into an encryption scheme
+which reduces to the worst-case hardness of problems on ideal lattices.
+We'll shortly describe the encryption scheme here but will omit proofs and detailed discussions.
+Both system will be over the message space of $R_p = \mathbb{Z}_p[x] / \langle f(x) \rangle $.
 
-    \subsection{Symmetric version}
-    Let $\kappa$ be the security parameter and let further q and t be prime numbers where $t \in \mathbb{Z}_n^*$.
-    We also need a polynomial of degree n $f(x) \in \mathbb{Z}[x]$ and an error distribution $\chi$ over the ring
-    $R_q = \mathbb{Z}_q[x] / \langle f(x) \rangle$.
+\subsection{Polynomial learning with errors}
+The polynomial learning with errors problem decision problem variant is defined for an instantiation
+of a function f, a modulo q and a error distribution $\chi$ and given at most l samples written as $PLWE_{f, q, \chi}^(l)$
+It is defined in the hermite normal form as
+\\[2mm]
+\textbf{The PLWE Assumption - Hermite Normal Form.}
+for all $\kappa \in \mathbb{N}$, let $f(x) = f_{\kappa}(x) \in \mathbb{Z}[x]$
+be a polynomial of degree N = N($\kappa$), let $q = q(\kappa) \in \mathbb{Z}$
+be a prime integer, let the ring $R = \mathbb{Z}[x] / \langle f(x) \rangle$
+and $R_q = R / qR$ with $\chi$ denoting a distribution over the ring R.
+Then the Polynomial learning with error ($PLWE_{f,q,\chi}$) assumption can be defined as
+\[
+    \{ (a_i, a_i \cdot s + e_i) \}_{i \in [l]} \approx^{c} \{(a_i, u_i) \}_{i \in [l]}\}
+\]
+where s is sampled from $\chi$, $a_i$ is uniform in $R_q$, the error polynomials
+$e_i$ are sampled from $\chi$ and $u_i$ are random ring elements from $R_q$.
+We will allow up to l samples for the decision problem where the only limitation on l is that it should
+be polynomial.
+\\[5mm]
+Beside the decision variant, the PLWE problem could also be stated in terms of a search problem, one in which
+an adversary have to find the secret vector $s \in R_q$. But we will focus on the decision problem, as this
+is more commonly used in cryptography.
 
+\subsection{Symmetric version}
+Let $\kappa$ be the security parameter and let further p and q be prime numbers where $p \in \mathbb{Z}_N^*$.
+We also need a polynomial of degree N: $f(x) \in \mathbb{Z}[x]$ and an error distribution $\chi$ over the ring
+$R_q = \mathbb{Z}_q[x] / \langle f(x) \rangle$, then we can define the following operations for a somewhat homomorphic
+encryption scheme.
 
-    \subsubsection{Key-gen}
-    Let our secret key be a randomly sampled element from the error distribution $s \leftarrow^\$ \chi$
-    Then given the security parameter $\kappa$ sample a ring element s uniformly at random from $\kappa$ and define the
-    secret key vector by $(s^0, s^1, s^2, \dots, s^D) \in R_q^{D+1}$.
+\subsubsection{Key-gen}
+Let our secret key be a randomly sampled element from the error distribution $s \leftarrow^\$ \chi$
+Then given the security parameter $\kappa$ sample a ring element s uniformly at random from $\kappa$ and define the
+secret key vector by $(s^0, s^1, s^2, \dots, s^D) \in R_q^{D+1}$.
 
-    \subsubsection{Encryption}
-    Rememer that all messages are encodeable in our message space $R_t$, thus we will encode our message m as a n degree
-    polynomium with coefficient mod t.
-    To encrypt we sample $(a, b = a \cdot s + t \cdot e)$ where $a \leftarrow^\$ R_q$ and $e \leftarrow^\$ \chi$,
-    then compute
-    \begin{align*}
-        c_0 \coloneqq b + m && c_1 \coloneqq -a
-    \end{align*}
-    and from this output the ciphertext \textbf{c} $\coloneqq (c_0, c_1) \in R_q^2$.
+\subsubsection{Encryption}
+Rememer that all messages are encodeable in our message space $R_p$, thus we will encode our message m as a n degree
+polynomium with coefficients modulo t.
+To encrypt we sample $(a, b = a \cdot s + p \cdot e)$ where $a \leftarrow^\$ R_q$ and $e \leftarrow^\$ \chi$,
+then compute
+\begin{align*}
+    c_0 \coloneqq b + m &  & c_1 \coloneqq -a
+\end{align*}
+and from this output the ciphertext \textbf{c} $\coloneqq (c_0, c_1) \in R_q^2$.
 
-    \subsubsection{Decryption}
-    Note that a ciphertext is on the form $(c_0, c_1, \dots , C_{D}) \in R_q^{D+1}$.
-    Define the inner product over $R_q$ as
-    \begin{align*}
-        \langle c, s \rangle = \sum_{i=0}^{D} c_i \cdot s^i
-    \end{align*}
-    Then to decrypt, simply set m as the inner product of c and s and take modulo t.
-    \begin{align*}
-        m = \langle c, s \rangle \bmod t
-    \end{align*}
-    m will then be the decrypted message.
+\subsubsection{Decryption}
+Note that a ciphertext is on the form $(c_0, c_1, \dots , C_{D}) \in R_q^{D+1}$.
+Define the inner product over $R_q$ as
+\begin{align*}
+    \langle c, s \rangle = \sum_{i=0}^{D} c_i \cdot s^i
+\end{align*}
+Then to decrypt, simply set m as the inner product of c and s and take modulo t.
+\begin{align*}
+    m = \langle c, s \rangle \bmod p
+\end{align*}
+m will then be the decrypted message.
 
-    \subsubsection{Eval}
-    To obtain the homomorphic abilities of the encryption scheme, Zvika Brakerski and Vinod Vaikuntanathan show
-    how to obtain homomorphic addition and multiplication of ciphertexts.
-    \\[2mm]
-    \textbf{Addition:} Assume we have 2 ciphertexts $c \in R_q^{D+1}$ and $c' \in R_q^{D+1}$, then an encryption
-    of the sum of the 2 underlying messages will be
-    \begin{align*}
-        c_{Add} = c + c' = (c_0 + c'_0, c_1 + c'_1, \dots , c_d + c'_d) && c_{Add} \in R_q^{D + 1}
-    \end{align*}
-    The decryption of $c_{Add}$ will then be the sum of the unencrypted messages from $c$ and $c'$.
-    \\[2mm]
-    \textbf{Multiplication:} Assume we have 2 ciphertexts $c \in R_q^{D+1}$ and $c' \in R_q^{D'+1}$ and let v be a symbolig value
-    then calculate the updated ciphertext
-    \\
-    $(\hat{c}_0, \hat{c}_1, \dots, \hat{c}_d+d') \in R_q^{D + D' + 1}$ by
-    \begin{align*}
-        c_{mul} = (\sum_{i=0}^D c_i \cdot v^i) \cdot
-                  (\sum_{j=0}^{D'} c'_i \cdot v^i) =
-                   \sum_{i=0}^{D+D'} \hat{c}_i \cdot v^i
-            && c_{mul} \in R_q^{D+D'+1}
-    \end{align*}
-    The output of the multiplication operation will then be $c_{mul} = (\hat{c}_0, \hat{c}_1, \dots, \hat{c}_{D+D'})$
-    
-    \subsection{Public key version}
+\subsubsection{Eval}
+To obtain the homomorphic abilities of the encryption scheme, Zvika Brakerski and Vinod Vaikuntanathan show
+how to obtain homomorphic addition and multiplication of ciphertexts.
+\\[2mm]
+\textbf{Addition:} Assume we have 2 ciphertexts $c \in R_q^{D+1}$ and $c' \in R_q^{D+1}$, then an encryption
+of the sum of the 2 underlying messages will be
+\begin{align*}
+    c_{Add} = c + c' = (c_0 + c'_0, c_1 + c'_1, \dots , c_d + c'_d) &  & c_{Add} \in R_q^{D + 1}
+\end{align*}
+The decryption of $c_{Add}$ will then be the sum of the unencrypted messages from $c$ and $c'$.
+\\[2mm]
+\textbf{Multiplication:} Assume we have 2 ciphertexts $c \in R_q^{D+1}$ and $c' \in R_q^{D'+1}$ and let v be a symbolig value
+then calculate the updated ciphertext
+\\
+$(\hat{c}_0, \hat{c}_1, \dots, \hat{c}_d+d') \in R_q^{D + D' + 1}$ by
+\begin{align*}
+    c_{mul} = (\sum_{i=0}^D c_i \cdot v^i) \cdot
+    (\sum_{j=0}^{D'} c'_i \cdot v^i) =
+    \sum_{i=0}^{D+D'} \hat{c}_i \cdot v^i
+     &  & c_{mul} \in R_q^{D+D'+1}
+\end{align*}
+The output of the multiplication operation will then be $c_{mul} = (\hat{c}_0, \hat{c}_1, \dots, \hat{c}_{D+D'})$
+
+\subsection{Public key version}
+%TODO: måske der skal skrives noget om lemma 4?
+To achieve a public scheme instead, we can make the following changes
+\begin{itemize}
+    \item In the key generation we generate in addition to the secret key $sk = s \leftarrow^{\$} \chi$, a public key
+        $pk = (a_0 , b_0 = a_0 \cdot s + p \cdot e_0)$, where $a_0 \leftarrow^{\$} R_q, e_0 \leftarrow^{\$} \chi$
+    \item In the encryption algorithm, we can instead use
+        $(a_0 \cdot v + t \cdot e', b_0 \cdot v + p \cdot e'')$ where
+        $v, e' \leftarrow^{\$} \chi$ and $e'' \leftarrow^{\$} \chi '$.
+\end{itemize} 
+where we have then obtained a public key $pk = (a_0, a_0 \cdot s + p \cdot e_0)$
+corresponding to the secret key sk.
+
+\subsection{On the security of PLWE}
+    To later generate a secure set of parameters for our encryption scheme we will have to touch a bit on the security.
+    Several considerations comes to play when thinking about the security and optimizations, most noticeable the choice
+    of a proper function f(x) and the best well known attack should come into consideration.
+    A lot of math including calculations on lattices and especially ideal lattices are needed to properly discuss the
+    necessity for certain choices to be made and as such we will only be outlining the processes needed for us to choose
+    secure parameters for our system.
+
+    \subsubsection{On the choice of functions f(x)}
+        The choice of function f(x) is normally set to be a cyclotomic-polynomial, meaning that it should be on the form
+        of $f(x) = x^N + 1$ where n should be chosen as $N = 2^k$ for $k \in \mathbb{N}$, do note that this is not the only
+        way that a polynomial can be chosen as cyclotomic, but for our use case this will suffice.
+        By doing so we get a lot of algebraic properties which opens for optimizations as described in section % TODO: sæt lige ref.
+        and adds to the security.
+        Therefore we will without further discussion choose f(x) as a cyclotomic-polynomial function.
+
+    \subsubsection{Reducing RLWE to LWE samples}
+        Another important property to see is that any RLWE sample of the form $(a, s \cdot a + e)$ 
+		where $a \in R_q$ and $s, e \leftarrow^\$ \chi$ can be written into n LWE samples by using the following method.
+        Let $A_a$ be the matrix of multiplication by $a \in R_q$, then we get n LWE samples by
+        \begin{align*}
+            (A_a, \textbf{b} = \textbf{s}^T \cdot A_a + \textbf{e}^T)
+        \end{align*}
+        Where $\textbf{b} \in (\mathbb{R} / q\mathbb{Z})^N$ and $e \in \mathbb{R}^N$.
+
+    \subsubsection{Parameter testing tool}
+        Martin Albrecht, professor at the university of Royal Holloway in London, is the current maintainer of an
+		opensource project~\cite{estimations-tool} geared towards choosing secure parameters for the RLWE encryption scheme.
+		By using this tool, we will be able to calculate the amount of security by using the lattice reduction algorithm BKZ.
+		We'll be using this tool to evaluate the amount of security that one would need to actually secure the algorithm,
+		while still holding the degree of the function f(x) to a minimum for performance reasons.
+		The tool will use a lot of lattice based mathemathics to actually calculate the amount of security, which will be given
+		to us in the form of a number $\beta$, this $\beta$ will then be used to test the amount of security.
+        For the precise usage of the tool we have used the following sage script
+        \lstinputlisting[language=Python]{code-snippets/estimator.sage}
+        Then we can here variate the parameteres of our modulus q, the degree of the cyclotomic-polynomial n
+        our noise distributions on r and r' (Xs, Xe) and the value of m typically provided by the authors.
+
+    \subsubsection{Best known attack}
+		The best known attack on the LWE scheme, which by combination of the earlier mentioned method to combine RLWE
+		into n LWE samples also gives an attack on RLWE, is the BKZ lattice reduction algorithm.
+		We will not be going into how BKZ works, but will mention that the amount of security from the BKZ algorithm
+		has been showed in the "new hope" paper \cite{usenix16} written by Erdem ALkim and Thomas poppelman to be
+		\[ 2^{0.292 \cdot \beta} \]
+		Where we can get the value of $\beta$ from the testing tool.
 
 \end{document}
