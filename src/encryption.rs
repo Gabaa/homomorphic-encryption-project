@@ -73,6 +73,62 @@ pub fn mpc_secure_params() -> Parameters {
     Parameters::new(q, 3.2, 3.2, 512, t)
 }
 
+
+pub fn params_8degree() -> Parameters {
+    let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
+    let t = Integer::from_str("127").unwrap();
+    Parameters::new(q, 3.2, 3.2, 8, t)
+}
+
+pub fn params_16degree() -> Parameters {
+    let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
+    let t = Integer::from_str("127").unwrap();
+    Parameters::new(q, 3.2, 3.2, 16, t)
+}
+
+pub fn params_32degree() -> Parameters {
+    let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
+    let t = Integer::from_str("127").unwrap();
+    Parameters::new(q, 3.2, 3.2, 32, t)
+}
+
+pub fn params_64degree() -> Parameters {
+    let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
+    let t = Integer::from_str("127").unwrap();
+    Parameters::new(q, 3.2, 3.2, 64, t)
+}
+
+pub fn params_128degree() -> Parameters {
+    let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
+    let t = Integer::from_str("127").unwrap();
+    Parameters::new(q, 3.2, 3.2, 128, t)
+}
+
+pub fn params_256degree() -> Parameters {
+    let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
+    let t = Integer::from_str("127").unwrap();
+    Parameters::new(q, 3.2, 3.2, 256, t)
+}
+
+
+pub fn params_512degree() -> Parameters {
+    let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
+    let t = Integer::from_str("127").unwrap();
+    Parameters::new(q, 3.2, 3.2, 512, t)
+}
+
+pub fn params_1024degree() -> Parameters {
+    let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
+    let t = Integer::from_str("127").unwrap();
+    Parameters::new(q, 3.2, 3.2, 1024, t)
+}
+
+pub fn params_2048degree() -> Parameters {
+    let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
+    let t = Integer::from_str("127").unwrap();
+    Parameters::new(q, 3.2, 3.2, 2048, t)
+}
+
 pub fn encrypt_det(
     params: &Parameters,
     m: Polynomial,
