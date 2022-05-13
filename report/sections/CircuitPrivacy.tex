@@ -13,6 +13,6 @@ This property along with how to achieve it has been described in \cite{gentry200
 
 To achieve \textit{circuit privacy} we can make an encryption of $0$ with a very large error term, and then add this ciphertext to the original ciphertext.
 By doing this we esentially drown out information about the error vector of the original ciphertext.
-This will not modify the encrypted data, as the new error term will be removed by the (mod $t$) computation done in \textbf{decrypt} anyways.
+This will not modify the encrypted data, as the new error term will be removed by the (mod $p$) computation done in \textbf{decrypt} anyways, as long as the requirements on the $\ell_\infty$ norm are still satisfied.
 
 \end{document}

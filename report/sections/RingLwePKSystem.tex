@@ -74,8 +74,8 @@ Then given the security parameter $\kappa$ sample a ring element s uniformly at 
 secret key vector by $(s^0, s^1, s^2, \dots, s^D) \in R_q^{D+1}$.
 
 \subsubsection{Encryption}
-Rememer that all messages are encodeable in our message space $R_p$, thus we will encode our message m as a n degree
-polynomium with coefficients modulo t.
+Rememer that all messages are encodeable in our message space $R_p$, thus we will encode our message m as a N degree
+polynomium with coefficients modulo p.
 To encrypt we sample $(a, b = a \cdot s + p \cdot e)$ where $a \leftarrow^\$ R_q$ and $e \leftarrow^\$ \chi$,
 then compute
 \begin{align*}
@@ -89,7 +89,7 @@ Define the inner product over $R_q$ as
 \begin{align*}
     \langle c, s \rangle = \sum_{i=0}^{D} c_i \cdot s^i
 \end{align*}
-Then to decrypt, simply set m as the inner product of c and s and take modulo t.
+Then to decrypt, simply set m as the inner product of c and s and take modulo p.
 \begin{align*}
     m = \langle c, s \rangle \bmod p
 \end{align*}
@@ -149,8 +149,8 @@ corresponding to the secret key sk.
 
     \subsubsection{Reducing RLWE to LWE samples}
         Another important property to see is that any RLWE sample of the form $(a, s \cdot a + e)$ 
-		where $a \in R_q$ and $s, e \leftarrow^\$ \chi$ can be written into n LWE samples by using the following method.
-        Let $A_a$ be the matrix of multiplication by $a \in R_q$, then we get n LWE samples by
+		where $a \in R_q$ and $s, e \leftarrow^\$ \chi$ can be written into N LWE samples by using the following method.
+        Let $A_a$ be the matrix of multiplication by $a \in R_q$, then we get N LWE samples by
         \begin{align*}
             (A_a, \textbf{b} = \textbf{s}^T \cdot A_a + \textbf{e}^T)
         \end{align*}
@@ -171,7 +171,7 @@ corresponding to the secret key sk.
 
     \subsubsection{Best known attack}
 		The best known attack on the LWE scheme, which by combination of the earlier mentioned method to combine RLWE
-		into n LWE samples also gives an attack on RLWE, is the BKZ lattice reduction algorithm.
+		into N LWE samples also gives an attack on RLWE, is the BKZ lattice reduction algorithm.
 		We will not be going into how BKZ works, but will mention that the amount of security from the BKZ algorithm
 		has been showed in the "new hope" paper \cite{usenix16} written by Erdem ALkim and Thomas poppelman to be
 		\[ 2^{0.292 \cdot \beta} \]
