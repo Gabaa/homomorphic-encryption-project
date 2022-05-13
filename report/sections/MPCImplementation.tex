@@ -58,8 +58,7 @@ The \lstinline{PlayerState} struct is also frequently used in our implementation
 
 It includes the key material received from the dealer $(pk, s_{i,1}, s_{i,2})$, our share of the global MAC key $\alpha_i$, the encrypted global key $e_\alpha$, a list of pairs $(a, \gamma(a)_i)$ (where $a$ is a value that has been opened, and $\gamma(a)_i$ is our share of $\alpha a$), and a \lstinline{Facilitator} instance.
 
-\subsection{Implementation of $\mathcal{F}_{KeyGenDec}$}
-\subsubsection*{ddec}
+\subsection{Distributed decryption}
 The \lstinline{ddec} function implements the distributed decryption part of the $\mathcal{F}_{KeyGenDec}$ functionality described earlier. The function takes a \lstinline{Parameters} struct \lstinline{params}, a \lstinline{PlayerState} \lstinline{state}, and a mutable \lstinline{Ciphertext} \lstinline{c} as arguments.
 
 First we check if \lstinline{c} contains $3$ elements, and if this is not the case then we pad the ciphertext with a $0$, since we need there to be three entries for the following computations.
