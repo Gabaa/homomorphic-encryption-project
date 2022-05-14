@@ -387,3 +387,104 @@ impl Protocol {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_input() {
+        let listener = TcpListener::bind("localhost:0").unwrap();
+        let local_address = listener.local_addr().unwrap();
+        let facilitator = FacilitatorImpl::new(vec![local_address], listener);
+
+        let params = secure_params();
+        let (pk, sk) = generate_key_pair(&params);
+        let key_material = KeyMaterial {
+            sk_i1: sk.clone(),
+            sk_i2: params.quotient_ring.mul(&sk, &sk),
+            pk,
+        };
+
+        let mut state = PlayerState::new(facilitator, key_material);
+
+        prep::protocol::initialize(&params, &mut state);
+        let pair = prep::protocol::pair(&params, &state);
+
+        let input_share = online::protocol::give_input(&params, Integer::from(42_i32), pair, &state);
+        let output = online::protocol::output(&params, input_share, &state);
+
+        assert_eq!(Integer::from(42_i32), output)
+    }
+
+    #[test]
+    fn test_add() {
+        let listener = TcpListener::bind("localhost:0").unwrap();
+        let local_address = listener.local_addr().unwrap();
+        let facilitator = FacilitatorImpl::new(vec![local_address], listener);
+
+        let params = secure_params();
+        let (pk, sk) = generate_key_pair(&params);
+        let key_material = KeyMaterial {
+            sk_i1: sk.clone(),
+            sk_i2: params.quotient_ring.mul(&sk, &sk),
+            pk,
+        };
+
+        let mut state = PlayerState::new(facilitator, key_material);
+
+        prep::protocol::initialize(&params, &mut state);
+        let pair_1 = prep::protocol::pair(&params, &state);
+        let pair_2 = prep::protocol::pair(&params, &state);
+
+        let input_share_x = online::protocol::give_input(&params, Integer::from(2_i32), pair_1, &state);
+        let input_share_y = online::protocol::give_input(&params, Integer::from(7_i32), pair_2, &state);
+        let res_share = online::protocol::add(&input_share_x, &input_share_y);
+        let output = online::protocol::output(&params, res_share, &state);
+
+        assert_eq!(Integer::from(9_i32), output)
+    }
+
+    #[test]
+    fn test_multiply() {
+        let listener = TcpListener::bind("localhost:0").unwrap();
+        let local_address = listener.local_addr().unwrap();
+        let facilitator = FacilitatorImpl::new(vec![local_address], listener);
+
+        let params = secure_params();
+        let (pk, sk) = generate_key_pair(&params);
+        let key_material = KeyMaterial {
+            sk_i1: sk.clone(),
+            sk_i2: params.quotient_ring.mul(&sk, &sk),
+            pk,
+        };
+
+        let mut state = PlayerState::new(facilitator, key_material);
+
+        prep::protocol::initialize(&params, &mut state);
+        let pair_1 = prep::protocol::pair(&params, &state);
+        let pair_2 = prep::protocol::pair(&params, &state);
+        let (t_share, _) = prep::protocol::pair(&params, &state);
+        let mul_triple_1 = prep::protocol::triple(&params, &state);
+        let mul_triple_2 = prep::protocol::triple(&params, &state);
+
+        let input_share_x = online::protocol::give_input(&params, Integer::from(2_i32), pair_1, &state);
+        let input_share_y = online::protocol::give_input(&params, Integer::from(7_i32), pair_2, &state);
+
+        let res_share = online::protocol::multiply(
+            &params,
+            input_share_x,
+            input_share_y,
+            mul_triple_1,
+            mul_triple_2,
+            t_share,
+            &mut state
+        );
+
+        let output = online::protocol::output(&params, res_share, &state);
+
+        assert_eq!(Integer::from(14_i32), output)
+    }
+}
+
+
