@@ -7,10 +7,11 @@ use std::{
         Arc,
     },
     thread::{self, JoinHandle},
+    time::Instant,
 };
 
 use homomorphic_encryption_project::{
-    encryption::{secure_params, Parameters},
+    encryption::*,
     mpc::{online, prep, PlayerState},
     prob::sample_single,
     protocol::{Facilitator, KeyMaterial, OnlineMessage, PrepMessage},
@@ -107,10 +108,7 @@ impl Facilitator for FacilitatorImpl {
     }
 
     fn receive(&self, player: usize) -> OnlineMessage {
-        let msg = self.receivers[player].recv().unwrap();
-
-        //println!("recv from [{:02}] {:?}", player, msg);
-        msg
+        self.receivers[player].recv().unwrap()
     }
 
     fn receive_from_all(&self) -> Vec<OnlineMessage> {
@@ -134,7 +132,8 @@ fn main() -> io::Result<()> {
 
     let facilitator = FacilitatorImpl::new(players, listener);
 
-    let params = secure_params();
+    let params = params_8degree();
+    println!("Using parameters with N={}", params.n);
     let state = PlayerState::new(facilitator, key_material);
 
     let input = sample_single(&Integer::from(50));
@@ -190,6 +189,15 @@ impl Protocol {
         params: Parameters,
         input: Integer,
     ) -> io::Result<()> {
+        let protocol_name = match self {
+            Protocol::AddAll => "ADD_ALL_INPUTS",
+            Protocol::MulAll => "MULTIPLY_ALL_INPUTS",
+            Protocol::X1MulX2PlusX3 => "X1 * X2 + X3",
+        };
+        println!("Running protocol for: {}", protocol_name);
+
+        let now = Instant::now();
+
         match self {
             Protocol::AddAll => {
                 let player_count = state.facilitator.player_count();
@@ -226,7 +234,14 @@ impl Protocol {
                 println!("Getting output...");
                 let output = online::protocol::output(&params, added_shares, &state);
 
-                println!("Output is {} (input {})", output, input);
+                let elapsed_time = now.elapsed();
+
+                println!(
+                    "Output is {} (input {}, took {} secs)",
+                    output,
+                    input,
+                    elapsed_time.as_secs_f32()
+                );
 
                 state.stop();
 
@@ -286,7 +301,14 @@ impl Protocol {
                 println!("Getting output...");
                 let output = online::protocol::output(&params, multiplied_shares, &state);
 
-                println!("Output is {} (input {})", output, input);
+                let elapsed_time = now.elapsed();
+
+                println!(
+                    "Output is {} (input {}, took {} secs)",
+                    output,
+                    input,
+                    elapsed_time.as_secs_f32()
+                );
 
                 state.stop();
 
@@ -349,7 +371,14 @@ impl Protocol {
                 println!("Getting output...");
                 let output = online::protocol::output(&params, added_share, &state);
 
-                println!("Output is {} (input {})", output, input);
+                let elapsed_time = now.elapsed();
+
+                println!(
+                    "Output is {} (input {}, took {} secs)",
+                    output,
+                    input,
+                    elapsed_time.as_secs_f32()
+                );
 
                 state.stop();
 

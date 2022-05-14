@@ -70,21 +70,21 @@ pub fn ddec<F: Facilitator>(
         sum
     };
 
-    let bound_C_m = 8.6;
+    let bound_c_m = 8.6;
     let r_squared = params.r * params.r;
     let n_squared = params.n * params.n;
-    let bound_B = &params.p / Integer::from(2_i32)
+    let bound_b = &params.p / Integer::from(2_i32)
         + &params.p
             * Integer::from(
-                (4_f64 * bound_C_m * r_squared * (n_squared as f64)
+                (4_f64 * bound_c_m * r_squared * (n_squared as f64)
                     + 2_f64 * (params.n as f64).sqrt() * params.r
-                    + 4_f64 * bound_C_m * r_squared * (n_squared as f64)) as i64,
+                    + 4_f64 * bound_c_m * r_squared * (n_squared as f64)) as i64,
             );
     let two_exp_sec = Integer::from(2_i32).pow(SEC as u32);
 
     let norm_bound =
-        two_exp_sec * bound_B / (Integer::from(state.facilitator.player_count()) * &params.p);
-    println!("norm_bound is {:?}", norm_bound);
+        two_exp_sec * bound_b / (Integer::from(state.facilitator.player_count()) * &params.p);
+
     let t_i = rq.add(
         &v_i,
         &rq.times(&sample_from_uniform(&norm_bound, params.n), &params.p), // norm_bound is placeholder, since q needs to be a lot higher for this to work properly

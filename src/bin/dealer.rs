@@ -1,4 +1,4 @@
-use homomorphic_encryption_project::encryption::secure_params;
+use homomorphic_encryption_project::encryption::*;
 use std::{
     io,
     net::{SocketAddr, TcpListener, TcpStream},
@@ -87,7 +87,7 @@ fn main() -> io::Result<()> {
     let mut facilitator = DealerFacilitatorImpl::new();
 
     println!("Generating and distributing key material...");
-    let params = secure_params();
+    let params = params_8degree();
     let (pk, sk) = generate_key_pair(&params);
     distribute_keys(&mut facilitator, pk, sk, &params)
 }
