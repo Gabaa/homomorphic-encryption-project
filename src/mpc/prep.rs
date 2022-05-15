@@ -217,7 +217,13 @@ fn run_zkpopk_for_single<F: Facilitator>(
     let r = vec![r_i; SEC];
     let c = vec![c_i; SEC];
 
-    let (a, z, t) = make_zkpopk(params, x, r, c.clone(), true, &state.pk);
+    let (a, z, t);
+    loop {
+        if let Ok(res) = make_zkpopk(params, x.clone(), r.clone(), c.clone(), true, &state.pk) {
+            (a, z, t) = res;
+            break;
+        }
+    }
 
     // Broadcast ZKPoPK to all players
     let message = OnlineMessage::ShareZKPoPK { a, z, t, c };

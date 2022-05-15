@@ -11,6 +11,12 @@ use crate::{
 
 use super::{SEC, V};
 
+#[derive(Debug)]
+pub enum MakeZKPoPKError {
+    TLInfNormTooBig,
+    ZLInfNormTooBig,
+}
+
 /// Make a zero-knowledge proof of plaintext knowledge
 #[allow(clippy::needless_range_loop, clippy::type_complexity)]
 pub fn make_zkpopk(
@@ -20,7 +26,7 @@ pub fn make_zkpopk(
     c: Vec<Ciphertext>,
     diagonal: bool,
     pk: &PublicKey,
-) -> (Vec<Vec<Polynomial>>, Vec<Vec<Integer>>, Vec<Vec<Integer>>) {
+) -> Result<(Vec<Vec<Polynomial>>, Vec<Vec<Integer>>, Vec<Vec<Integer>>), MakeZKPoPKError> {
     let tau = &params.p / Integer::from(2_i32);
     let rho = Integer::from(2_i32)
         * Integer::from(params.r as i64)
@@ -28,8 +34,9 @@ pub fn make_zkpopk(
     let d = params.n * 3;
 
     let y_i_bound =
-        Integer::from(128_i32) * Integer::from(params.n) * tau * Integer::from(SEC).pow(2);
-    let s_i_bound = Integer::from(128_i32) * Integer::from(d) * rho * Integer::from(SEC).pow(2);
+        Integer::from(128_i32) * Integer::from(params.n) * tau.clone() * Integer::from(SEC).pow(2);
+    let s_i_bound =
+        Integer::from(128_i32) * Integer::from(d) * rho.clone() * Integer::from(SEC).pow(2);
 
     let mut y = Vec::with_capacity(V);
     let mut s = Vec::with_capacity(V);
@@ -139,7 +146,23 @@ pub fn make_zkpopk(
         }
     }
 
-    (a, z, t)
+    // Ensure that ||z_i||_inf is at most 128 * N * tau * sec^2 - tau * sec
+    let z_i_bound = y_i_bound - (tau * Integer::from(SEC));
+    for z_i in z.iter() {
+        if !check_l_inf_norm_below_bound(&Polynomial::from(z_i.to_owned()), &z_i_bound) {
+            return Err(MakeZKPoPKError::ZLInfNormTooBig);
+        }
+    }
+
+    // Ensure that ||t_i||_inf is at most 128 * d * rho * sec^2 - rho * sec
+    let t_i_bound = s_i_bound - (rho * Integer::from(SEC));
+    for t_i in t.iter() {
+        if !check_l_inf_norm_below_bound(&Polynomial::from(t_i.to_owned()), &t_i_bound) {
+            return Err(MakeZKPoPKError::TLInfNormTooBig);
+        }
+    }
+
+    Ok((a, z, t))
 }
 
 /// Verify the validity of a zero-knowledge proof of plaintext knowledge
@@ -285,6 +308,10 @@ fn create_m_e_from_e(e: Vec<u8>) -> Vec<Vec<u8>> {
     m_e
 }
 
+fn check_l_inf_norm_below_bound(pol: &Polynomial, bound: &Integer) -> bool {
+    &pol.l_inf_norm() <= bound
+}
+
 #[cfg(test)]
 mod tests {
     use rug::{rand::RandState, Integer};
@@ -335,7 +362,7 @@ mod tests {
         let params = Parameters::default();
         let (pk, _sk, x, r, c) = setup(&params);
 
-        let (a, z, t) = make_zkpopk(&params, x, r, c.clone(), false, &pk);
+        let (a, z, t) = make_zkpopk(&params, x, r, c.clone(), false, &pk).unwrap();
 
         assert!(
             verify_zkpopk(&params, a, z, t, c, &pk),
@@ -348,7 +375,7 @@ mod tests {
         let params = encryption::secure_params();
         let (pk, _sk, x, r, c) = setup(&params);
 
-        let (a, z, t) = make_zkpopk(&params, x, r, c.clone(), false, &pk);
+        let (a, z, t) = make_zkpopk(&params, x, r, c.clone(), false, &pk).unwrap();
 
         assert!(
             verify_zkpopk(&params, a, z, t, c, &pk),
@@ -361,7 +388,7 @@ mod tests {
         let params = Parameters::default();
         let (pk, _sk, x, r, c) = setup(&params);
 
-        let (a, z, t) = make_zkpopk(&params, x, r, c.clone(), true, &pk);
+        let (a, z, t) = make_zkpopk(&params, x, r, c.clone(), true, &pk).unwrap();
 
         assert!(
             verify_zkpopk(&params, a, z, t, c, &pk),
