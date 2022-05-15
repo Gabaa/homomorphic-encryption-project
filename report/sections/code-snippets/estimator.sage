@@ -1,6 +1,6 @@
 from estimator import *
-from estimator.lwe_parameteres import LWEparameters
-from estimator.nd import NoiseDistribution
+from estimator.lwe_parameters import *
+from estimator.nd import *
 
 n = 2048
 q = 80708763

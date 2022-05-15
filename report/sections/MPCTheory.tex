@@ -134,11 +134,9 @@ Finally, the players check that $\sigma_1 + ... + \sigma_n = 0$, and if this is 
     When choosing our parameter sets for the MPC system it is important to think not only of the security but also of
     the practicality of the systems.
     In the article \cite{damgaard2012multiparty} from Ivan et al.
-	they give examples of parameters where the degree of the polynomial is arounder 12900, much to high for our system to handle
-	as we do not have the cyclotomic-polynomial optimization as descibed in section % TODO: indsæt lige ref til cyclo optimering afsnit.
-	However we are provided with certain limitations on the parameters as well, which we have to bend a bit to test that the system works and as such we will sketch the calculations for the parameters here.
+	We are provided with certain limitations on the parameters as well, which we have to bend a bit to test that the system works and as such we will sketch the calculations for the parameters here.
     We will omit the proofs and justification as those are outside the scope of our project.
-    Let N be the degree of our polynomial f(x) in the RLWE encryption scheme as mentioned in section % TODO: cite the section.
+    Let N be the degree of our polynomial f(x) in the RLWE encryption scheme, % TODO: cite the section.
     let r be the randomness used while encrypting, SEC be 40, the amount of players n be 3 with $c_{SEC}, Y$ and $Z$ be
     be given by the formulas
     \begin{align*}
@@ -146,26 +144,33 @@ Finally, the players check that $\sigma_1 + ... + \sigma_n = 0$, and if this is 
         Y       &= \frac{p}{2} + p \cdot (4 \cdot C_{m-bound} \cdot r^2 \cdot N^2 \cdot 2 \cdot \sqrt{N} \cdot r + 4 \cdot C_{m-bound} \cdot r^2 \cdot N^2) \\
         Z       &= C_{m-bound} \cdot N^2 \cdot n^2 \cdot c_{sec}^2 \cdot Y^2 + n \cdot c_{sec} \cdot Y
     \end{align*}
-    Then they write concesily in the article that the following inequalities for q and r should be held.
+    Then the article writes that the following inequalities for q and r need to be held.
     \begin{align*}
-        q > 2 \cdot Z \cdot (1 + 2^{sec}) \\
-        r > max\{3.2, 1.5 \cdot \gamma^{-t'} \cdot q^{1 - \frac{N}{t'}}\}
+        q   &> 2 \cdot Z \cdot (1 + 2^{sec}) \\
+        r   &> max\{3.2, 1.5 \cdot \gamma^{-t'} \cdot q^{1 - \frac{N}{t'}}\}
     \end{align*}
-    As this was a pain to write, we wr8ote a small script to search for parameters for us to use which can be seen below.
+    We wrote a small program, which can be seen below, to check for good values of q and r.
     \lstinputlisting[language=Python]{code-snippets/param-searach.py}
-	With the script we found that a 
-	512 degree polynomial would result in q being of 313 bits in size and our randomness (used for encryption in the mpc protocol) should be above $3.85 \cdot 10^{73}$.
+	With the script we found that a  512 degree polynomial would result in q being of 313 bits in size and our randomness (used for encryption in the mpc protocol) should be above $3.85 \cdot 10^{73}$.
 	While these values provides something of a pretty good security, the generated value for the randomness r is way to high to be
 	practical in any way.
-	So to have a smaller degree of the polynomial f(x), as to have better performance, from section % TODO: indsæt reference.
+	So to have a smaller degree of the polynomial f(x), and have better performance,
 	we need to increase the value of q and r.
-	Using this enormous value of r, we would find ourselves in a situation in which the l-inf-norm would be way to high, which
-	would generate to much noise for us to decrypt and as a consequence, we have to use a smaller value of r.
+	Using this enormous value of r, we would be in a situation where the l-inf-norm would be to high, which
+	would generate to much noise for us to decrypt and as a consequence, we need to have a smaller value of r.
 	\\[5mm]
-	Using the tool from provided by Martin Albrecht and described in section % TODO: indsæt reference til tool
-	we have found that the the following parameteres using a polynomial of degree 1024 provides 128 bit of security
-	% \lstinputlisting[language=Rust]{code-snippets/params-1024-degree.rs} % TODO: få lige rust styling sat ind.
-	Using these parameters to run the system, we found that it was possible to actually run the system and get some
-	test data as can be seen in section % TODO: indsæt reference til test data section.
+    By using the tool from Martin Albrecht % TODO: indsæt lige en reference.
+    and using the valus which we got from the program as above, we can see that setting q some prime
+    of size 313 bits and setting the degree of our polynomial to N = 12900, we will have around 627 bits
+    of security against the BKZ lattice reduction.
+    These tests also align with the how the parameters in \cite{damgaard2012multiparty} are chosen.
+    \\[5mm]
+    While this provides pretty good security, it is by no means effective for us to run, as we miss the optimization %TODO: indsæt ref
+    so we have to settle for a smaller degree but still leave q high enough to not have enough noise, when 
+    we perform the protocol operations.
+    From an empirical analysis we cannot run with a polynomial f(x) having a degree > 512 and we still have to provide a q that is
+    around the 300 bits in size.
+    Running these parameters through the lwe-estimator, we can see that our security crashes all the way
+    down to around 13 bits. % TODO: vigtig pointe her, skal med konklusionen!
 
 \end{document}
