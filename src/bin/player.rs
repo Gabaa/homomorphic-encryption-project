@@ -132,7 +132,7 @@ fn main() -> io::Result<()> {
 
     let facilitator = FacilitatorImpl::new(players, listener);
 
-    let params = params_8degree();
+    let params = mpc_secure_params();
     println!("Using parameters with N={}", params.n);
     let state = PlayerState::new(facilitator, key_material);
 
