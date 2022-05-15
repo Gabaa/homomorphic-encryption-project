@@ -87,7 +87,7 @@ fn main() -> io::Result<()> {
     let mut facilitator = DealerFacilitatorImpl::new();
 
     println!("Generating and distributing key material...");
-    let params = params_8degree();
+    let params = mpc_secure_params();
     let (pk, sk) = generate_key_pair(&params);
     distribute_keys(&mut facilitator, pk, sk, &params)
 }

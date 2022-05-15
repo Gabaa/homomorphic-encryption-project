@@ -19,7 +19,7 @@ impl Rq {
     // Bug/missing: Reduce actually has a bug that does not impact our case of f(x) = 1 + x^n.
     // The bug occurs when t is not an integer. In this case the algorithm does not terminate.
     // This situation never arises due to the coefficients of f(x) all either being 1 or 0.
-    pub fn reduce(&self, pol: &Polynomial) -> Polynomial {
+    pub fn poly_long_div(&self, pol: &Polynomial) -> Polynomial {
         let mut r = pol.clone();
 
         while r != polynomial![0; i32] && r.degree() >= self.modulo.degree() {
@@ -30,6 +30,34 @@ impl Rq {
         }
         // Reduce coefficients mod q
         r.modulo(&self.q)
+    }
+    
+    // Performs synthetic division as described in https://en.wikipedia.org/wiki/Synthetic_division
+    pub fn reduce(&self, pol: &Polynomial) -> Polynomial {
+        if self.modulo.degree() > pol.degree() {
+            return pol.modulo(&self.q)
+        }
+
+        let mut out: Vec<Integer> = pol.coefficients().rev().cloned().collect::<Vec<Integer>>();
+        let divisor: Vec<Integer> = self.modulo.coefficients().rev().cloned().collect::<Vec<Integer>>();
+
+        let normalizer = divisor[0].clone();
+        for i in 0..(pol.degree() - self.modulo.degree() + 1) {
+            out[i] = out[i].clone() / normalizer.clone();
+            let coef = out[i].clone();
+            if coef != 0 {
+                for j in 1..divisor.len() {
+                    out[i + j] = out[i + j].clone() - divisor[j].clone() * coef.clone()
+                }
+            }
+        }
+
+        out.reverse();
+        let res_vec = out.iter().take(divisor.len() - 1).cloned().collect();
+        let rem = Polynomial::new(res_vec);
+
+        // Reduce coefficients mod q
+        rem.modulo(&self.q)
     }
 
     pub fn add(&self, a: &Polynomial, b: &Polynomial) -> Polynomial {

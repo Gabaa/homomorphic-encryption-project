@@ -1,0 +1,24 @@
+% !TeX root = ../main.tex
+% Preamble
+\documentclass[../main.tex]{subfiles}
+\graphicspath{{\subfix{../images/}}}
+
+\begin{document}
+\section{Testing of implementation}
+For testing our implementation we used both automated unit tests and "semi-automated" integration tests.
+
+\subsection{Automated tests}
+The automated unit tests cover the polynomial implementation (\lstinline{poly.rs}), the quotient ring implementation (\lstinline{quotient_ring.rs}), the Ring-LWE encryption scheme (\lstinline{encryption.rs}), and the MPC implementation (\lstinline{mpc/prep.rs} and \lstinline{mpc/online.rs}).
+
+The automated tests for the polynomial and quotient ring implementations ensure that the basic operations: addition, subtraction, multiplication, scalar multiplication, negation, and reduce work as expected.
+
+The tests that cover the Ring-LWE encryption scheme ensure consistency, i.e. $\text{decrypt}(\text{encrypt}(m)) = m$, and additionally checks that the homomorphic operations add and mul work correctly.
+
+For the automated tests for the MPC implementation we only run $1$ player, and we generate the key material for the player directly, instead of running the dealer. We decided to conduct our automated tests of the MPC system in this way, since the added complexity from the communication with the other players made it hard to test.
+
+This is of course not sufficient by itself, so to test the system in a more realistic setting we turn to manual, or "semi-automated" integration tests.
+
+\subsection{Integration tests}
+The "semi-automated" integration tests consists of a shell script \lstinline{run.sh}, that simply starts a dealer and three players, which then execute the protocol. The function that is computed then depends on the \lstinline{protocol} enum which can be set in \lstinline{player.rs}. The script then saves logs which contain the inputs and outputs for each player, and then we can check manually that the correct result was computed.
+
+\end{document}
