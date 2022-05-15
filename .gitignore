@@ -9,5 +9,14 @@
 /report/sections/*.gz
 /out/*
 
-/logs/
+*.aux
+*.bbl
+*.blg
+*.fls
+*.out
+*.synctex.gz
 *.log
+*.fdb_latexmk
+*.toc
+
+/logs/
