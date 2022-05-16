@@ -33,7 +33,7 @@ It therefore has fields $q$ and $modulo$, where $q$ is an \lstinline{Integer}, a
 
 The \lstinline{reduce} method found in the quotient ring module is called on an \lstinline{Rq} struct, takes a polynomial \lstinline{pol} as input, and returns the normal form of the element \lstinline{pol} with respect to \lstinline{modulo}.
 
-To achieve this, the method first performs polynomial long division with \lstinline{pol} as the dividend and the \lstinline{modulo} from the \lstinline{Rq} struct as the divisor. The remainder computed in this way is then stored in the variable $r$.
+To achieve this, the method first performs synthetic division with \lstinline{pol} as the dividend and the \lstinline{modulo} from the \lstinline{Rq} struct as the divisor. The remainder computed in this way is then stored in the variable $r$.
 
 Lastly, we reduce the coefficients of the resulting polynomial $r$ modulo $q$, by using the \lstinline{modulo} method defined in the \lstinline{poly.rs} module, and then return the result.
 
