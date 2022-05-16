@@ -28,41 +28,68 @@
 \newcommand{\dred}{\color{dredcolor}\bf}
 \newcommand{\dblack}{\color{dblackcolor}\bf}
 
+\theoremstyle{definition}
+\newtheorem*{definition}{Definition}
+
 % Document
 \begin{document}
 
-\section{Ring LWE - A somewhat homomorphic encryption scheme} \label{section: RLWE theory}
+\section{Ring-LWE - A somewhat-homomorphic encryption scheme} \label{sec:RLWE-theory}
+
 In the paper ``Fully Homomorphic Encryption from Ring-LWE and Security for Key Dependent Messages'' written by
 Zvika Brakerski and Vinod Vaikuntanathan \cite{brakerski2011fully}
-they describe a method for converting the Ring Learnig with errors (RingLWE) problem into an encryption scheme
+they describe a method for converting the Ring Learning with errors (Ring-LWE) problem into an encryption scheme
 which reduces to the worst-case hardness of problems on ideal lattices.
 We'll shortly describe the encryption scheme here but will omit proofs and detailed discussions.
-Both system will be over the message space of $R_p = \mathbb{Z}_p[x] / \langle f(x) \rangle $.
+% TODO [meg]: Her skal vi nok forklare hvilke "systems" vi taler om.
+Both systems will be over the message space of $R_p = \mathbb{Z}_p[x] / \langle f(x) \rangle$.
+
+% TODO [meg]: Skriver vi om RLWE eller PLWE? Vi bør nok skrive noget om sammenhængen mellem de to, og gøre "overgangen" (fra RLWE til PLWE) lidt mere tydelig.
 
 \subsection{Polynomial learning with errors}
-The polynomial learning with errors problem decision problem variant is defined for an instantiation
-of a function f, a modulo q and a error distribution $\chi$ and given at most l samples written as $PLWE_{f, q, \chi}^(l)$
-It is defined in the hermite normal form as
-\\[2mm]
-\textbf{The PLWE Assumption - Hermite Normal Form.}
-for all $\kappa \in \mathbb{N}$, let $f(x) = f_{\kappa}(x) \in \mathbb{Z}[x]$
-be a polynomial of degree N = N($\kappa$), let $q = q(\kappa) \in \mathbb{Z}$
-be a prime integer, let the ring $R = \mathbb{Z}[x] / \langle f(x) \rangle$
-and $R_q = R / qR$ with $\chi$ denoting a distribution over the ring R.
-Then the Polynomial learning with error ($PLWE_{f,q,\chi}$) assumption can be defined as
-\[
-    \{ (a_i, a_i \cdot s + e_i) \}_{i \in [l]} \approx^{c} \{(a_i, u_i) \}_{i \in [l]}\}
-\]
-where s is sampled from $\chi$, $a_i$ is uniform in $R_q$, the error polynomials
-$e_i$ are sampled from $\chi$ and $u_i$ are random ring elements from $R_q$.
-We will allow up to l samples for the decision problem where the only limitation on l is that it should
-be polynomial.
-\\[5mm]
+
+The decisional polynomial learning with errors (PLWE) problem is parameterized by a polynomial $f(x) \in \mathbb{Z}[x]$ where $deg(f) = N$, a prime $q \in \mathbb{Z}$, a distribution $\chi$ (specifically an error distribution over elements in $R_q$), and an integer $\ell$ (a limit on the number of samples given in the problem).
+$f$ defines the ring $R = \mathbb{Z}[x] / \langle f(x) \rangle$, and $R$ and $q$ together define $R_q = R / q R = \mathbb{Z}_q[x] / \langle f(x) \rangle$.
+An instance of the problem is then written as $PLWE_{f, q, \chi}^{(\ell)}$.
+
+% TODO [meg]: Er ikke helt tilfreds med at denne er skrevet som assumption når vi bruger problem over, men det kan vi lige snakke om.
+\begin{definition}[The $PLWE_{f, q, \chi}^{(\ell)}$ assumption]
+    Let $s$ be a uniformly random element from $R_q$.
+    Then it holds that 
+    \[
+        \{ (a_i, a_i \cdot s + e_i) \}_{i \in [\ell]} \approx^{c} \{(a_i, u_i) \}_{i \in [\ell]}\}
+    \]
+    where all $a_i$ and $u_i$ are uniformly random elements from $R_q$, and all $e_i$ are sampled from $\chi$.
+\end{definition}
+
+%%% Den gamle formulering af PLWE. Skal den bare slettes?
+% 
+% The polynomial learning with errors problem decision problem variant is defined for an instantiation
+% of a function $f$, a modulo $q$ and an error distribution $\chi$ and given at most $\ell$ samples written as $PLWE_{f, q, \chi}^{(\ell)}$.
+% It is defined in the hermite normal form as
+% \\[2mm]
+% \textbf{The PLWE Assumption - Hermite Normal Form.}
+% For all $\kappa \in \mathbb{N}$,let $f(x) = f_{\kappa}(x) \in \mathbb{Z}[x]$
+% be a polynomial of degree $N = N(\kappa)$, let $q = q(\kappa) \in \mathbb{Z}$
+% be a prime integer, let the ring $R = \mathbb{Z}[x] / \langle f(x) \rangle$
+% and $R_q = R / qR$ with $\chi$ denoting a distribution over the ring R.
+% Then the Polynomial learning with error ($PLWE_{f,q,\chi}$) assumption can be defined as
+% \[
+%     \{ (a_i, a_i \cdot s + e_i) \}_{i \in [\ell]} \approx^{c} \{(a_i, u_i) \}_{i \in [\ell]}\}
+% \]
+% where s is sampled from $\chi$, $a_i$ is uniform in $R_q$, the error polynomials
+% $e_i$ are sampled from $\chi$ and $u_i$ are random ring elements from $R_q$.
+% We will allow up to $\ell$ samples for the decision problem where the only limitation on $\ell$ is that it should
+% be polynomial.
+% \\[5mm]
+
+% TODO [meg]: Kan ikke finde ud af om dette skal være her eller ej ¯\_(ツ)_/¯
 Beside the decision variant, the PLWE problem could also be stated in terms of a search problem, one in which
 an adversary have to find the secret vector $s \in R_q$. But we will focus on the decision problem, as this
 is more commonly used in cryptography.
 
-\subsection{Symmetric version}
+\subsection{Symmetric encryption scheme}
+
 Let $\kappa$ be the security parameter and let further p and q be prime numbers where $p \in \mathbb{Z}_N^*$.
 We also need a polynomial of degree N: $f(x) \in \mathbb{Z}[x]$ and an error distribution $\chi$ over the ring
 $R_q = \mathbb{Z}_q[x] / \langle f(x) \rangle$, then we can define the following operations for a somewhat homomorphic
@@ -118,7 +145,7 @@ $(\hat{c}_0, \hat{c}_1, \dots, \hat{c}_d+d') \in R_q^{D + D' + 1}$ by
 \end{align*}
 The output of the multiplication operation will then be $c_{mul} = (\hat{c}_0, \hat{c}_1, \dots, \hat{c}_{D+D'})$
 
-\subsection{Public key version}
+\subsection{Public-key encryption scheme}
 %TODO: måske der skal skrives noget om lemma 4?
 To achieve a public scheme instead, we can make the following changes
 \begin{itemize}
