@@ -33,7 +33,7 @@ It therefore has fields $q$ and $modulo$, where $q$ is an \lstinline{Integer}, a
 
 The \lstinline{reduce} method found in the quotient ring module is called on an \lstinline{Rq} struct, takes a polynomial \lstinline{pol} as input, and returns the normal form of the element \lstinline{pol} with respect to \lstinline{modulo}.
 
-To achieve this, the method first performs synthetic division with \lstinline{pol} as the dividend and the \lstinline{modulo} from the \lstinline{Rq} struct as the divisor. The remainder computed in this way is then stored in the variable $r$.
+To achieve this, the method first performs synthetic division with \lstinline{pol} as the dividend and \lstinline{modulo} from the \lstinline{Rq} struct as the divisor. The remainder computed in this way is then stored in the variable $r$.
 
 Lastly, we reduce the coefficients of the resulting polynomial $r$ modulo $q$, by using the \lstinline{modulo} method defined in the \lstinline{poly.rs} module, and then return the result.
 
@@ -97,7 +97,7 @@ If the check succeeds, we reduce the message modulo $p$ to remove the $e \cdot p
 \subsubsection{add}
 The \lstinline{add} function homomorphically adds the two ciphertexts \lstinline{c1} and \lstinline{c2} given as input along with a \lstinline{Parameters} struct.
 
-To do this computation the function simply creates a new \lstinline{Vec} of length \lstinline{max(c1.len(), c2.len()}.
+To do this computation the function simply creates a new \lstinline{Vec} of length \lstinline{max(c1.len(), c2.len())}.
 Following this the function iterates over the two ciphertexts and for each entry $i$, it adds \lstinline{c1[i]} and \lstinline{c2[i]} to entry $i$ in the newly created \lstinline{Vec} using \lstinline{add} from \lstinline{quotient_ring.rs}. After iterating over all entries the resulting \lstinline{Vec} is returned.
 
 \subsubsection{mul}

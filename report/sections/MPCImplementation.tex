@@ -113,7 +113,7 @@ verify\_zkopk will return a boolean indicating whether or not the proof was vali
 \subsection{Preprocessing phase (mpc/prep.rs)}
 The file \lstinline{prep.rs} contains all of the functions that are called in the preprocessing phase to generate values for the online phase.
 
-The functions \lstinline{reshare} and \lstinline{p_angle} correspond to the Reshare and PAngle protocols explained previously, while \lstinline{initialize}, \lstinline{pair}, and \lstinline{triple} correspond to three steps of the Prep protocol.
+The functions \lstinline{reshare} and \lstinline{p_angle} correspond to the Reshare and PAngle protocols explained previously, while \lstinline{initialize}, \lstinline{pair}, and \lstinline{triple} correspond to the three steps of the Prep protocol.
 
 The file also contains a type definition \lstinline{AngleShare}, which for some value $\langle v \rangle$ is a pair of the form $(v_i, \gamma(v)_i)$ for some player $i$. Additionally, the file also contains a definition \lstinline{MulTriple}, which contains three \lstinline{AngleShare} values, and represent a players shares of the $\langle \cdot \rangle$ values in a multiplicative triple. %TODO: Faktisk i mod.rs åbenbart
 
@@ -145,9 +145,9 @@ Finally, we run \lstinline{zpopk} from \lstinline{zk.rs} in a loop $sec$ times.
 
 Notice how we do not compute the personal keys $\beta_i$ as done in \cite{damgaard2012multiparty}. As mentioned earlier these are not needed when we use the trick described in section \ref{section: Reuse}.
 \subsubsection{pair}
-The \lstinline{pair} function takes a Parameters struct params, and a PlayerState state as input.
+The \lstinline{pair} function takes a \lstinline{Parameters} struct \lstinline{params}, and a \lstinline{PlayerState} \lstinline{state} as input.
 
-The function first samples a uniformly random \lstinline{Integer} \lstinline{r_i} from $Z_p$. Now, \lstinline{r_i} is encrypted to get \lstinline{e_r_i}, which is the broadcast using the facilitator. All players then again use the facilitator to receive the encrypted shares from the other parties, which are then homomorphically added to compute \lstinline{e_r}. Then, we call \lstinline{zkpopk} with \lstinline{e_r_i} as input.
+The function first samples a uniformly random \lstinline{Integer} \lstinline{r_i} from $Z_p$. Now, \lstinline{r_i} is encrypted to get \lstinline{e_r_i}, which is then broadcast using the facilitator. All players then again use the facilitator to receive the encrypted shares from the other parties, which are then homomorphically added to compute \lstinline{e_r}. Then, we call \lstinline{zkpopk} with \lstinline{e_r_i} as input.
 
 Following this we compute the given players share of $\langle r \rangle$ with a call to \lstinline{p_angle} with \lstinline{r_i} and \lstinline{e_r} as arguments, which returns \lstinline{r_angle}.
 
