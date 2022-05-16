@@ -42,6 +42,7 @@ they describe a method for converting the Ring Learning with errors (Ring-LWE) p
 which reduces to the worst-case hardness of problems on ideal lattices.
 We'll shortly describe the encryption scheme here but will omit proofs and detailed discussions.
 % TODO [meg]: Her skal vi nok forklare hvilke "systems" vi taler om.
+% TODO [meg]: Indså også lige at det er $R_p$, men vi har ikke defineret $p$ endnu. Bedst at nævne senere?
 Both systems will be over the message space of $R_p = \mathbb{Z}_p[x] / \langle f(x) \rangle$.
 
 % TODO [meg]: Skriver vi om RLWE eller PLWE? Vi bør nok skrive noget om sammenhængen mellem de to, og gøre "overgangen" (fra RLWE til PLWE) lidt mere tydelig.
@@ -83,6 +84,8 @@ An instance of the problem is then written as $PLWE_{f, q, \chi}^{(\ell)}$.
 % be polynomial.
 % \\[5mm]
 
+Correspondingly, the decisional $PLWE_{f, q, \chi}^{(\ell)}$ problem is then to distinguish how a set of $\ell$ samples was generated: as elements of the form $(a_i, a_i \cdot s + e_i)$, or of the form $(a_i, u_i)$.
+
 % TODO [meg]: Kan ikke finde ud af om dette skal være her eller ej ¯\_(ツ)_/¯
 Beside the decision variant, the PLWE problem could also be stated in terms of a search problem, one in which
 an adversary have to find the secret vector $s \in R_q$. But we will focus on the decision problem, as this
@@ -90,20 +93,20 @@ is more commonly used in cryptography.
 
 \subsection{Symmetric encryption scheme}
 
-Let $\kappa$ be the security parameter and let further p and q be prime numbers where $p \in \mathbb{Z}_N^*$.
-We also need a polynomial of degree N: $f(x) \in \mathbb{Z}[x]$ and an error distribution $\chi$ over the ring
+Let $\kappa$ be the security parameter and let further $p$ and $q$ be prime numbers where $p \in \mathbb{Z}_N^*$.
+We also need a polynomial of degree $N$: $f(x) \in \mathbb{Z}[x]$ and an error distribution $\chi$ over the ring
 $R_q = \mathbb{Z}_q[x] / \langle f(x) \rangle$, then we can define the following operations for a somewhat homomorphic
 encryption scheme.
 
-\subsubsection{Key-gen}
-Let our secret key be a randomly sampled element from the error distribution $s \leftarrow^\$ \chi$
-Then given the security parameter $\kappa$ sample a ring element s uniformly at random from $\kappa$ and define the
+\subsubsection{Key generation}
+Let our secret key be a randomly sampled element from the error distribution $s \leftarrow^\$ \chi$.
+Then, given the security parameter $\kappa$, sample a ring element $s$ uniformly at random from $\kappa$ and define the
 secret key vector by $(s^0, s^1, s^2, \dots, s^D) \in R_q^{D+1}$.
 
 \subsubsection{Encryption}
-Rememer that all messages are encodeable in our message space $R_p$, thus we will encode our message m as a N degree
-polynomium with coefficients modulo p.
-To encrypt we sample $(a, b = a \cdot s + p \cdot e)$ where $a \leftarrow^\$ R_q$ and $e \leftarrow^\$ \chi$,
+As mentioned, all messages are encodeable in our message space $R_p$, thus we will encode our message $m$ as a degree $N$
+polynomium with coefficients modulo $p$.
+To encrypt, we sample $(a, b = a \cdot s + p \cdot e)$ where $a \leftarrow^\$ R_q$ and $e \leftarrow^\$ \chi$,
 then compute
 \begin{align*}
     c_0 \coloneqq b + m &  & c_1 \coloneqq -a
@@ -111,16 +114,17 @@ then compute
 and from this output the ciphertext \textbf{c} $\coloneqq (c_0, c_1) \in R_q^2$.
 
 \subsubsection{Decryption}
+% TODO [meg]: Skulle vi nævne noget med l inf norm kravet her? Vi refererer til det i Circuit Privacy.
 Note that a ciphertext is on the form $(c_0, c_1, \dots , C_{D}) \in R_q^{D+1}$.
 Define the inner product over $R_q$ as
 \begin{align*}
     \langle c, s \rangle = \sum_{i=0}^{D} c_i \cdot s^i
 \end{align*}
-Then to decrypt, simply set m as the inner product of c and s and take modulo p.
+Then to decrypt, simply set $m$ as the inner product of $c$ and $s$ and take modulo $p$.
 \begin{align*}
     m = \langle c, s \rangle \bmod p
 \end{align*}
-m will then be the decrypted message.
+$m$ will then be the decrypted message.
 
 \subsubsection{Eval}
 To obtain the homomorphic abilities of the encryption scheme, Zvika Brakerski and Vinod Vaikuntanathan show
@@ -133,8 +137,8 @@ of the sum of the 2 underlying messages will be
 \end{align*}
 The decryption of $c_{Add}$ will then be the sum of the unencrypted messages from $c$ and $c'$.
 \\[2mm]
-\textbf{Multiplication:} Assume we have 2 ciphertexts $c \in R_q^{D+1}$ and $c' \in R_q^{D'+1}$ and let v be a symbolig value
-then calculate the updated ciphertext
+\textbf{Multiplication:} Assume we have 2 ciphertexts $c \in R_q^{D+1}$ and $c' \in R_q^{D'+1}$ and let $v$ be a symbolic value.
+Then calculate the updated ciphertext
 \\
 $(\hat{c}_0, \hat{c}_1, \dots, \hat{c}_d+d') \in R_q^{D + D' + 1}$ by
 \begin{align*}
@@ -153,7 +157,7 @@ To achieve a public scheme instead, we can make the following changes
         $pk = (a_0 , b_0 = a_0 \cdot s + p \cdot e_0)$, where $a_0 \leftarrow^{\$} R_q, e_0 \leftarrow^{\$} \chi$
     \item In the encryption algorithm, we can instead use
         $(a_0 \cdot v + t \cdot e', b_0 \cdot v + p \cdot e'')$ where
-        $v, e' \leftarrow^{\$} \chi$ and $e'' \leftarrow^{\$} \chi '$.
+        $v, e' \leftarrow^{\$} \chi$ and $e'' \leftarrow^{\$} \chi '$. % TODO [meg]: Vi bør forklare hvad $\chi '$ er.
 \end{itemize} 
 where we have then obtained a public key $pk = (a_0, a_0 \cdot s + p \cdot e_0)$
 corresponding to the secret key sk.
