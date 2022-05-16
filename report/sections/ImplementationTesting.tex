@@ -4,6 +4,7 @@
 \graphicspath{{\subfix{../images/}}}
 
 \begin{document}
+\todo{Forslag: Kald dette afsnit "Evaluation" i stedet for "Testing" (eller måske ikke, idk)}
 \section{Testing of implementation}
 For testing our implementation we used both automated unit tests and "semi-automated" integration tests.
 
@@ -20,5 +21,36 @@ This is of course not sufficient by itself, so to test the system in a more real
 
 \subsection{Integration tests}
 The "semi-automated" integration tests consists of a shell script \lstinline{run.sh}, that simply starts a dealer and three players, which then execute the protocol. The function that is computed then depends on the \lstinline{protocol} enum which can be set in \lstinline{player.rs}. The script then saves logs which contain the inputs and outputs for each player, and then we can check manually that the correct result was computed.
+
+\subsection{Measuring system performance}
+To get an estimate on the performance of the system, we ran the program a number of times with different parameters. Specifically, these parameters were chosen to be secure, as described in section \ref{sec:choosing-parameters}, but with the degree of the polynomials $N$ set to different values to test the impact that would have on the performance of the system.
+
+\begin{table}
+    \centering
+    \begin{tabular}{l|l}
+        $N$  & Time (s)   \\ 
+        \hline
+        8    & 19.900202  \\
+        16   & 38.093643  \\
+        32   & 79.117386  \\
+        64   & 165.27484  \\
+        128  & 397.68887  \\
+        256  & 923.9578   \\
+        512  & 2300.92    \\
+        1024 & 6230.6777 
+    \end{tabular}
+    \caption{A table relating the size of the $N$ parameter to the wallclock run-time of the entire MPC system, for $n = 3$ with the function $x_1 \cdot x_2 + x_3$. The timer was started as soon as all players had connected to the system and received the key material, and was stopped when the output had been calculated.}
+    \label{tab:synthetic-division-performance}
+\end{table}
+
+The results can be seen in table \ref{tab:synthetic-division-performance}. Performing quadratic regression on the results, we get an expression of the form $f(x) = a x^2 + b x + c$ with
+\begin{align*}
+    a &= 0.00312337 \\
+    b &= 2.90545 \\
+    c &= -17.2764
+\end{align*}
+where $R^2 \approx 1$. This shows that the polynomial system is clearly quadratic in its runtime. Though the quadratic coefficient term is negligible for the smaller values of $N$, it ends up contributing more than half of the output value for $N = 1024$.
+
+As we had previously implemented the polynomial reduction method using polynomial long division instead of synthetic division, we were able to run these tests for both cases and compare the results. See table \ref{tab:polynomial-long-division-performance}.
 
 \end{document}

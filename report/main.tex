@@ -147,6 +147,24 @@
 \appendix
 \chapter{First appendix}
 
+\section{MPC system performance with polynomial long division}
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{l|l}
+      $N$  & Time (s)   \\ 
+      \hline
+      8   & 19.036512 \\
+      16  & 39.95138 \\
+      32  & 85.003136 \\
+      64  & 200.78773 \\
+      128 & 568.9214 \\
+      256 & 1631.5626 \\
+      512 & 5160.727
+  \end{tabular}
+  \caption{A table relating the size of the $N$ parameter to the wallclock run-time of the entire MPC system, for $n = 3$ with the function $x_1 \cdot x_2 + x_3$ when using polynomial long division.}
+  \label{tab:polynomial-long-division-performance}
+\end{table}
 
 \end{document}
 
