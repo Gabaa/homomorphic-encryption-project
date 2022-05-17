@@ -192,12 +192,12 @@ Finally, the players check that $\sigma_1 + ... + \sigma_n = 0$, and if this is 
     \end{align*}
     We wrote a small program, which can be seen below, to check for good values of $q$ and $r$.
     \lstinputlisting[language=Python]{code-snippets/param-searach.py}
-	With the script we found that a $512$ degree polynomial would result in $q$ being of $313$ bits in size and our randomness (used for encryption in the mpc protocol) should be above $3.85 \cdot 10^{73}$.
+	With the script we found that a $512$ degree polynomial would result in $q$ being of $313$ bits in size, and our $r$ parameter (used for encryption in the mpc protocol) should be above $3.85 \cdot 10^{73}$.
 	While these values provides something of a pretty good security, the generated value for the randomness $r$ is way too high to be
 	practical in any way.
 	So to have a smaller degree of the polynomial $f(x)$, and have better performance,
 	we need to increase the value of $q$ and $r$.
-	Using this enormous value of $r$, we would be in a situation where the $\ell_infty$ norm would be too high, which
+	Using this enormous value of $r$, we would be in a situation where the $\ell_\infty$ norm would be too high, which
 	would generate too much noise for us to decrypt and as a consequence, we need to have a smaller value of $r$.
 	\\[5mm]
     By using the tool from Martin Albrecht % TODO: indsæt lige en reference.
@@ -206,12 +206,11 @@ Finally, the players check that $\sigma_1 + ... + \sigma_n = 0$, and if this is 
     of security against the BKZ lattice reduction.
     These tests also align with the how the parameters in \cite{damgaard2012multiparty} are chosen.
     \\[5mm]
-    While this provides pretty good security, it is by no means effective for us to run, as we miss the optimization, %TODO: indsæt ref
+    While this provides pretty good security, it is by no means effective for us to run, and we miss the entry-wise multiplication optimisation, %TODO: indsæt ref
     so we have to settle for a smaller degree but still leave $q$ high enough to not have enough noise, when 
     we perform the protocol operations.
-    From an empirical analysis we cannot run with a polynomial $f(x)$ having a degree $> 512$ and we still have to provide a $q$ that is
-    around $300$ bits in size.
-    Running these parameters through the lwe-estimator, we can see that our security crashes all the way
+    From an empirical analysis we see that our implementation becomes very slow when $deg(f(x)) > 1024$, and we still have to provide a $q$ that is large enough.
+    Running these parameters through the lwe-estimator, we can see that our security level crashes all the way
     down to around $13$ bits. % TODO: vigtig pointe her, skal med konklusionen!
 
 \end{document}
