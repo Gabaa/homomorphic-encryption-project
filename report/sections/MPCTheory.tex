@@ -116,8 +116,8 @@ The \textbf{triple} step generates triples $(\langle a \rangle, \langle b \rangl
 
 \subsection{Online phase} \label{subsection: Online}
 % TODO [meg]: Write the actual protocols with enumerate
-The Online protocol implements the online phase,
-and consists of the steps \textbf{initialize}, \textbf{input}, \textbf{add}, \textbf{multiply}, and \textbf{output}. These steps are executed as needed to evaluate the arithmetic circuit that we wish to evaluate.
+The Online protocol implements the online phase, and consists of the steps \textbf{initialize}, \textbf{input}, \textbf{add}, \textbf{multiply}, and \textbf{output} \cite{damgaard2012multiparty}.
+These steps are executed as needed to evaluate the arithmetic circuit that we wish to evaluate.
 
 \paragraph{Initialize:}
 The \textbf{initialize} step simply consists using the preprocessing protocol to generate a global key $\bracketr{\alpha}$, along with enough multiplicative triples and random values in the $\angler{\cdot}$ and $\bracketr{\cdot}$ representations showed earlier, for the circuit that we want to evaluate.
@@ -129,7 +129,9 @@ The \textbf{input} step lets a player $P_i$ share their private input $x_i$. The
 To add two values $\langle x \rangle, \langle y \rangle$, we simply perform the component-wise addition $\langle z \rangle = \langle x \rangle + \langle y \rangle$, meaning that each player adds their shares locally $z_i = x_i + y_i, \gamma(z)_i = \gamma(x)_i + \gamma(y)_i$.
 
 \paragraph{Multiply:}
-To multiply two values $\langle x \rangle, \langle y \rangle$, we use two multiplicative triples $(\langle a \rangle, \langle b \rangle, \langle c \rangle)$ and $(\langle f \rangle, \langle g \rangle, \langle h \rangle)$. We use the second triple to check that $ab = c$, but this could also be done in preprocessing instead. To do this check we first open $[\![ t ]\!]$ to get t, then partially open $t * \langle a \rangle - \langle f \rangle$ and $\langle b \rangle - \langle g \rangle$ to get $\rho$ and $\sigma$ respectively. Finally, we compute and partially open $$t * \langle c \rangle - \langle h \rangle - \sigma \langle f \rangle - \rho \langle g \rangle - \sigma \rho$$
+To multiply two values $\langle x \rangle, \langle y \rangle$, we use two multiplicative triples $(\langle a \rangle, \langle b \rangle, \langle c \rangle)$ and $(\langle f \rangle, \langle g \rangle, \langle h \rangle)$. We use the second triple to check that $ab = c$, but this could also be done in preprocessing instead.
+To do this check we first open $[\![ t ]\!]$ to get t, then partially open $t \cdot \langle a \rangle - \langle f \rangle$ and $\langle b \rangle - \langle g \rangle$ to get $\rho$ and $\sigma$ respectively. 
+Finally, we compute and partially open $$t \cdot \langle c \rangle - \langle h \rangle - \sigma \langle f \rangle - \rho \langle g \rangle - \sigma \rho$$
 if the result is $0$, then we conclude that $ab = c$ and move on, otherwise the players abort.
 
 Now, partially open $\langle x \rangle - \langle a \rangle$ and $\langle y \rangle - \langle b \rangle$ to get $\epsilon$ and $\delta$ respectively. Finally, we output $$\langle z \rangle \leftarrow \langle c \rangle + \epsilon \langle b \rangle + \delta \langle a \rangle + \epsilon \delta$$
@@ -137,26 +139,27 @@ Now, partially open $\langle x \rangle - \langle a \rangle$ and $\langle y \rang
 \paragraph{Output:}
 To output a value y given $\langle y \rangle$, the players do the following.
 First, a random value $[\![ e ]\!]$ is opened so each player gets $e$, which is used to compute $$a = \sum_j e^j \cdot a_j$$ where $a_j$ are all of the opened values of the form $\langle a_j \rangle$.
-Each player $P_i$ then uses the commitment functionality $\mathcal{F}_{Com}$ to commit to $\gamma_i \leftarrow \sum_j e^j \gamma(a_j)_i$ along with $y_i$ and $\gamma(y)_i$.
+Each player $P_i$ then uses the commitment functionality $\mathcal{F}_{Commit}$ as in \cite{damgaard2012multiparty} to commit to $\gamma_i \leftarrow \sum_j e^j \gamma(a_j)_i$ along with $y_i$ and $\gamma(y)_i$.
 Then, the global key $[\![ \alpha ]\!]$ is opened.
-The players then use $\mathcal{F}_{Com}$ to open $\gamma_i$ and then check that indeed $$\alpha(a + \sum_j e^j \delta_j) = \sum_j \gamma_i$$
+The players then use $\mathcal{F}_{Commit}$ to open $\gamma_i$ and then check that indeed $$\alpha(a + \sum_j e^j \delta_j) = \sum_j \gamma_i$$
 If this is not the case, then the players abort.
-Finally, to make sure that all players end up with $y$ the commitments to $y_i$ and $\gamma(y)_i$ are opened. Now the players check that $\alpha(y + \delta) = \sum_i \gamma(y)_i$, and if this is the case, then $y = \sum_i y_i$ is output.
-
-%\subsection{Parameter setting}
-%In section D of the paper the authors give example parameter sets and explain how to choose the parameters, s.t. the previously described Ring-LWE public key encryption scheme meets the requirements of the MPC protocol.
+Finally, to make sure that all players end up with $y$ the commitments to $y_i$ and $\gamma(y)_i$ are opened. Now the players check that $\alpha(y + \delta) = \sum_i \gamma(y)_i$, and if this is the case, then $y = \sum_i y_i$ is output, and otherwise they abort.
 
 \section{Reuse of unrevealed secret-shared data} \label{section: Reuse}
-In \cite{damgaard2013practical} a technique that allows for reuse of unrevealed secret-shared data is used.
-This technique revolves around not having to open $[\![ \alpha ]\!]$, and in fact we do not even need the $[\![ \cdot ]\!]$ representation when using this technique.
 
+In \cite{damgaard2013practical} a technique that allows for reuse of unrevealed secret-shared data is used.
+This technique revolves around not having to reveal the global key $[\![ \alpha ]\!]$, and in fact we do not even need the $[\![ \cdot ]\!]$ representation when using this technique.
+
+% TODO [meg]: Write the actual protocols with enumerate
 The technique works as follows.
 First, when we generate the global key we now just need each player $P_i$ to have a share $\alpha_i$ of $\alpha$. In the output step the player will then instead of the current MAC check instead invoke the new MACCheck protocol on all of the values in the $\langle \cdot \rangle$ representation that have been opened, and if this succeeds the player invokes MACCheck on the output value $\langle y \rangle$. The MACCheck protocol works as follows:
+
 \paragraph{Protocol MACCheck}
+% TODO [meg]: Write the actual protocols with enumerate
 First each $P_i$ samples a seed $s_i$ and use $\mathcal{F}_{Commit}$ to broadcast $\tau^s_i \leftarrow Commit(s_i)$. Following this each player opens all commitments using $\mathcal{F}_{Commit}$ to get all $n$ seeds $s_j$. Now, all players set $$s \leftarrow s_1 \oplus ... \oplus s_n$$
-Players then use $s$ as seed to sample a random vector of length $t$ with entries in the interval $[0, p)$. %WAT, t eller p
-All players then first compute $$a \leftarrow \sum^t_{j = 1} r_j \cdot a_j$$ where the $a_j$'s are the opened values.
-Now $P_i$ computes
+Players then use $s$ as seed to sample a random vector of length $t$ with entries in the interval $[0, p)$.
+All players compute $$a \leftarrow \sum^t_{j = 1} r_j \cdot a_j$$ where the $a_j$'s are the values in the $\angler{\cdot}$ representation that have been opened.
+Now, $P_i$ computes
 \begin{align*}
     \gamma_i \leftarrow \sum^t_{j = 1} r_j \cdot \gamma(a_j)_i \text{  and  } \sigma_i \leftarrow \gamma_i - \alpha_i \cdot a
 \end{align*}
