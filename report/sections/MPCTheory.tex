@@ -172,14 +172,12 @@ Finally, the players check that $\sigma_1 + ... + \sigma_n = 0$, and if this is 
     We have implemented the zero knowledge from figure 10, as they the authors state that it will be better suited for implementation.
     % TODO: skal vi skrive det eller kan vi bare smide et billede ind? også forklare hvad det er for nogle variabler der bliver sat?
 
-\section{Choosing parameters for our MPC system} \label{sec:choosing-parameters}
+\section{Parameter setting for the MPC system} \label{sec:choosing-parameters}
     When choosing our parameter sets for the MPC system it is important to think not only of the security, but also of
     the practicality of the systems.
-    In the article \cite{damgaard2012multiparty} from Ivan et al. we are provided with certain limitations on the parameters as well, which we have to bend a bit to test that the system works and as such we will sketch the calculations for the parameters here.
-    We will omit the proofs and justification as those are outside the scope of our project.
-    Let $N$ be the degree of our polynomial $f(x)$ in the Ring-LWE encryption scheme, % TODO: cite the section.
-    let $r$ be the randomness used while encrypting, $SEC$ be $40$, the amount of players $n$ be 3 with $c_{SEC}, Y$ and $Z$
-    be given by the formulas
+    We are already limited in the parameters we can pick from the restrictions outlined in section x.x, but in the article \cite{damgaard2012multiparty} from Ivan et al. we are provided with additional limitations that we have to adhere to.
+    We will here outline these limitations, but will omit the proofs and justification as those are outside the scope of our project.
+    Let $N = deg(f(x))$, let $r$ be the standard deviation of our error distribution $\chi$, $SEC$ be $40$, the amount of players $n = 3$ with $c_{SEC}, Y$ and $Z$ defined by
     \begin{align*}
         c_{sec} &= 9 \cdot N^2 \cdot SEC^4 \cdot 2^{SEC + 8} \\
         Y       &= \frac{p}{2} + p \cdot (4 \cdot C_{m-bound} \cdot r^2 \cdot N^2 \cdot 2 \cdot \sqrt{N} \cdot r + 4 \cdot C_{m-bound} \cdot r^2 \cdot N^2) \\
@@ -190,27 +188,5 @@ Finally, the players check that $\sigma_1 + ... + \sigma_n = 0$, and if this is 
         q   &> 2 \cdot Z \cdot (1 + 2^{sec}) \\
         r   &> max\{3.2, 1.5 \cdot \gamma^{-t'} \cdot q^{1 - \frac{N}{t'}}\}
     \end{align*}
-    We wrote a small program, which can be seen below, to check for good values of $q$ and $r$.
-    \lstinputlisting[language=Python]{code-snippets/param-searach.py}
-	With the script we found that a $512$ degree polynomial would result in $q$ being of $313$ bits in size, and our $r$ parameter (used for encryption in the mpc protocol) should be above $3.85 \cdot 10^{73}$.
-	While these values provides something of a pretty good security, the generated value for the randomness $r$ is way too high to be
-	practical in any way.
-	So to have a smaller degree of the polynomial $f(x)$, and have better performance,
-	we need to increase the value of $q$ and $r$.
-	Using this enormous value of $r$, we would be in a situation where the $\ell_\infty$ norm would be too high, which
-	would generate too much noise for us to decrypt and as a consequence, we need to have a smaller value of $r$.
-	\\[5mm]
-    By using the tool from Martin Albrecht % TODO: indsæt lige en reference.
-    and using the values, which we got from the program above, we can see that setting $q$ to some prime
-    of size $313$ bits and setting the degree of our polynomial to $N = 12900$, we will have around $627$ bits
-    of security against the BKZ lattice reduction.
-    These tests also align with the how the parameters in \cite{damgaard2012multiparty} are chosen.
-    \\[5mm]
-    While this provides pretty good security, it is by no means effective for us to run, and we miss the entry-wise multiplication optimisation, %TODO: indsæt ref
-    so we have to settle for a smaller degree but still leave $q$ high enough to not have enough noise, when 
-    we perform the protocol operations.
-    From an empirical analysis we see that our implementation becomes very slow when $deg(f(x)) > 1024$, and we still have to provide a $q$ that is large enough.
-    Running these parameters through the lwe-estimator, we can see that our security level crashes all the way
-    down to around $13$ bits. % TODO: vigtig pointe her, skal med konklusionen!
 
 \end{document}
