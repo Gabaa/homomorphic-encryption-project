@@ -6,7 +6,7 @@
 \begin{document}
 \section{Circuit privacy}
 Each time we add or multiply ciphertexts the error term grows.
-As a result of this the error term will be larger for a ciphertext output by the homomorphic operations, than for a ciphertext output by \textbf{encrypt}.
+As a result of this, the error term will be larger for a ciphertext output by the homomorphic operations, than for a ciphertext output by \textbf{encrypt}.
 This poses a problem, as an adversary might be able to derive information about the function computed by looking at the ciphertexts produced.
 To deal with this problem we would like the output distributions of the ciphertexts output by \textbf{eval} and \textbf{encrypt} to be identical, which is known as \textit{circuit privacy}.
 This property along with how to achieve it has been described in \cite{gentry2009fully}.

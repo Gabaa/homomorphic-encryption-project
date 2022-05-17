@@ -27,6 +27,7 @@
 \newcommand{\dblue}{\color{dbluecolor}\bf}
 \newcommand{\dred}{\color{dredcolor}\bf}
 \newcommand{\dblack}{\color{dblackcolor}\bf}
+\newcommand{\getsrand}{\overset{\$}{\gets}}
 
 % Document
 \begin{document}
@@ -34,23 +35,19 @@
 \section{Ring-LWE - A somewhat-homomorphic encryption scheme} \label{sec:RLWE-theory}
 
 In the paper ``Fully Homomorphic Encryption from Ring-LWE and Security for Key Dependent Messages'' written by
-Zvika Brakerski and Vinod Vaikuntanathan \cite{brakerski2011fully}
-they describe a method for converting the Ring Learning with errors (Ring-LWE) problem into an encryption scheme,
-which reduces to the worst-case hardness of problems on ideal lattices.
+Brakerski and Vaikuntanathan \cite{brakerski2011fully},
+the authors describe a method for using the ring learning with errors (Ring-LWE) problem to construct an encryption scheme,
+which reduces to the worst-case hardness of problems on ideal lattices \cite{brakerski2011fully}.
+Somewhat-homomorphic encryption schemes allow the evaluation of a limited set of functions on encrypted data.
 We will shortly describe the encryption scheme here, but will omit proofs and detailed discussions.
-% TODO [meg]: Her skal vi nok forklare hvilke "systems" vi taler om.
-% TODO [meg]: Indså også lige at det er $R_p$, men vi har ikke defineret $p$ endnu. Bedst at nævne senere?
-Both systems will be over the message space of $R_p = \mathbb{Z}_p[x] / \langle f(x) \rangle$.
-
-% TODO [meg]: Skriver vi om RLWE eller PLWE? Vi bør nok skrive noget om sammenhængen mellem de to, og gøre "overgangen" (fra RLWE til PLWE) lidt mere tydelig.
 
 \subsection{Polynomial learning with errors}
 
-The decisional polynomial learning with errors (PLWE) problem is parameterized by a polynomial $f(x) \in \mathbb{Z}[x]$ where $deg(f) = N$, a prime $q \in \mathbb{Z}$, a distribution $\chi$ (specifically an error distribution over elements in $R_q$), and an integer $\ell$ (a limit on the number of samples given in the problem).
+Polynomial learning with errors (PLWE) is a variant of the Ring-LWE problem.
+The decisional PLWE problem is parameterized by a polynomial $f(x) \in \mathbb{Z}[x]$ where $deg(f) = N$, a prime $q \in \mathbb{Z}$, a distribution $\chi$ (specifically an error distribution over elements in $R_q$), and an integer $\ell$ (a limit on the number of samples given in the problem).
 $f$ defines the ring $R = \mathbb{Z}[x] / \langle f(x) \rangle$, and $R$ and $q$ together define $R_q = R / q R = \mathbb{Z}_q[x] / \langle f(x) \rangle$.
 An instance of the problem is then written as $PLWE_{f, q, \chi}^{(\ell)}$.
 
-% TODO [meg]: Er ikke helt tilfreds med at denne er skrevet som assumption når vi bruger problem over, men det kan vi lige snakke om.
 \begin{definition}[The $PLWE_{f, q, \chi}^{(\ell)}$ assumption]
     Let $s$ be a uniformly random element from $R_q$.
     Then it holds that 
@@ -60,50 +57,29 @@ An instance of the problem is then written as $PLWE_{f, q, \chi}^{(\ell)}$.
     where all $a_i$ and $u_i$ are uniformly random elements from $R_q$, and all $e_i$ are sampled from $\chi$.
 \end{definition}
 
-%%% Den gamle formulering af PLWE. Skal den bare slettes?
-% 
-% The polynomial learning with errors problem decision problem variant is defined for an instantiation
-% of a function $f$, a modulo $q$ and an error distribution $\chi$ and given at most $\ell$ samples written as $PLWE_{f, q, \chi}^{(\ell)}$.
-% It is defined in the hermite normal form as
-% \\[2mm]
-% \textbf{The PLWE Assumption - Hermite Normal Form.}
-% For all $\kappa \in \mathbb{N}$,let $f(x) = f_{\kappa}(x) \in \mathbb{Z}[x]$
-% be a polynomial of degree $N = N(\kappa)$, let $q = q(\kappa) \in \mathbb{Z}$
-% be a prime integer, let the ring $R = \mathbb{Z}[x] / \langle f(x) \rangle$
-% and $R_q = R / qR$ with $\chi$ denoting a distribution over the ring R.
-% Then the Polynomial learning with error ($PLWE_{f,q,\chi}$) assumption can be defined as
-% \[
-%     \{ (a_i, a_i \cdot s + e_i) \}_{i \in [\ell]} \approx^{c} \{(a_i, u_i) \}_{i \in [\ell]}\}
-% \]
-% where s is sampled from $\chi$, $a_i$ is uniform in $R_q$, the error polynomials
-% $e_i$ are sampled from $\chi$ and $u_i$ are random ring elements from $R_q$.
-% We will allow up to $\ell$ samples for the decision problem where the only limitation on $\ell$ is that it should
-% be polynomial.
-% \\[5mm]
+Likewise, the decisional $PLWE_{f, q, \chi}^{(\ell)}$ problem is then to distinguish how a set of $\ell$ samples was generated: as elements of the form $(a_i, a_i \cdot s + e_i)$, or of the form $(a_i, u_i)$.
 
-Correspondingly, the decisional $PLWE_{f, q, \chi}^{(\ell)}$ problem is then to distinguish how a set of $\ell$ samples was generated: as elements of the form $(a_i, a_i \cdot s + e_i)$, or of the form $(a_i, u_i)$.
-
-% TODO [meg]: Kan ikke finde ud af om dette skal være her eller ej ¯\_(ツ)_/¯
 Beside the decision variant, the PLWE problem could also be stated in terms of a search problem, one in which
-an adversary has to find the secret vector $s \in R_q$. But we will focus on the decision problem, as this
-is more commonly used in cryptography.
+an adversary has to find the secret vector $s \in R_q$.
 
 \subsection{Symmetric encryption scheme}
 
+Now we summarise a symmetric encryption scheme based on PLWE as defined in \cite{brakerski2011fully}.
+
 Let $\kappa$ be the security parameter and let further $p$ and $q$ be prime numbers where $p \in \mathbb{Z}_N^*$.
 We also need a polynomial of degree $N$: $f(x) \in \mathbb{Z}[x]$ and an error distribution $\chi$ over the ring
-$R_q = \mathbb{Z}_q[x] / \langle f(x) \rangle$, then we can define the following operations for a somewhat homomorphic
-encryption scheme.
+$R_q = \mathbb{Z}_q[x] / \langle f(x) \rangle$, and with the message space $R_p = \mathbb{Z}_p[x] / \langle f(x) \rangle$.
+Then we can define the following operations for a somewhat-homomorphic symmetric encryption scheme.
 
 \subsubsection{Key generation}
-Let our secret key be a randomly sampled element from the error distribution $s \leftarrow^\$ \chi$.
+Let our secret key be a randomly sampled element from the error distribution $s \getsrand{} \chi$.
 Then, given the security parameter $\kappa$, sample a ring element $s$ uniformly at random from $\kappa$ and define the
-secret key vector by $(s^0, s^1, s^2, \dots, s^D) \in R_q^{D+1}$.
+secret key vector by $(s^0, s^1, s^2, \dots, s^D) \in R_q^{D+1}$, where $D$ is related to the maximal degree of homomorphism allowed.
 
 \subsubsection{Encryption}
-As mentioned, all messages are encodeable in our message space $R_p$, thus we will encode our message $m$ as a degree $N$
+All messages are encodeable in our message space $R_p$, thus we will encode our message $m$ as a degree $N$
 polynomial with coefficients modulo $p$.
-To encrypt, we sample $(a, b = a \cdot s + p \cdot e)$ where $a \leftarrow^\$ R_q$ and $e \leftarrow^\$ \chi$,
+To encrypt, we sample $(a, b = a \cdot s + p \cdot e)$ where $a \getsrand{} R_q$ and $e \getsrand{} \chi$,
 then compute
 \begin{align*}
     c_0 \coloneqq b + m &  & c_1 \coloneqq -a
@@ -111,11 +87,10 @@ then compute
 and from this output the ciphertext \textbf{c} $\coloneqq (c_0, c_1) \in R_q^2$.
 
 \subsubsection{Decryption}
-% TODO [meg]: Skulle vi nævne noget med l inf norm kravet her? Vi refererer til det i Circuit Privacy.
-Note that a ciphertext is on the form $(c_0, c_1, \dots , C_{D}) \in R_q^{D+1}$.
+Note that a ciphertext is on the form $(c_0, c_1, \dots , c_D) \in R_q^{D+1}$.
 Define the inner product over $R_q$ as
 \begin{align*}
-    \langle c, s \rangle = \sum_{i=0}^{D} c_i \cdot s^i
+    \langle c, s \rangle = \sum_{i=0}^D c_i \cdot s^i
 \end{align*}
 Then to decrypt, simply set $m$ as the inner product of $c$ and $s$ and take modulo $p$.
 \begin{align*}
@@ -123,8 +98,10 @@ Then to decrypt, simply set $m$ as the inner product of $c$ and $s$ and take mod
 \end{align*}
 $m$ will then be the decrypted message.
 
+Note that for decryption to work correctly, we require that the $\ell_\infty$ norm (defined as the largest absolute coefficient in the polynomial) for the polynomial $\langle c, s \rangle$ is less than $q / 2$.
+
 \subsubsection{Eval}
-To obtain the homomorphic abilities of the encryption scheme, Zvika Brakerski and Vinod Vaikuntanathan show
+To obtain the homomorphic abilities of the encryption scheme, Brakerski and Vaikuntanathan show
 how to obtain homomorphic addition and multiplication of ciphertexts.
 \\[2mm]
 \textbf{Addition:} Assume we have 2 ciphertexts $c \in R_q^{D+1}$ and $c' \in R_q^{D+1}$, then an encryption
@@ -135,9 +112,7 @@ of the sum of the 2 underlying messages will be
 The decryption of $c_{Add}$ will then be the sum of the unencrypted messages from $c$ and $c'$.
 \\[2mm]
 \textbf{Multiplication:} Assume we have 2 ciphertexts $c \in R_q^{D+1}$ and $c' \in R_q^{D'+1}$ and let $v$ be a symbolic value.
-Then calculate the updated ciphertext
-\\
-$(\hat{c}_0, \hat{c}_1, \dots, \hat{c}_d+d') \in R_q^{D + D' + 1}$ by
+Then calculate the updated ciphertext $(\hat{c}_0, \hat{c}_1, \dots, \hat{c}_{d+d'}) \in R_q^{D + D' + 1}$ as
 \begin{align*}
     c_{mul} = (\sum_{i=0}^D c_i \cdot v^i) \cdot
     (\sum_{j=0}^{D'} c'_i \cdot v^i) =
@@ -148,61 +123,55 @@ The output of the multiplication operation will then be $c_{mul} = (\hat{c}_0, \
 
 \subsection{Public-key encryption scheme}
 %TODO: måske der skal skrives noget om lemma 4?
-To achieve a public scheme instead, we can make the following changes
+To achieve a public-key encryption scheme instead, we introduce the error distribution $\chi '$ with standard deviation $r'$.
+Then, we can make the following changes:
 \begin{itemize}
-    \item In the key generation we generate in addition to the secret key $sk = s \leftarrow^{\$} \chi$, a public key
-        $pk = (a_0 , b_0 = a_0 \cdot s + p \cdot e_0)$, where $a_0 \leftarrow^{\$} R_q, e_0 \leftarrow^{\$} \chi$
-    \item In the encryption algorithm, we can instead use
+    \item In the key generation we generate in addition to the secret key $sk = s \getsrand{} \chi$, a public key
+        $pk = (a_0 , b_0 = a_0 \cdot s + p \cdot e_0)$, where $a_0 \getsrand{} R_q, e_0 \getsrand{} \chi$.
+    \item In the encryption algorithm, we use a public key to calculate the ciphertext as
         $(a_0 \cdot v + t \cdot e', b_0 \cdot v + p \cdot e'')$ where
-        $v, e' \leftarrow^{\$} \chi$ and $e'' \leftarrow^{\$} \chi '$. % TODO [meg]: Vi bør forklare hvad $\chi '$ er.
-\end{itemize} 
-where we have then obtained a public key $pk = (a_0, a_0 \cdot s + p \cdot e_0)$
-corresponding to the secret key sk.
+        $v, e' \getsrand{} \chi$ and $e'' \getsrand{} \chi '$.
+\end{itemize}
 
 \subsection{On the security of PLWE}
-    To later generate a secure set of parameters for our encryption scheme we will have to touch a bit on the security.
-    Several considerations comes to play when thinking about the security and optimizations, most noticeable the choice
-    of a proper function $f(x)$ and the best well known attack should come into consideration.
-    A lot of math including calculations on lattices and especially ideal lattices are needed to properly discuss the
-    necessity for certain choices to be made, and as such we will only be outlining the processes needed for us to choose
-    secure parameters for our system.
+    To later generate a secure set of parameters for our encryption scheme, we will have to touch a bit on the security.
+    Several considerations come to play when thinking about the security and optimizations, most noticeably the choice
+    of a proper function $f(x)$. The best well-known attack should also come into consideration.
+    A lot of math, including calculations on lattices and especially ideal lattices, are needed for a proper discussion of the
+    choices to be made in choosing secure parameters, but we will only briefly outline those processes, as it is not the main focus of this project.
 
     \subsubsection{On the choice of functions $f(x)$}
-        The choice of function $f(x)$ is normally set to be a cyclotomic-polynomial, meaning that it should be on the form
-        of $f(x) = x^N + 1$ where n should be chosen as $N = 2^k$ for $k \in \mathbb{N}$, do note that this is not the only
-        way that a polynomial can be chosen as cyclotomic, but for our use case this will suffice.
-        By doing so we get a lot of algebraic properties which opens for optimizations as described in section % TODO: sæt lige ref.
-        and adds to the security.
-        Therefore we will without further discussion choose $f(x)$ as a cyclotomic-polynomial function.
+        The choice of function $f(x)$ is normally set to be a cyclotomic polynomial. One way to choose a cyclotomic polynomial is on the form of $f(x) = x^N + 1$ where $N$ should be chosen as $N = 2^k$ for $k \in \mathbb{N}$.
+        Doing so, we get some useful algebraic properties, which opens for optimizations and adds to the security, as described in section \ref{sec:abstract-she-theory}.
+        Therefore, we will without further discussion choose $f(x)$ as a cyclotomic polynomial.
 
     \subsubsection{Reducing RLWE to LWE samples}
         Another important property to see is that any RLWE sample of the form $(a, s \cdot a + e)$,
-		where $a \in R_q$ and $s, e \leftarrow^\$ \chi$ can be written into N LWE samples by using the following method.
-        Let $A_a$ be the matrix of multiplication by $a \in R_q$, then we get N LWE samples by
+		where $a \in R_q$ and $s, e \getsrand{} \chi$ can be written into $N$ LWE samples by using the following method.
+        Let $A_a$ be the matrix of multiplication by $a \in R_q$, then we get $N$ LWE samples by
         \begin{align*}
             (A_a, \textbf{b} = \textbf{s}^T \cdot A_a + \textbf{e}^T)
         \end{align*}
-        Where $\textbf{b} \in (\mathbb{R} / q\mathbb{Z})^N$ and $e \in \mathbb{R}^N$.
+        where $\textbf{b} \in (\mathbb{R} / q\mathbb{Z})^N$ and $e \in \mathbb{R}^N$ \cite{peikert2016not}.
 
     \subsubsection{Parameter testing tool}
         Martin Albrecht, professor at the university of Royal Holloway in London, is the current maintainer of an
-		opensource project~\cite{estimations-tool} geared towards choosing secure parameters for the RLWE encryption scheme.
-		By using this tool, we will be able to calculate the amount of security by using the lattice reduction algorithm BKZ.
-		We'll be using this tool to evaluate the amount of security that one would need to actually secure the algorithm,
+		open-source project~\cite{estimations-tool} geared towards choosing secure parameters for the RLWE encryption scheme.
+		By using this tool, we will be able to calculate the amount of security by using the lattice reduction algorithm BKZ \cite{usenix16}.
+		We will be using this tool to evaluate the equivalent symmetric security level,
 		while still holding the degree of the function $f(x)$ to a minimum for performance reasons.
-		The tool will use a lot of lattice based mathemathics to actually calculate the amount of security, which will be given
-		to us in the form of a number $\beta$, that will then be used to test the amount of security.
-        For the precise usage of the tool we have used the following sage script
+		The tool will use lattice based mathemathics to calculate the amount of security, which will be given
+		to us in the form of a number $\beta$, that will then be used to test the security level.
+        For the precise usage of the tool, we have used the following Sage script:
         \lstinputlisting[language=Python]{code-snippets/estimator.sage}
-        Then we can here vary the parameters of our modulus $q$, the degree of the cyclotomic-polynomial $N$
+        In this, we can vary the parameters of our modulus $q$, the degree of the cyclotomic-polynomial $N$,
         our noise distributions on $r$ and $r'$ (Xs, Xe) and the value of $m$ typically provided by the authors.
 
     \subsubsection{Best known attack}
-		The best known attack on the LWE scheme, which by combination of the earlier mentioned method to combine RLWE
-		into $N$ LWE samples also gives an attack on RLWE, is the BKZ lattice reduction algorithm.
-		We will not be going into how BKZ works, but will mention that the amount of security from the BKZ algorithm
-		has been showed in the "new hope" paper \cite{usenix16} written by Erdem Alkim and Thomas poppelman to be
+		The best known attack on the LWE scheme is the BKZ lattice reduction algorithm, which by the earlier mentioned method to divide RLWE into $N$ LWE samples, also gives an attack on RLWE.
+		We will not be going into how BKZ works, but will mention that the security level from the BKZ algorithm
+		has been shown in the "New Hope" paper \cite{usenix16} written by Alkim and Poppelman to be
 		\[ 2^{0.292 \cdot \beta} \]
-		Where we can get the value of $\beta$ from the testing tool.
+		where we can get the value of $\beta$ from the testing tool.
 
 \end{document}

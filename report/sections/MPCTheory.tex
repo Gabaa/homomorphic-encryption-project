@@ -4,9 +4,10 @@
 \begin{document}
 
 \section{Protocol for Multiparty Computation based on SHE} \label{section: MPC scheme}
+
 The Multiparty Computation (MPC) problem is the problem where $n$ players each with some private input $x_i$, want to compute some function $f$ on the input, without revealing anything but the result.
 
-In \cite{damgaard2012multiparty} the authors describe a protocol for MPC based on a SHE scheme. The protocol is able compute arithmetic formulas consisting of up to a single multiplication, along with a relatively large number of additions, while being statistically UC-secure against an active adversary and $n - 1$ corruptions.
+In \cite{damgaard2012multiparty} the authors describe a protocol for MPC based on a SHE scheme. The protocol is able to compute arithmetic formulas consisting of up to a single multiplication, along with a relatively large number of additions, while being statistically UC-secure against an active adversary and $n - 1$ corruptions.
 
 The protocol proceeds in two phases. In the first phase, preprocessing, a global key $[\![\alpha]\!]$, random values in two representations $[\![r]\!], \langle r \rangle$, and a number of multiplicative triples $\langle a \rangle, \langle b \rangle, \langle c \rangle$ satisfying $c = ab$ are generated.
 
@@ -17,22 +18,25 @@ The online phase therefore only makes indirect use of the SHE scheme, as it is o
 These two phases are described in further detail in section \ref{subsection: Prep} \& \ref{subsection: Online}.
 
 \paragraph{Representations of shared values}
-The protocol makes use of two different representations of shared values $[\![ \cdot ]\!], \langle \cdot \rangle$. For a shared value $a \in F_{p^k}$ the $\langle \cdot \rangle$ representation is defined as follows:
+The protocol makes use of two different representations of shared values $[\![ \cdot ]\!], \langle \cdot \rangle$.
+
+The first representation used for the protocol, $[\![ \cdot ]\!]$, is defined in the following way:
+$$[\![ a ]\!] = ((a_1, ..., a_n), (\beta_i, \gamma(a)^i_1, ..., \gamma(a)^i_n)_{i = 1, ..., n})$$
+where $a = \sum_i a_i$ and $a\beta_i = \sum_j \gamma(a)^j_i$. Thus the $\gamma(a)^j_i$ values are used to authenticate $a$ under $P_i$'s personal key $\beta_i \in \mathbb{F}_{p^k}$. Each player $P_i$ then has the shares $(a_i, \beta_i, \gamma(a)^i_1, ..., \gamma(a)^i_n)$. To open a $[\![ \cdot ]\!]$ value each player $P_j$ sends $a_j, \gamma(a)^j_i$ to $P_i$, who checks that $a\beta_i = \sum_j \gamma(a)^j_i$. Afterwards $P_i$ can compute $a = \sum_i a_i$.
+
+For a shared value $a \in F_{p^k}$ the $\langle \cdot \rangle$ representation is defined as follows:
 $$\langle a \rangle := (\delta, (a_1, ..., a_n), (\gamma(a)_1, ..., \gamma(a)_n))$$
 where $a = \sum_i a_i$ and $\alpha (\delta + a) = \sum_i \gamma(a)_i$. The $\gamma(a)_i$ values are thus MAC values used to authenticate $a$. Such a value is shared s.t. each party $P_i$ has access to the global value $\delta$ along with shares $(a_i, \gamma(a)_i)$. Multiplication by a constant and regular addition are then defined entry-wise on the representation, while addition by a constant is defined as $$c + \langle a \rangle := (\delta - c, (a_1 + c, ..., a_n), (\gamma(a)_1, ..., \gamma(a)_n))$$
 When a value $\langle a \rangle$ is partially opened, it means that the value $a$ is revealed without revealing $a$'s MAC values.
 
-The second representation used for the protocol, $[\![ \cdot ]\!]$, is defined in the following way:
-$$[\![ a ]\!] = ((a_1, ..., a_n), (\beta_i, \gamma(a)^i_1, ..., \gamma(a)^i_n)_{i = 1, ..., n})$$
-where $a = \sum_i a_i$ and $a\beta_i = \sum_j \gamma(a)^j_i$. Thus the $\gamma(a)^j_i$ values are used to authenticate $a$ under $P_i$'s personal key $\beta_i$. Each player $P_i$ then has the shares $(a_i, \beta_i, \gamma(a)^i_1, ..., \gamma(a)^i_n)$. To open a $[\![ \cdot ]\!]$ value each player $P_j$ sends $a_j, \gamma(a)^j_i$ to $P_i$, who checks that $a\beta_i = \sum_j \gamma(a)^j_i$. Afterwards $P_i$ can compute $a = \sum_i a_i$.
+\subsection{Abstract SHE scheme and instantiation} \label{sec:abstract-she-theory}
 
-\subsection{Abstract SHE scheme and instantiation}
-The cryptosystem used as the SHE scheme in the protocol has to have certain properties to be admissible. The authors of the MPC protocol present a concrete instantiation of such an abstract SHE scheme, using the Ring-LWE based public key encryption scheme by Zvika Brakerski and Vinod Vaikuntanathan \cite{brakerski2011fully} described in section \ref{sec:RLWE-theory}.
+The cryptosystem used as the SHE scheme in the protocol has to have certain properties to be admissible. The authors of the MPC protocol present a concrete instantiation of such an abstract SHE scheme, using the Ring-LWE based public key encryption scheme by Brakerski and Vaikuntanathan \cite{brakerski2011fully} described in section \ref{sec:RLWE-theory}.
 
 \paragraph{encode and decode}
 To be able to use this scheme we have to define the function \textbf{encode}, which maps elements in the plaintext space $M = (\mathbb{F}_{p^k})^s$ to elements in a ring $R$, which is equivalent to $\mathbb{Z}^N$. In addition to this we also need to define a function \textbf{decode}, which maps elements in $\mathbb{Z}^N$ to $M$, s.t. $\textbf{decode}(\textbf{encode}(m)) = m$ for $m \in M$.
 
-To do this we first have to pick a polynomial for the quotient ring $R = \mathbb{Z}[X]/\langle f(x) \rangle$ used by the cryptosystem. Picking $f(x)$ in a specific way allows an optimization, which makes it possible to do entrywise multiplication, such that we can perform $N$ multiplications in parallel.
+To do this we first have to pick a polynomial for the quotient ring $R = \mathbb{Z}[X]/\langle f(x) \rangle$ used by the cryptosystem. Picking $f(x)$ in a specific way allows an optimization, which makes it possible to do entrywise multiplication, such that we can perform $N$ multiplications in parallel \cite{damgaard2012multiparty}.
 To do this we pick $f(x)$ to be the $m$'th cyclotomic polynomial $f(x)$ of degree $N = \phi(m)$, s.t. modulo $p$ the polynomial $f(x)$ factors into $l'$ irreducible factors of degree $k'$, where $l' \geq s$ and $k$ divides $k'$.
 
 We can then define the function $\phi: M \rightarrow R_p$ which embeds $M$ into $R_p$. We also define $\iota : R_p \rightarrow \mathbb{Z}^N$, which maps the coefficients from the polynomial given as input to a vector of length $N$ with coefficients in the range $(-p/2, ..., p/2]$.
@@ -41,61 +45,94 @@ Finally, we define $\textbf{encode}(\textbf{m}) = \iota(\phi(\textbf{m}))$ and $
 
 \paragraph{key distribution and distributed decryption}
 In addition to the aforementioned requirements, we also want the cryptosystem to implement a functionality $\mathcal{F}_{KeyGenDec}$. This functionality will on receiving ''start'' from all honest players generate a keypair $(pk, sk)$, and then distribute $pk$ to the players and store $sk$. The players can then use the functionality to cooperate in decrypting a ciphertext encrypted under $pk$.
+We have omitted the description of a protocol that implements the functionality, but it can be found in \cite{damgaard2012multiparty}.
 
 \subsection{Preprocessing phase} \label{subsection: Prep}
-The preprocessing phase is implemented by the Prep protocol, which consists of the steps \textbf{initialize}, \textbf{pair}, and \textbf{triple}. These steps use the additional protocols Reshare, PAngle, and PBracket as subroutines.
 
-\paragraph{Protocol Reshare:} The Reshare protocol takes a ciphertext $e_m$ as input and a parameter $enc$, which can be set to either $NewCiphertext$ or $NoNewCiphertext$. The protocol then outputs a share $m_i$ of $m$ to each player along with a new fresh ciphertext $e'_m$ if $enc = NewCiphertext$, where $e'_m$ contains $\sum_i m_i$.
-To do this the players first each sample $f_i \in \mathbb{F}_{p^k}$, and then broadcast $$e_{f_i} \leftarrow Enc_{pk}(f_i)$$
-Each $P_i$ then runs the ZKPoPK protocol while acting as a prover on the previously generated ciphertext $e_{f_i}$, and if any of these proofs fail, then parties abort.
-Now, each player homomorphically adds each encrypted share
-$$e_f \leftarrow e_{f_1} \boxplus ... \boxplus e_{f_n} $$
-and then homomorphically adds $e_m$ and $e_f$ to get $e_{m + f}$. The players now use $\mathcal{F}_{KeyGenDec}$ to decrypt $e_{m + f}$ so that they get $m + f$. Now $P_1$ sets $m_1 \leftarrow m + f - f_1$, while the rest of the players $P_i$ set $m_i \leftarrow - f_i$.
-If $enc = NewCiphertext$, then the players each compute
-$$e'_m \leftarrow Enc_{pk}(m + f) \boxminus e_{f_1} \boxminus ... \boxminus e_{f_n}$$ where default randomness is used for the encryption.
+The preprocessing phase is implemented by the following protocol, which consists of the steps \textbf{initialize}, \textbf{pair}, and \textbf{triple}. These steps use the additional protocols Reshare, PAngle, and PBracket as subroutines \cite{damgaard2012multiparty}.
 
-\paragraph{Protocol PAngle:}
-PAngle takes as input a ciphertext $e_v$ along with privately held shares $v_1, ..., v_n$. These are then used to generate a value in the angle representation $\langle v \rangle$.
-To achieve this all players first compute $$e_{v \cdot a} \leftarrow e_v \boxplus e_\alpha$$
-Reshare is then used with $e_{v \cdot \alpha}$ as input, such that each player $P_i$ recieves a share $\gamma_i$ of $v \cdot \alpha$. Finally, $\langle v \rangle = (0, (v_1, ..., v_n), (\gamma_1, ..., \gamma_n)$ is output.
+\paragraph{Protocol Reshare:}
+The Reshare protocol distributes shares of a plaintext, given the ciphertext, to all parties, without revealing the plaintext to any of the players.
+Specifically, it takes a ciphertext $e_m$ as input and a parameter $enc$, which can be set to either $NewCiphertext$ or $NoNewCiphertext$. The protocol then outputs a share $m_i$ of the plaintext $m$ to each player along with a new fresh ciphertext $e'_m$ if $enc = NewCiphertext$, where $e'_m$ contains $\sum_i m_i$.
+The protocol proceeds as follows:
+\begin{enumerate}
+    \item Each player $P_i$ samples $f_i \in \mathbb{F}_{p^k}$, and then broadcasts $e_{f_i} \leftarrow Enc_{pk}(f_i)$.
+    \item Each player $P_i$ runs the ZKPoPK protocol (as defined in \ref{sec:zkpopk-theory}) as a prover on $e_{f_i}$, aborting if any proof fails.
+    \item Each player $P_i$ homomorphically adds $e_f \leftarrow e_{f_1} \boxplus ... \boxplus e_{f_n}$ and $e_{m+f} \gets e_f \boxplus e_m$.
+    \item The players collectively use $\mathcal{F}_{KeyGenDec}$ to decrypt $e_{m + f}$ so that they get $m + f$.
+    \item Player $P_1$ sets $m_1 \gets m + f - f_1$, and each other players $P_i$ sets $m_i \leftarrow - f_i$.
+    \item If $enc = NewCiphertext$, then each player each computes $e'_m \leftarrow Enc_{pk}(m + f) \boxminus e_{f_1} \boxminus ... \boxminus e_{f_n}$ using default randomness, and gets output $(m_i, e'_m)$.
+    \item If $enc = NoNewCiphertext$, then each player $P_i$ gets output $m_i$.
+\end{enumerate}
 
 \paragraph{Protocol PBracket:}
-PAngle takes as input a ciphertext $e_v$ along with privately held shares $v_1, ..., v_n$. These are then used to generate a value in the angle representation $[\![ v ]\!]$.
-For $i = 1, ..., n$ all players compute $$e_{\gamma_i} \leftarrow e_{\beta_i} \boxtimes e_v$$ and then generate $(\gamma^1_i, ..., \gamma^n_i)$ by calling Reshare with $e_{\gamma_i}$ and $NoNewCiphertext$ as input.
-The representation $[\![ v ]\!] = ((v_1, ..., v_n), (\beta_i, \gamma(v)^i_1, ..., \gamma(v)^i_n)_{i = 1, ..., n})$ is then output.
+The PBracket protocol produces a value in the $[\![ v ]\!]$ representation, given a ciphertext $e_v$ along with privately held shares $v_1, ..., v_n$.
+% TODO [meg]: Write the actual protocol with itemize
+\begin{enumerate}
+    \item For $i = 1, \dots, n$, every player $P_j$ computes $e_{\gamma_i} \leftarrow e_{\beta_i} \boxtimes e_v$, and gets the share $\gamma^j_i$ by calling Reshare with $e_m = e_{\gamma_i}$ and $enc = NoNewCiphertext$.
+    \item The players output $[\![ v ]\!] = ((v_1, ..., v_n), (\beta_i, \gamma(v)^i_1, ..., \gamma(v)^i_n)_{i = 1, ..., n})$.
+\end{enumerate}
+
+\paragraph{Protocol PAngle:}
+The PAngle protocol produces a value in the $\langle v \rangle$ representation, given a ciphertext $e_v$ along with privately held shares $v_1, ..., v_n$.
+\begin{enumerate}
+    \item Each player $P_i$ computes $e_{v \cdot a} \leftarrow e_v \boxplus e_\alpha$.
+    \item The players collectively run Reshare with $e_m = e_{v \cdot \alpha}$ and $enc = NoNewCiphertext$, such that each player $P_i$ receives a share $\gamma_i$ of $v \cdot \alpha$.
+    \item The players output $\langle v \rangle = (0, (v_1, ..., v_n), (\gamma_1, ..., \gamma_n))$.
+\end{enumerate}
 
 \paragraph{Initialize:}
-The \textbf{initialize} step generates the global and personal keys. This is acheived by the players first calling "start" on $\mathcal{F}_{KeyGenDec}$, so that every player obtains the public key $pk$.
-Then each player samples $\alpha_i, \beta_i \in \mathbb{F}_{p^k}$, and broadcasts $$e_{\alpha_i} \leftarrow Enc_{pk}(Diag(\alpha_i)), \;\; e_{\beta_i} \leftarrow Enc_{pk}(Diag(\beta_i))$$ where $Diag(a) = (a, a, ..., a) \in (\mathbb{F}_{p^k})^s$. Now each $P_i$ runs the ZKPoPK protocol twice with $diag = true$, while acting as a prover, where the inputs are the ciphertexts $e_{\alpha_i}$ and $e_{\beta_i}$ repeated $sec$ times.
-Finally, the players homomorphically add the encrypted shares $e_{\alpha_i}$ to get $e_\alpha$, which they use along with their share $Diag(\alpha_i)$ to generate $[\![ Diag(\alpha) ]\!]$ using a call to PBracket. Then $[\![ Diag(\alpha) ]\!]$ is the global key, while $\beta_i$ is $P_i$'s personal key.
+The \textbf{initialize} step generates the global and personal keys.
+\begin{enumerate}
+    \item Each player sends "Start" to $\mathcal{F}_{KeyGenDec}$ and obtains the public key $pk$.
+    \item Each player $P_i$ samples $\alpha_i, \beta_i \in \mathbb{F}_{p^k}$ and broadcasts $e_{\alpha_i} \leftarrow Enc_{pk}(Diag(\alpha_i)), \;\; e_{\beta_i} \leftarrow Enc_{pk}(Diag(\beta_i))$, where $Diag(a) = (a, a, ..., a) \in (\mathbb{F}_{p^k})^s$.
+    \item Each player $P_i$ runs the ZKPoPK protocol twice as a prover with $diag = True$, on $e_{\alpha_i}$ and $e_{\beta_i}$, each repeated $sec$ times, aborting if any proof fails.
+    \item Each player $P_i$ homomorphically adds the encrypted shares $e_{\alpha_i}$ to get $e_\alpha$.
+    \item The players collectively run PBracket with their shares $\alpha_1, \dots, \alpha_n$ to obtain $[\![ Diag(\alpha) ]\!]$.
+    \item Then the players output $[\![ Diag(\alpha) ]\!]$ as the global key and each $P_i$ gets $\beta_i$ as their personal key.
+\end{enumerate}
 
 \paragraph{Pair:}
-In \textbf{pair} the players generate random values in the two representations $[\![ r ]\!], \langle r \rangle$. This is done by each player first sampling a share $r_i \in (\mathbb{F}_{p^k})^s$, then broadcasting $$e_{r_i} \leftarrow Enc_{pk}(r_i)$$
-Once again $P_i$ runs the ZKPoPK protocol acting as a prover with input $e_{r_i}$, and if the ZK proof fails, then the protocol is aborted.
-The players then homomorphically add the encrytped shares to get $e_r$, which they use along with their share $r_i$ as input to PBracket and PAngle to generate $[\![ r ]\!], \langle r \rangle$.
+In \textbf{pair} the players generate random values in the two representations $[\![ r ]\!], \langle r \rangle$.
+\begin{enumerate}
+    \item Each player $P_i$ samples a share $r_i \in (\mathbb{F}_{p^k})^s$ and broadcasts $e_{r_i} \leftarrow Enc_{pk}(r_i)$.
+    \item Each player $P_i$ runs the ZKPoPK protocol as a prover on $e_{r_i}$, aborting if any proof fails.
+    \item Each player $P_i$ homomorphically adds the encrypted shares to get $e_r \gets e_{r_1} \boxplus \dots \boxplus e_{e_n}$.
+    \item The players collectively run PBracket to get $[\![ r ]\!]$ and PAngle to get $\langle r \rangle$.
+\end{enumerate}
 
 \paragraph{Triple:}
-The \textbf{triple} step generates triples $(\langle a \rangle, \langle b \rangle, \langle c \rangle)$ satisfying $c = ab$. To do this the players start off by sampling shares $a_i, b_i \in (\mathbb{F}_{p^k})^s$.
-The players then encrypt their shares and broadcast the result $$e_{a_i} \leftarrow Enc_{pk}(a_i), \;\; e_{b_i} \leftarrow Enc_{pk}(b_i)$$
-Now each $P_i$ acts as a prover running the ZKPoPK protocol first with $e_{a_i}$ and then with $e_{b_i}$ as input, and if any proof fails, then the protocol is aborted.
-The players then homomorphically add the encrypted shares to get $e_a$ and $e_b$, and use these along with their shares $a_i, b_i$ to generate $\langle a \rangle$, $\langle b \rangle$ using calls to PAngle.
-Following this each player homomorphically multiplies $e_a$ and $e_b$ to get $e_c$, which the players use as input to Reshare to get shares of $c$ along with a new ciphertext $(c_1, ..., c_n, e_{c'})$. Then the players use their shares of $c$ along with $e_{c'}$ to generate $\langle c \rangle$ by calling PAngle. Finally, the triple $(\langle a \rangle, \langle b \rangle, \langle c \rangle)$ is output.
-
+The \textbf{triple} step generates triples $(\langle a \rangle, \langle b \rangle, \langle c \rangle)$ satisfying $c = ab$. 
+\begin{enumerate}
+    \item Each player $P_i$ samples $a_i, b_i \in (\mathbb{F}_{p^k})^s$ and broadcasts $e_{a_i} \leftarrow Enc_{pk}(a_i), \;\; e_{b_i} \leftarrow Enc_{pk}(b_i)$.
+    \item Each $P_i$ runs the ZKPoPK protocol as a prover first on $e_{a_i}$ and then on $e_{b_i}$, aborting if any proof fails.
+    \item Each player $P_i$ homomorphically adds the encrypted shares to get $e_a$ and $e_b$.
+    \item The players collectively run PAngle to get $\langle a \rangle$ and $\langle b \rangle$.
+    \item Each player $P_i$ homomorphically multiplies $e_a$ and $e_b$ to get $e_c$.
+    \item The players collectively run Reshare with $e_m = e_c$ and $enc = NewCiphertext$, such that each player $P_i$ receives a share $c_i$ of $c$ and a new ciphertext $e'_c$.
+    \item The players collectively run PAngle to get $\langle c \rangle$.
+    \item Each player $P_i$ gets the output $(\langle a \rangle, \langle b \rangle, \langle c \rangle)$.
+\end{enumerate}
 
 \subsection{Online phase} \label{subsection: Online}
+% TODO [meg]: Write the actual protocols with enumerate
 The Online protocol implements the online phase,
-and consists of the steps \textbf{initialize}, \textbf{input}, \textbf{add}, \textbf{multiply}, and \textbf{output}. These steps are executed as needed to evaluate the arithemtic circuit that we wish to evaluate.
+and consists of the steps \textbf{initialize}, \textbf{input}, \textbf{add}, \textbf{multiply}, and \textbf{output}. These steps are executed as needed to evaluate the arithmetic circuit that we wish to evaluate.
 
-\paragraph{Initialize:} The \textbf{initialize} step simply consists using the Prep protocol to generate a global key, along with enough multiplicative triples and random values in the two representations showed earlier, for the circuit that we want to evaluate.
+\paragraph{Initialize:}
+The \textbf{initialize} step simply consists using the preprocessing protocol to generate a global key $\bracketr{\alpha}$, along with enough multiplicative triples and random values in the $\angler{\cdot}$ and $\bracketr{\cdot}$ representations showed earlier, for the circuit that we want to evaluate.
 
-\paragraph{Input:} The \textit{input} step lets a player $P_i$ share their private input $x_i$. The input is shared by taking a pair $[\![ r ]\!], \langle r \rangle$, and then opening $[\![ r ]\!]$ to $P_i$ so that $P_i$ gets $r$. Following this $P_i$ computes and broadcasts $\epsilon \leftarrow x_i - r$. All players finally set $\langle x_i \rangle \leftarrow \langle r \rangle + \epsilon$. %Forklar hvordan en konstant adderes til angle repr.
+\paragraph{Input:}
+The \textbf{input} step lets a player $P_i$ share their private input $x_i$. The input is shared by taking a pair $[\![ r ]\!], \langle r \rangle$, and then opening $[\![ r ]\!]$ to $P_i$ so that $P_i$ gets $r$. Following this $P_i$ computes and broadcasts $\epsilon \leftarrow x_i - r$. All players finally set $\langle x_i \rangle \leftarrow \langle r \rangle + \epsilon$.
 
-\paragraph{Add:} To add two values $\langle x \rangle, \langle y \rangle$, we simply perform the component-wise addition $\langle z \rangle = \langle x \rangle + \langle y \rangle$, meaning that each player adds their shares locally $z_i = x_i + y_i, \gamma(z)_i = \gamma(x)_i + \gamma(y)_i$. %Er det klart hvad der sker her?
+\paragraph{Add:}
+To add two values $\langle x \rangle, \langle y \rangle$, we simply perform the component-wise addition $\langle z \rangle = \langle x \rangle + \langle y \rangle$, meaning that each player adds their shares locally $z_i = x_i + y_i, \gamma(z)_i = \gamma(x)_i + \gamma(y)_i$.
 
-\paragraph{Multiply:} To multiply two values $\langle x \rangle, \langle y \rangle$, we use two multiplicative triples $(\langle a \rangle, \langle b \rangle, \langle c \rangle)$ and $(\langle f \rangle, \langle g \rangle, \langle h \rangle)$. We use the second triple to check that $ab = c$, but this could also be done in preprocessing instead. To do this check we first open $[\![ t ]\!]$ to get t, then partially open $t * \langle a \rangle - \langle f \rangle$ and $\langle b \rangle - \langle g \rangle$ to get $\rho$ and $\sigma$ respectively. Finally, we compute and partially open $$t * \langle c \rangle - \langle h \rangle - \sigma \langle f \rangle - \rho \langle g \rangle - \sigma \rho$$
+\paragraph{Multiply:}
+To multiply two values $\langle x \rangle, \langle y \rangle$, we use two multiplicative triples $(\langle a \rangle, \langle b \rangle, \langle c \rangle)$ and $(\langle f \rangle, \langle g \rangle, \langle h \rangle)$. We use the second triple to check that $ab = c$, but this could also be done in preprocessing instead. To do this check we first open $[\![ t ]\!]$ to get t, then partially open $t * \langle a \rangle - \langle f \rangle$ and $\langle b \rangle - \langle g \rangle$ to get $\rho$ and $\sigma$ respectively. Finally, we compute and partially open $$t * \langle c \rangle - \langle h \rangle - \sigma \langle f \rangle - \rho \langle g \rangle - \sigma \rho$$
 if the result is $0$, then we conclude that $ab = c$ and move on, otherwise the players abort.
 
-Now, partially open $\langle x \rangle - \langle a \rangle$ and $\langle y \rangle - \langle b \rangle$ to get $\epsilon$ and $\delta$ respectively. Finally, we ouptut $$\langle z \rangle \leftarrow \langle c \rangle + \epsilon \langle b \rangle + \delta \langle a \rangle + \epsilon \delta$$
+Now, partially open $\langle x \rangle - \langle a \rangle$ and $\langle y \rangle - \langle b \rangle$ to get $\epsilon$ and $\delta$ respectively. Finally, we output $$\langle z \rangle \leftarrow \langle c \rangle + \epsilon \langle b \rangle + \delta \langle a \rangle + \epsilon \delta$$
 
 \paragraph{Output:}
 To output a value y given $\langle y \rangle$, the players do the following.
@@ -105,7 +142,6 @@ Then, the global key $[\![ \alpha ]\!]$ is opened.
 The players then use $\mathcal{F}_{Com}$ to open $\gamma_i$ and then check that indeed $$\alpha(a + \sum_j e^j \delta_j) = \sum_j \gamma_i$$
 If this is not the case, then the players abort.
 Finally, to make sure that all players end up with $y$ the commitments to $y_i$ and $\gamma(y)_i$ are opened. Now the players check that $\alpha(y + \delta) = \sum_i \gamma(y)_i$, and if this is the case, then $y = \sum_i y_i$ is output.
-
 
 %\subsection{Parameter setting}
 %In section D of the paper the authors give example parameter sets and explain how to choose the parameters, s.t. the previously described Ring-LWE public key encryption scheme meets the requirements of the MPC protocol.
@@ -128,7 +164,7 @@ Player $i$ then uses $\mathcal{F}_{Commit}$ to broadcast $\tau^\sigma_i \leftarr
 All players invoke $\mathcal{F}_{Commit}$ to open the commitments received to get the $\sigma_j$'s.
 Finally, the players check that $\sigma_1 + ... + \sigma_n = 0$, and if this is not the case, then they abort.
 
-\section{Zero-knowledge proof}
+\section{Zero-knowledge proof} \label{sec:zkpopk-theory}
     In \cite{damgaard2012multiparty} a zero knowledge proof of plaintext knowledge is shown in figure 9 and 10.
     We have implemented the zero knowledge from figure 10, as they the authors state that it will be better suited for implementation.
     % TODO: skal vi skrive det eller kan vi bare smide et billede ind? også forklare hvad det er for nogle variabler der bliver sat?
