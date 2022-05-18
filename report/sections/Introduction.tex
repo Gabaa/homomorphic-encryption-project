@@ -4,6 +4,39 @@
 \graphicspath{{\subfix{../images/}}}
 
 \begin{document}
-...
+\section{Introduction}
+	By the work of Peter W. Shar, we already know of an algorithm that is expected to break
+	the prime factorization and discrete logarithm problems in polynomial time, assuming that it can be run
+	on a large enough quantum computer. %TODO: indsæt lige en kommentar der linker til Shors algorithm - https://arxiv.org/abs/quant-ph/9508027
+	And while quantum computers today are not large enough, the field is increasing rapidly and as such
+	we should strive for new solutions.
+	One solution is to change the underlying mathemathical problem to no longer use prime factorization or
+	discrete log and instead use encryption schemes based on polynomial learning with error as proposed by %TODO: cite Lyubashevsky, Perikert and Regev
+	which reduces down to the worst case problems on ideal lattices, making these encryption schemes a good
+	candidate for future encryption schemes.
+	Another highly desired property in cryptography is that of secure multiparty computation (MPC).
+	In this problem n players wish to compute some function such that only the output of the function
+	is revealed to every player, even in the case of an adversary controlling some of the corrupted players.
+	It has been shown possible, for only a limited number of operations, by Brakerski and Vaikuntanathan
+	%TODO: \cite{}
+	and by Ivan et al. \cite{damgaard2012multiparty} that it is possible to get
+	a homormorphic encryption scheme based on the polynomial learning with error problem and as such
+	creating not only a scheme, thought to be secure against a quantum adversary, but also one which
+	have the properties of MPC systems. % TODO: jeg kan ikke lide den her formulering.
+	While encryption based on lattices seem very promising, parameters can still be chosen such that the
+	underlying problem does not impose a desired level of security.
+	To prevent this the lwe estimator tool 
+	% TODO: \cite{}
+	, maintained by Martin Albrecht, have been used to argue about the security of different parameters.
+	\\[5mm]
+	During this project we have implemented the system mostly inspired by the work of Brakerski and Vaikuntanathan (BV)
+	% TODO: \cite{}
+	and Ivan et al. \cite{damgaard2012multiparty}.
+	Our system is made in the programming language rust, which provides absolute memory safety,
+	making it an ideal choice for doing low level efficient implementations, while still having many of
+	the nice features of a modern language.
+	While performance has not been our main concern, we have tried to optimize the code written as much as possible,
+	using and evaluating many of the features in the rust language, to have the optimal code for the features
+	implemented.
 
 \end{document}
