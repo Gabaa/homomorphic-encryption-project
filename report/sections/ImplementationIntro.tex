@@ -10,7 +10,7 @@
 
 \begin{document}
 \noindent For the implementation part of the project we first implemented the Ring-LWE cryptosystem described in section \ref{sec:RLWE-theory}. We then used this for implementing the MPC protocol described in section \ref{section: MPC scheme}, while making slight deviations to allow for reuse of secret-shared values, as described in section \ref{section: Reuse}.
-For this protocol we had to be able to represent arbitrarily large integers, and to do this we use the \lstinline{Integer} type from the GMP library, which can be found at \url{https://gmplib.org/}.
+For this protocol we had to be able to represent arbitrarily large integers, and to do this we use the \lstinline{Integer} type from the "rug" rust library.
 
 The code for the protocol was written in the programming language Rust, and can be found in the repository at \url{https://github.com/Gabaa/homomorphic-encryption-project}.
 In this chapter we describe the implementation details of these systems.
