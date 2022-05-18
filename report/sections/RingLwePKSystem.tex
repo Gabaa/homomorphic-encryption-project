@@ -20,14 +20,6 @@
   numbers=left,
   numberstyle=\footnotesize
 }
-\definecolor{dblackcolor}{rgb}{0.0,0.0,0.0}
-\definecolor{dbluecolor}{rgb}{0.01,0.02,0.7}
-\definecolor{dgreencolor}{rgb}{0.2,0.4,0.0}
-\definecolor{dgraycolor}{rgb}{0.30,0.3,0.30}
-\newcommand{\dblue}{\color{dbluecolor}\bf}
-\newcommand{\dred}{\color{dredcolor}\bf}
-\newcommand{\dblack}{\color{dblackcolor}\bf}
-\newcommand{\getsrand}{\overset{\$}{\gets}}
 
 % Document
 \begin{document}
@@ -162,7 +154,7 @@ Then, we can make the following changes:
 		The tool will use lattice based mathemathics to calculate the amount of security, which will be given
 		to us in the form of a number $\beta$, that will then be used to test the security level.
         For the precise usage of the tool, we have used the following Sage script:
-        \lstinputlisting[language=Python]{code-snippets/estimator.sage}
+        \lstinputlisting[language=Sage]{code-snippets/estimator.sage}
         In this, we can vary the parameters of our modulus $q$, the degree of the cyclotomic-polynomial $N$,
         our noise distributions on $r$ and $r'$ (Xs, Xe) and the value of $m$ typically provided by the authors.
 
