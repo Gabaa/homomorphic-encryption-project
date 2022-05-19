@@ -220,7 +220,9 @@ fn run_zkpopk_for_single<F: Facilitator>(
     let (a, z, t);
     loop {
         if let Ok(res) = make_zkpopk(params, x.clone(), r.clone(), c.clone(), true, &state.pk) {
-            (a, z, t) = res;
+            a = res.0;
+            z = res.1;
+            t = res.2;
             break;
         }
     }

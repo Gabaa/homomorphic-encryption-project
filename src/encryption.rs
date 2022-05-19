@@ -69,7 +69,7 @@ pub fn secure_params() -> Parameters {
 pub fn mpc_secure_params() -> Parameters {
     // q not accurate, still should reflect real performance
     let q = Integer::from_str("6440092097492369874468694478456476902429935263779065830479393474203066496323859298183983608879").unwrap();
-    let p = Integer::from_str("64").unwrap();
+    let p = Integer::from_str("127").unwrap();
     Parameters::new(q, 3.2, 3.2, 512, p)
 }
 

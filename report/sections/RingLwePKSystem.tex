@@ -38,7 +38,6 @@ In the paper ``Fully Homomorphic Encryption from Ring-LWE and Security for Key D
 Brakerski and Vaikuntanathan \cite{brakerski2011fully},
 the authors describe a method for using the ring learning with errors (Ring-LWE) problem to construct an encryption scheme,
 which reduces to the worst-case hardness of problems on ideal lattices \cite{brakerski2011fully}.
-Somewhat-homomorphic encryption schemes allow the evaluation of a limited set of functions on encrypted data.
 We will shortly describe the encryption scheme here, but will omit proofs and detailed discussions.
 
 \subsection{Polynomial learning with errors}
@@ -154,7 +153,7 @@ Then, we can make the following changes:
         \end{align*}
         where $\textbf{b} \in (\mathbb{R} / q\mathbb{Z})^N$ and $e \in \mathbb{R}^N$ \cite{peikert2016not}.
 
-    \subsubsection{Parameter testing tool}
+    \subsubsection{Parameter testing tool} \label{sec:lattice-reduction}
         Martin Albrecht, professor at the university of Royal Holloway in London, is the current maintainer of an
 		open-source project~\cite{estimations-tool} geared towards choosing secure parameters for the RLWE encryption scheme.
 		By using this tool, we will be able to calculate the amount of security by using the lattice reduction algorithm BKZ \cite{usenix16}.
