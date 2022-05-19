@@ -196,6 +196,7 @@ Finally, the players check that $\sigma_1 + ... + \sigma_n = 0$, and if this is 
         c &= (c_1, ..., c_{SEC}), c_i = Enc_{pk}(x_i, r_i), \\
         ||&x_i||_\infty \leq B_{plain}, \text{decode}(x_i) \in (\mathbb{F}_{p^k})^s, ||r_i||_\infty \leq B_{rand}\}
     \end{align*}
+    where $B_{plain}$ and $B_{rand}$ are bounds on the coefficients in the plaintext and randomness respectively.
     A detailed description of the protocol has been omitted, but can be found in \cite{damgaard2012multiparty}.
     % TODO: skal vi skrive det eller kan vi bare smide et billede ind? også forklare hvad det er for nogle variabler der bliver sat?
 
@@ -207,9 +208,10 @@ Finally, the players check that $\sigma_1 + ... + \sigma_n = 0$, and if this is 
     Let $N = deg(f(x))$, let $r$ be the standard deviation of our error distribution $\chi$, $SEC$ be $40$, the amount of players $n = 3$ with $c_{SEC}, Y$ and $Z$ defined by
     \begin{align*}
         c_{sec} &= 9 \cdot N^2 \cdot SEC^4 \cdot 2^{SEC + 8} \\
-        Y       &= \frac{p}{2} + p \cdot (4 \cdot C_{m-bound} \cdot r^2 \cdot N^2 \cdot 2 \cdot \sqrt{N} \cdot r + 4 \cdot C_{m-bound} \cdot r^2 \cdot N^2) \\
-        Z       &= C_{m-bound} \cdot N^2 \cdot n^2 \cdot c_{sec}^2 \cdot Y^2 + n \cdot c_{sec} \cdot Y
+        Y       &= \frac{p}{2} + p \cdot (4 \cdot C_m \cdot r^2 \cdot N^2 \cdot 2 \cdot \sqrt{N} \cdot r + 4 \cdot C_m \cdot r^2 \cdot N^2) \\
+        Z       &= C_m \cdot N^2 \cdot n^2 \cdot c_{sec}^2 \cdot Y^2 + n \cdot c_{sec} \cdot Y
     \end{align*}
+    where $C_m$ is a constant, as defined in \cite{damgaard2012multiparty}.
     Then the article specifies that the following inequalities for $q$ and $r$ need to hold.
     \begin{align*}
         q   &> 2 \cdot Z \cdot (1 + 2^{sec}) \\
