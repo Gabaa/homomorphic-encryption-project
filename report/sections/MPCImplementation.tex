@@ -13,6 +13,8 @@ For this protocol we did not implement the cyclotomic polynomial optimisation de
 This also means that we cannot do entry-wise multiplications like done in \cite{damgaard2012multiparty}.
 Therefore, to encode an element $a \in \mathbb{F}_{p^k}$ to an element in $R_p$, we simply return \lstinline{Polynomial::new(vec![a])}, which is the \lstinline{Polynomial} corresponding to $f(x) = a$. To decode a polynomial $f(x) = a \in R_p$, we simply return the \lstinline{Integer} $a$.
 
+For testing purposes, we implemented three protocols: one where all inputs are added together, one where all inputs are multiplied, and one specifically for three players, where $x_1 \cdot x_2 + x_3$ is computed. The set of protocols is easily extendable using our framework.
+
 \subsection{Dealer and Player}
 
 There are two types of actors in this system, the \textit{dealer} and the \textit{player}.
@@ -83,7 +85,7 @@ We then normalize the coefficients of $t'$ to get \lstinline{msg_minus_q} like d
 
 Finally, we compute \lstinline{msg_mod_q.modulo(&params.p)}, then call decode on the result to get an Integer which we return.
 
-\subsection{ZKPoPK (mpc/zk.rs)}
+\subsection{ZKPoPK (mpc/zk.rs)} \label{sec:zkpopk-impl}
 In zk.rs the zero knowledge proof of plaintext is implemented for each party to run.
 The zero-knowledge proof has been implemented as in figure 10 of ``multiparty computation from somewhat homomorphic encryption''~\cite{damgaard2012multiparty}.
 Due to time constraints we had to simplify the implementation, by always letting the input to the protocol be the same ciphertext $c$ repeated $SEC$ times.

@@ -147,9 +147,9 @@ Then, we can make the following changes:
 
     \subsubsection{Parameter testing tool} \label{sec:lattice-reduction}
         Martin Albrecht, professor at the university of Royal Holloway in London, is the current maintainer of an
-		open-source project~\cite{estimations-tool} geared towards choosing secure parameters for the RLWE encryption scheme.
-		By using this tool, we will be able to calculate the amount of security by using the lattice reduction algorithm BKZ \cite{usenix16}.
-		We will be using this tool to evaluate the equivalent symmetric security level,
+		open-source project~\cite{cryptoeprint:2015:046} geared towards choosing secure parameters for the RLWE encryption scheme, which can be found at \url{https://github.com/malb/lattice-estimator}.
+		By using this tool, we will be able to calculate the amount of security by using the lattice reduction algorithm BKZ \cite{alkim2016post}.
+		We will be using this tool to evaluate the equivalent symmetric security level against an adversary with access to a large-scale quantum computer,
 		while still holding the degree of the function $f(x)$ to a minimum for performance reasons.
 		The tool will use lattice based mathemathics to calculate the amount of security, which will be given
 		to us in the form of a number $\beta$, that will then be used to test the security level.
@@ -161,7 +161,7 @@ Then, we can make the following changes:
     \subsubsection{Best known attack}
 		The best known attack on the LWE scheme is the BKZ lattice reduction algorithm, which by the earlier mentioned method to divide RLWE into $N$ LWE samples, also gives an attack on RLWE.
 		We will not be going into how BKZ works, but will mention that the security level from the BKZ algorithm
-		has been shown in the "New Hope" paper \cite{usenix16} written by Alkim and Poppelman to be
+		has been shown in the "New Hope" paper \cite{alkim2016post} written by Alkim and Poppelman to be
 		\[ 2^{0.292 \cdot \beta} \]
 		where we can get the value of $\beta$ from the testing tool.
 

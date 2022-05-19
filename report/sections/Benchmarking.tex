@@ -8,23 +8,23 @@
 In the following chapter we will first outline our process of picking parameters for our MPC system. Following this we use these considerations to evaluate the performance of the system, and discuss why we see the results that we do.
 
 \section{Choosing parameters for our MPC system}
-We have in sections \ref{sec:lattice-reduction} and \ref{sec:choosing-parameters} previously outlined some limitations on the parameter sets that we can choose. We use the previously mentioned lattice reduction tool to evaluate the equivalent amount of bits of symmetric security level that we get. To ensure that our chosen values for $q$ and $r$ satisfy the requirements outlined in section \ref{sec:choosing-parameters}, we wrote a small program, which can be seen below.
-    \lstinputlisting[language=Python]{code-snippets/param-searach.py}
-	With the script we found that a $512$ degree polynomial would result in $q$ being of $313$ bits in size, and our $r$ parameter (used for encryption in the mpc protocol) should be above $3.85 \cdot 10^{73}$.
-	While these values provide enough security, the value of the noise standard deviation $r$ is way too high to be
-	practical in any way, since we would likely end up with too much noise for us to decrypt, and as a consequence we need to decrease $r$ to avoid such a situation.
-	\\[5mm]
-    By using the tool from Martin Albrecht % TODO: indsæt lige en reference.
-    and using the values, which we got from the program above, we can see that setting $q$ to some prime
-    of size $> 313$ bits and setting the degree of our polynomial to $N = 12900$, we will have around $627$ bits
-    of security against the BKZ lattice reduction.
-    These tests also align with the how the parameters in \cite{damgaard2012multiparty} are chosen.
-    \\[5mm]
-    While this provides enough security, it is by no means effective for us to run, and we do not have the entry-wise multiplication optimisation, meaning that the efficiency of our implementation degrades further. %TODO: indsæt ref
-    Therefore, we have to settle for a smaller degree, but still leave $q$ high enough make space for the noise.
-    From an empirical analysis we see that our implementation becomes very slow when $deg(f(x)) > 1024$, and we still have to provide a $q$ that is large enough.
-    Running these parameters through the lwe-estimator, we can see that our security level decreases
-    down to around $13$ bits, which is of course not sufficient. % TODO: vigtig pointe her, skal med konklusionen!
+We have in sections \ref{sec:lattice-reduction} and \ref{sec:choosing-parameters} previously outlined some limitations on the parameter sets that we can choose. We use the previously mentioned lattice reduction tool to evaluate the equivalent amount of bits of symmetric security level that we get. To ensure that our chosen values for $q$ and $r$ satisfy the requirements outlined in section \ref{sec:choosing-parameters}, we wrote a small program, which can be seen in appendix \ref{appendix:param-search}.
+
+With the script we found that a $512$ degree polynomial with $p = 127$ would result in $q$ being of $315$ bits in size, and our $r$ parameter (used for encryption in the mpc protocol) should be above $3.85 \cdot 10^{73}$.
+While these values provide enough security, the value of the noise standard deviation $r$ is way too high to be
+practical in any way, since we would likely end up with too much noise for us to decrypt, and as a consequence we need to decrease $r$ to avoid such a situation.
+
+By using the tool from Martin Albrecht \cite{cryptoeprint:2015:046}
+and using the values, which we got from the program above, we can see that setting $q$ to some prime
+of size $> 313$ bits and setting the degree of our polynomial to $N = 12900$, we will have around $627$ bits
+of security against the BKZ lattice reduction.
+These tests also align with the how the parameters in \cite{damgaard2012multiparty} are chosen, as described in section \ref{sec:choosing-parameters}.
+
+While this provides enough security, it is by no means effective for us to run, and we do not have the entry-wise multiplication optimisation, meaning that the efficiency of our implementation degrades further.
+Therefore, we have to settle for a smaller degree, but still leave $q$ high enough make space for the noise.
+From an empirical analysis we see that our implementation becomes very slow when $deg(f(x)) > 1024$, and we still have to provide a $q$ that is large enough.
+Running these parameters through the lwe-estimator, we can see that our security level decreases
+down to around $13$ bits, which is of course not sufficient.
 
 \section{Measuring system performance}
 To get an estimate on the performance of the system, we ran the program a number of times with different parameters. Specifically, these parameters were chosen to be secure, as described in section \ref{sec:choosing-parameters}, but with the degree of the polynomials $N$ set to different values to test the impact that would have on the performance of the system.
@@ -32,16 +32,16 @@ To get an estimate on the performance of the system, we ran the program a number
 \begin{table}
     \centering
     \begin{tabular}{l|l}
-        $N$  & Time (s)   \\ 
+        $N$  & Time (s)  \\
         \hline
-        8    & 19.900202  \\
-        16   & 38.093643  \\
-        32   & 79.117386  \\
-        64   & 165.27484  \\
-        128  & 397.68887  \\
-        256  & 923.9578   \\
-        512  & 2300.92    \\
-        1024 & 6230.6777 
+        8    & 19.900202 \\
+        16   & 38.093643 \\
+        32   & 79.117386 \\
+        64   & 165.27484 \\
+        128  & 397.68887 \\
+        256  & 923.9578  \\
+        512  & 2300.92   \\
+        1024 & 6230.6777
     \end{tabular}
     \caption{A table relating the size of the $N$ parameter to the wallclock run-time of the entire MPC system, for $n = 3$ with the function $x_1 \cdot x_2 + x_3$. The timer was started as soon as all players had connected to the system and received the key material, and was stopped when the output had been calculated.}
     \label{tab:synthetic-division-performance}
@@ -49,12 +49,20 @@ To get an estimate on the performance of the system, we ran the program a number
 
 The results can be seen in table \ref{tab:synthetic-division-performance}. Performing quadratic regression on the results, we get an expression of the form $f(x) = a x^2 + b x + c$ with
 \begin{align*}
-    a &= 0.00312337 \\
-    b &= 2.90545 \\
-    c &= -17.2764
+    a & = 0.00312337 \\
+    b & = 2.90545    \\
+    c & = -17.2764
 \end{align*}
 where $R^2 \approx 1$. This shows that the polynomial system is clearly quadratic in its runtime. Though the quadratic coefficient term is negligible for the smaller values of $N$, it ends up contributing more than half of the output value for $N = 1024$.
 
 As we had previously implemented the polynomial reduction method using polynomial long division instead of synthetic division, we were able to run these tests for both cases and compare the results. See table \ref{tab:polynomial-long-division-performance}.
+
+The performance for our implementation is clearly sub-par, which may be due to multiple factors:
+\begin{itemize}
+    \item The zero-knowledge proof is in many cases run too many times, causing a major slowdown in the preprocessing phase (see \ref{sec:zkpopk-impl}).
+    \item The system does not implement multiplication using parallel SIMD processing, as in \cite{damgaard2012multiparty}.
+    \item Our implementations of polynomial operations and ring quotient operations were not made with performance as a main priority.
+    \item In many cases, values are copied unnecessarily instead of edited in place, which may cause slowdowns. Note that compiler optimizations may eliminate this in some cases.
+\end{itemize}
 
 \end{document}
