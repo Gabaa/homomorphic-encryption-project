@@ -67,6 +67,23 @@
 \definecolor{keywordsColor}{rgb}{0.000000, 0.000000, 0.635294}
 \definecolor{stringColor}{rgb}{0.558215, 0.000000, 0.135316}
 
+\lstdefinelanguage{Sage}[]{Python}
+{morekeywords={False,sage,True},sensitive=true}
+\lstset{
+  frame=none,
+  showtabs=False,
+  showspaces=False,
+  showstringspaces=False,
+  commentstyle={\ttfamily\color{dgreencolor}},
+  keywordstyle={\ttfamily\color{dbluecolor}\bfseries},
+  stringstyle={\ttfamily\color{dgraycolor}\bfseries},
+  language=Sage,
+  basicstyle={\fontsize{10pt}{10pt}\ttfamily},
+  aboveskip=0.3em,
+  belowskip=0.1em,
+  numbers=left,
+  numberstyle=\footnotesize
+}
 
 \lstset{
   basicstyle=\ttfamily\small,                   % the size of the fonts that are used for the code
