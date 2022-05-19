@@ -5,14 +5,14 @@
 
 \begin{document}
 
-By the work of Peter W. Shor, we already know of an algorithm that is expected to break
+By the work of Peter W. Shor, we know of an algorithm that is expected to break
 the prime factorization and discrete logarithm problems in polynomial time, assuming that it can be run
 on a large enough quantum computer \cite{Shor_1997}.
 While quantum computers today are not large enough, the field is increasing rapidly and as such
 we should strive for new solutions.
 
 One solution is to change the underlying mathemathical problem to no longer use prime factorization or
-discrete log, and instead use encryption schemes based on polynomial learning with errors as proposed by \cite{IdealLatAndRLWE}, which can be reduced to the worst case problems on ideal lattices, making this problem a good candidate for future encryption schemes, as can be seen by the submissions to the post-quantum NIST competition, since many of the submissions are based on lattices.
+discrete log, and instead use encryption schemes based on polynomial learning with errors as proposed by \cite{IdealLatAndRLWE}. This problem can be reduced to worst case problems on ideal lattices, making it a good candidate for future encryption schemes, as can also be seen by the submissions to the post-quantum NIST competition, since many of the submissions are based on lattices.
 
 Another highly desired property in cryptography is that of secure multiparty computation (MPC).
 In this problem, $n$ players wish to compute some function such that only the output of the function
