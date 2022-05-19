@@ -112,7 +112,7 @@ The file also contains a type definition \lstinline{AngleShare}, which for some 
 \subsubsection{reshare}
 The first function, \lstinline{reshare}, takes as input a \lstinline{Parameters} struct \lstinline{params}, a Ciphertext \lstinline{e_m}, a  \lstinline{PlayerState} \lstinline{state}, and an \lstinline{Enc} enum \lstinline{enc}, which can take on values \lstinline{NewCiphertext} or \lstinline{NoNewCiphertext}.
 
-The first thing done in this function is to sample a value \lstinline{f_i} uniformly from $Z_p$ using \lstinline{sample_single} from \lstinline{prob.rs}. Then, \lstinline{f_i} is encrypted to get \lstinline{e_f_i}.
+The first thing done in this function is to sample a value \lstinline{f_i} uniformly from $\mathbb{Z}_p$ using \lstinline{sample_single} from \lstinline{prob.rs}. Then, \lstinline{f_i} is encrypted to get \lstinline{e_f_i}.
 %Mangler ZK
 The facilitator is then used to broadcast \lstinline{e_f_i}, and subsequently receive the encrypted shares from the other parties, which are then homomorphically added to get \lstinline{e_f}. Then, we compute \lstinline{e_m_plus_f = add(params, e_m, &e_f)}.
 
@@ -132,14 +132,14 @@ As can be seen from the implementation we omit the public $\delta$ value as done
 \subsubsection{initialize}
 The initialize function takes a \lstinline{Parameters} struct \lstinline{params}, and a mutable \lstinline{PlayerState} \lstinline{state} as input.
 
-First, we sample a uniformly random \lstinline{Integer} from $Z_p$ using the \lstinline{sample_single} function with \lstinline{params.p} as input, and set the \lstinline{alpha_i} variable of the player state to this value. This represents the given players share of the global key. We then encrypt \lstinline{state.alpha_i} to get an encrypted share \lstinline{e_alpha_i}. Now, \lstinline{e_alpha_i} is broadcast using \lstinline{state.facilitor}, and each player then uses their facilitator to receive $e_{\alpha_i}$ from the other players. The $e_{\alpha_i}$'s are then homomorphically added to get $e_\alpha$, and the result is then assigned to the \lstinline{e_alpha} variable of \lstinline{state}. %Well ikke helt, men add_encrypted_shares, skal vi nævne det?
+First, we sample a uniformly random \lstinline{Integer} from $\mathbb{Z}_p$ using the \lstinline{sample_single} function with \lstinline{params.p} as input, and set the \lstinline{alpha_i} variable of the player state to this value. This represents the given players share of the global key. We then encrypt \lstinline{state.alpha_i} to get an encrypted share \lstinline{e_alpha_i}. Now, \lstinline{e_alpha_i} is broadcast using \lstinline{state.facilitor}, and each player then uses their facilitator to receive $e_{\alpha_i}$ from the other players. The $e_{\alpha_i}$'s are then homomorphically added to get $e_\alpha$, and the result is then assigned to the \lstinline{e_alpha} variable of \lstinline{state}. %Well ikke helt, men add_encrypted_shares, skal vi nævne det?
 Finally, we run \lstinline{zpopk} from \lstinline{zk.rs} in a loop $sec$ times.
 
 Notice how we do not compute the personal keys $\beta_i$ as done in \cite{damgaard2012multiparty}. As mentioned earlier these are not needed when we use the trick described in section \ref{section: Reuse}.
 \subsubsection{pair}
 The \lstinline{pair} function takes a \lstinline{Parameters} struct \lstinline{params}, and a \lstinline{PlayerState} \lstinline{state} as input.
 
-The function first samples a uniformly random \lstinline{Integer} \lstinline{r_i} from $Z_p$. Now, \lstinline{r_i} is encrypted to get \lstinline{e_r_i}, which is then broadcast using the facilitator. All players then again use the facilitator to receive the encrypted shares from the other parties, which are then homomorphically added to compute \lstinline{e_r}. Then, we call \lstinline{zkpopk} with \lstinline{e_r_i} as input.
+The function first samples a uniformly random \lstinline{Integer} \lstinline{r_i} from $\mathbb{Z}_p$. Now, \lstinline{r_i} is encrypted to get \lstinline{e_r_i}, which is then broadcast using the facilitator. All players then again use the facilitator to receive the encrypted shares from the other parties, which are then homomorphically added to compute \lstinline{e_r}. Then, we call \lstinline{zkpopk} with \lstinline{e_r_i} as input.
 
 Following this we compute the given players share of $\langle r \rangle$ with a call to \lstinline{p_angle} with \lstinline{r_i} and \lstinline{e_r} as arguments, which returns \lstinline{r_angle}.
 
