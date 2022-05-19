@@ -10,7 +10,7 @@
 We now describe our implementation of an actively secure MPC protocol.
 
 For this protocol we did not implement the cyclotomic polynomial optimisation described earlier, so $s = 1$, meaning that we are working in $\mathbb{F}_{p^k}$.
-This also means that we cannot do entry-wise multiplications like done in \cite{damgaard2012multiparty}.
+This also means that we cannot do component-wise multiplications like done in \cite{damgaard2012multiparty}.
 Therefore, to encode an element $a \in \mathbb{F}_{p^k}$ to an element in $R_p$, we simply return \lstinline{Polynomial::new(vec![a])}, which is the \lstinline{Polynomial} corresponding to $f(x) = a$. To decode a polynomial $f(x) = a \in R_p$, we simply return the \lstinline{Integer} $a$.
 
 For testing purposes, we implemented three protocols: one where all inputs are added together, one where all inputs are multiplied, and one specifically for three players, where $x_1 \cdot x_2 + x_3$ is computed. The set of protocols is easily extendable using our framework.

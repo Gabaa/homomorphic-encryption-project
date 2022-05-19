@@ -36,7 +36,7 @@ The cryptosystem used as the SHE scheme in the protocol has to have certain prop
 \paragraph{encode and decode}
 To be able to use this scheme we have to define the function \textbf{encode}, which maps elements in the plaintext space $M = (\mathbb{F}_{p^k})^s$ to elements in a ring $R$, which is equivalent to $\mathbb{Z}^N$. In addition to this we also need to define a function \textbf{decode}, which maps elements in $\mathbb{Z}^N$ to $M$, s.t. $\textbf{decode}(\textbf{encode}(m)) = m$ for $m \in M$.
 
-To do this we first have to pick a polynomial for the quotient ring $R = \mathbb{Z}[X]/\langle f(x) \rangle$ used by the cryptosystem. Picking $f(x)$ in a specific way allows an optimization, which makes it possible to do entrywise multiplication, such that we can perform $N$ multiplications in parallel \cite{damgaard2012multiparty}.
+To do this we first have to pick a polynomial for the quotient ring $R = \mathbb{Z}[X]/\langle f(x) \rangle$ used by the cryptosystem. Picking $f(x)$ in a specific way allows an optimization, which makes it possible to do component-wise multiplication, such that we can perform $N$ multiplications in parallel \cite{damgaard2012multiparty}.
 To do this we pick $f(x)$ to be the $m$'th cyclotomic polynomial $f(x)$ of degree $N = \phi(m)$, s.t. modulo $p$ the polynomial $f(x)$ factors into $l'$ irreducible factors of degree $k'$, where $l' \geq s$ and $k$ divides $k'$.
 
 We can then define the function $\phi: M \rightarrow R_p$ which embeds $M$ into $R_p$. We also define $\iota : R_p \rightarrow \mathbb{Z}^N$, which maps the coefficients from the polynomial given as input to a vector of length $N$ with coefficients in the range $(-p/2, ..., p/2]$.

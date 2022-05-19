@@ -4,14 +4,15 @@
 \graphicspath{{\subfix{../images/}}}
 
 \begin{document}
-\section{Conclusion}
-	We have implemented the system as explained by Ivan et al. % TODO: cite
-	with only minor modifications to better suit the rust programming language
-	and the specifics of our system.
-	Still without the implementation of component-wise multipliation,
-	the system seems to run into one of two scenarios.
-	Either being unsecure when converting the PLWE instance into LWE instances
-	and running the lwe estimator tool or the system being to slow to have
-	any significant value in a real life scenario.
+
+We have implemented the system as described by Ivan et al. \cite{damgaard2012multiparty}, with some modifications to better suit the Rust programming language and the specifics of our system, as well as to improve the performance and allow reuse of secret-shared material.
+
+The preprocessing phase is clearly a bottleneck in the system, which may be due to multiple factors, most notably not having implemented component-wise multiplication.
+
+Without the implementation of component-wise multiplication, the system seems to run into one of two scenarios.
+In one scenario, the cryptosystem is insecure with respect to the results from the LWE estimator tool, due to choosing too small parameters.
+In the other scenario, the MPC system is too slow to use in practice.
+
+For future work, it could be valuable to improve the performance of the system, so that it can be run practically while still being secure.
 
 \end{document}

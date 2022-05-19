@@ -20,7 +20,7 @@ of size $> 313$ bits and setting the degree of our polynomial to $N = 12900$, we
 of security against the BKZ lattice reduction.
 These tests also align with the how the parameters in \cite{damgaard2012multiparty} are chosen, as described in section \ref{sec:choosing-parameters}.
 
-While this provides enough security, it is by no means effective for us to run, and we do not have the entry-wise multiplication optimisation, meaning that the efficiency of our implementation degrades further.
+While this provides enough security, it is by no means effective for us to run, and we do not have the component-wise multiplication optimisation, meaning that the efficiency of our implementation degrades further.
 Therefore, we have to settle for a smaller degree, but still leave $q$ high enough make space for the noise.
 From an empirical analysis we see that our implementation becomes very slow when $deg(f(x)) > 1024$, and we still have to provide a $q$ that is large enough.
 Running these parameters through the lwe-estimator, we can see that our security level decreases
@@ -54,6 +54,9 @@ The results can be seen in table \ref{tab:synthetic-division-performance}. Perfo
     c & = -17.2764
 \end{align*}
 where $R^2 \approx 1$. This shows that the polynomial system is clearly quadratic in its runtime. Though the quadratic coefficient term is negligible for the smaller values of $N$, it ends up contributing more than half of the output value for $N = 1024$.
+
+Running the system with $N = 12900$ as the degree of the polynomial, this regression suggests that the computation would take $557223.03$ seconds (or $6.45$ days), making it completely infeasible in practice.
+It is worth noting, however, that a large majority of the time is spent in the preprocessing phase, and that the online phase is still relatively efficient.
 
 As we had previously implemented the polynomial reduction method using polynomial long division instead of synthetic division, we were able to run these tests for both cases and compare the results. See table \ref{tab:polynomial-long-division-performance}.
 
