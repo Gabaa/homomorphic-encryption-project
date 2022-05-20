@@ -20,6 +20,6 @@ For the automated tests for the MPC implementation we only run $1$ player, and w
 This is of course not sufficient by itself, so to test the system in a more realistic setting we turn to manual, or "semi-automated" integration tests.
 
 \subsection{Integration tests}
-The "semi-automated" integration tests consists of a shell script \lstinline{run.sh}, that simply starts a dealer and three players, which then execute the protocol. The function that is computed then depends on the \lstinline{protocol} enum which can be set in \lstinline{player.rs}. The script then saves logs which contain the inputs and outputs for each player, and then we can check manually that the correct result was computed.
+The "semi-automated" integration tests consists of a bash script \lstinline{run.sh}, that simply starts a dealer and three players, which then execute the protocol. The function that is computed then depends on the \lstinline{protocol} enum which can be set in \lstinline{player.rs}. The script then saves logs which contain the inputs and outputs for each player, and then we can check manually that the correct result was computed.
 
 \end{document}
