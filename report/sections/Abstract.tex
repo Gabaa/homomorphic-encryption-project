@@ -12,7 +12,7 @@ For this work, we implement a multiparty computation system based on somewhat ho
 Our somewhat homomorphic encryption scheme is based on the polynomial learning with errors problem,
 which is commonly used for post-quantum secure encryption schemes. 
 The system is able to compute arithmetic formulas consisting of up to a single multiplication, along with a relatively large number of additions.
-Supporting new arithmetic circuits are fairly simple by extending the code.
+Supporting new arithmetic circuits is fairly simple by extending the code.
 
 We found that in order for the system to be secure, the parameters must be prohibitively large relative to the performance of the system, making our implementation either insecure or impractical.
 Specifically, running the system with secure parameters for a simple arithmetic circuit would require around $6.5$ days to compute, in large part due to an inefficient preprocessing phase.
