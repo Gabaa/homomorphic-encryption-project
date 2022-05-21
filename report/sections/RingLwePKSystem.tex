@@ -41,13 +41,12 @@ Now we summarise a symmetric encryption scheme based on PLWE as defined in \cite
 
 Let $\kappa$ be the security parameter and let further $p$ and $q$ be prime numbers where $p \in \mathbb{Z}_N^*$.
 We also need a polynomial of degree $N$: $f(x) \in \mathbb{Z}[x]$ and an error distribution $\chi$ over the ring
-$R_q = \mathbb{Z}_q[x] / \langle f(x) \rangle$, and with the message space $R_p = \mathbb{Z}_p[x] / \langle f(x) \rangle$.
+$R_q = \mathbb{Z}_q[x] / \langle f(x) \rangle$. The message space is then $R_p = \mathbb{Z}_p[x] / \langle f(x) \rangle$.
 Then we can define the following operations for a somewhat-homomorphic symmetric encryption scheme.
 
 \subsubsection{Key generation}
 Let our secret key be a randomly sampled element from the error distribution $s \getsrand{} \chi$.
-Then, given the security parameter $\kappa$, sample a ring element $s$ uniformly at random from $\kappa$ and define the
-secret key vector by $(s^0, s^1, s^2, \dots, s^D) \in R_q^{D+1}$, where $D$ is related to the maximal degree of homomorphism allowed.
+Now, for the purpose of decryption we define the secret key vector by $(s^0, s^1, s^2, \dots, s^D) \in R_q^{D+1}$, where $D$ is related to the maximal degree of homomorphism allowed.
 
 \subsubsection{Encryption}
 All messages are encodeable in our message space $R_p$, thus we will encode our message $m$ as a degree $N$
@@ -96,7 +95,8 @@ The output of the multiplication operation will then be $c_{mul} = (\hat{c}_0, \
 
 \subsection{Public-key encryption scheme}
 %TODO: måske der skal skrives noget om lemma 4?
-To achieve a public-key encryption scheme instead, we introduce the error distribution $\chi '$ with standard deviation $r'$.
+To achieve a public-key encryption scheme instead, we introduce the error distribution $\chi '$.
+Let $\chi = D_{\mathbb{Z}^N, r}$ and $\chi' = D_{\mathbb{Z}^N, r'}$ be the discrete gaussian distributions with standard deviation $r$ and $r'$ respectively.
 Then, we can make the following changes:
 \begin{itemize}
     \item In the key generation we generate in addition to the secret key $sk = s \getsrand{} \chi$, a public key
@@ -113,10 +113,9 @@ Then, we can make the following changes:
     A lot of math, including calculations on lattices and especially ideal lattices, are needed for a proper discussion of the
     choices to be made in choosing secure parameters, but we will only briefly outline those processes, as it is not the main focus of this project.
 
-    \subsubsection{On the choice of functions $f(x)$}
-        The choice of function $f(x)$ is normally set to be a cyclotomic polynomial. One way to choose a cyclotomic polynomial is on the form of $f(x) = x^N + 1$ where $N$ should be chosen as $N = 2^k$ for $k \in \mathbb{N}$.
-        Doing so, we get some useful algebraic properties, which opens for optimizations and adds to the security, as described in section \ref{sec:abstract-she-theory}.
-        Therefore, we will without further discussion choose $f(x)$ as a cyclotomic polynomial.
+\subsubsection{On the choice of functions $f(x)$}
+    The choice of function $f(x)$ is normally set to be a cyclotomic polynomial. Doing so, we get some useful algebraic properties, which opens for optimizations and adds to the security, as described in section \ref{sec:abstract-she-theory}.
+    One way to choose a cyclotomic polynomial would be to set $f(x) = x^N + 1$ where $N = 2^k$ for $k \in \mathbb{N}$.
 
     \subsubsection{Reducing RLWE to LWE samples}
         Another important property to see is that any RLWE sample of the form $(a, s \cdot a + e)$,
@@ -128,14 +127,13 @@ Then, we can make the following changes:
         where $\textbf{b} \in (\mathbb{R} / q\mathbb{Z})^N$ and $e \in \mathbb{R}^N$ \cite{peikert2016not}.
 
     \subsubsection{Parameter testing tool} \label{sec:lattice-reduction}
-        Martin Albrecht, professor at the university of Royal Holloway in London, is the current maintainer of an
-		open-source project~\cite{cryptoeprint:2015:046} geared towards choosing secure parameters for the RLWE encryption scheme, which can be found at \url{https://github.com/malb/lattice-estimator}.
+        Martin Albrecht, professor at the university of Royal Holloway in London, is the current maintainer of an open-source project~\cite{cryptoeprint:2015:046} geared towards choosing secure parameters for the RLWE encryption scheme, which can be found at \url{https://github.com/malb/lattice-estimator}.
 		By using this tool, we will be able to calculate the amount of security by using the lattice reduction algorithm BKZ \cite{alkim2016post}.
 		We will be using this tool to evaluate the equivalent symmetric security level against an adversary with access to a large-scale quantum computer,
 		while still holding the degree of the function $f(x)$ to a minimum for performance reasons.
 		The tool will use lattice based mathemathics to calculate the amount of security, which will be given
 		to us in the form of a number $\beta$, that will then be used to test the security level.
-        For the precise usage of the tool, we have used the following Sage script:
+        More specifically, to utilise the tool we have used the following Sage script:
         \lstinputlisting[language=Sage]{code-snippets/estimator.sage}
         In this, we can vary the parameters of our modulus $q$, the degree of the cyclotomic-polynomial $N$,
         our noise distributions on $r$ and $r'$ (Xs, Xe) and the value of $m$ typically provided by the authors.

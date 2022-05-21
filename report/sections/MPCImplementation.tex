@@ -9,7 +9,7 @@
 \section{MPC protocol}
 We now describe our implementation of an actively secure MPC protocol.
 
-For this protocol we did not implement the cyclotomic polynomial optimisation described earlier, so $s = 1$, meaning that we are working in $\mathbb{F}_{p^k}$.
+For this protocol we did not implement the component-wise multiplication optimisation described earlier, so $s = 1$, meaning that we are working in $\mathbb{F}_{p^k} = \mathbb{Z}_p$.
 This also means that we cannot do component-wise multiplications like done in \cite{damgaard2012multiparty}.
 Therefore, to encode an element $a \in \mathbb{F}_{p^k}$ to an element in $R_p$, we simply return \lstinline{Polynomial::new(vec![a])}, which is the \lstinline{Polynomial} corresponding to $f(x) = a$. To decode a polynomial $f(x) = a \in R_p$, we simply return the \lstinline{Integer} $a$.
 
@@ -92,14 +92,14 @@ Due to time constraints we had to simplify the implementation, by always letting
 This is a requirement when running the protocol for the initialize step of preprocessing anyways, but in pair this results in a significant slowdown, as we cannot generate $SEC$ pairs in parallel as we would otherwise have been able to.
 The file is divided into 2 different functions.
 \paragraph{make\_zkpopk}
-To generate a zero knowledge proof, we call the function make\_zkopk, which takes 6 arguments:
+To generate a zero knowledge proof, we call the function make\_zkpopk, which takes 6 arguments:
 A \lstinline{Parameters} struct \lstinline{params}, a plaintext \lstinline{x}, randomness \lstinline{r}, a \lstinline{Ciphertext} \lstinline{c}, a \lstinline{bool} \lstinline{diagonal}, and a public key \lstinline{pk}.
-make\_zkopk will generate 3 values $(a, z, T)$, which will be used in the verification of the proof.
+make\_zkpopk will generate 3 values $(a, z, T)$, which will be used in the verification of the proof.
 
 \paragraph{verify\_zkpopk}
-To verify the proof we call the function verify\_zkopk, which takes as input 6 arguments as well:
+To verify the proof we call the function verify\_zkpopk, which takes as input 6 arguments as well:
 A \lstinline{Parameters} struct \lstinline{params}, Integer matrices \lstinline{a, z, t}, a \lstinline{Ciphertext} \lstinline{c}, and a public key \lstinline{pk}.
-verify\_zkopk will return a boolean indicating whether or not the proof was valid.
+verify\_zkpopk will return a boolean indicating whether or not the proof was valid.
 % TODO: vores matrix beregninger har dimensioner omvendt, men det er fikset ved at gå anderledes igennem matrixen.
 
 \subsection{Preprocessing phase (mpc/prep.rs)}
@@ -134,12 +134,15 @@ The initialize function takes a \lstinline{Parameters} struct \lstinline{params}
 
 First, we sample a uniformly random \lstinline{Integer} from $\mathbb{Z}_p$ using the \lstinline{sample_single} function with \lstinline{params.p} as input, and set the \lstinline{alpha_i} variable of the player state to this value. This represents the given players share of the global key. We then encrypt \lstinline{state.alpha_i} to get an encrypted share \lstinline{e_alpha_i}. Now, \lstinline{e_alpha_i} is broadcast using \lstinline{state.facilitor}, and each player then uses their facilitator to receive $e_{\alpha_i}$ from the other players. The $e_{\alpha_i}$'s are then homomorphically added to get $e_\alpha$, and the result is then assigned to the \lstinline{e_alpha} variable of \lstinline{state}. %Well ikke helt, men add_encrypted_shares, skal vi nævne det?
 Finally, we run \lstinline{zpopk} from \lstinline{zk.rs} in a loop $sec$ times.
+Then, we run the ZKPoPK protocol by calling \lstinline{make_zkpopk} with \lstinline{e_alpha_i} as input, and then calling \lstinline{verify_zkpopk} on the values received from the other players.
 
 Notice how we do not compute the personal keys $\beta_i$ as done in \cite{damgaard2012multiparty}. As mentioned earlier these are not needed when we use the trick described in section \ref{section: Reuse}.
 \subsubsection{pair}
 The \lstinline{pair} function takes a \lstinline{Parameters} struct \lstinline{params}, and a \lstinline{PlayerState} \lstinline{state} as input.
 
-The function first samples a uniformly random \lstinline{Integer} \lstinline{r_i} from $\mathbb{Z}_p$. Now, \lstinline{r_i} is encrypted to get \lstinline{e_r_i}, which is then broadcast using the facilitator. All players then again use the facilitator to receive the encrypted shares from the other parties, which are then homomorphically added to compute \lstinline{e_r}. Then, we call \lstinline{zkpopk} with \lstinline{e_r_i} as input.
+The function first samples a uniformly random \lstinline{Integer} \lstinline{r_i} from $\mathbb{Z}_p$. Now, \lstinline{r_i} is encrypted to get \lstinline{e_r_i}, which is then broadcast using the facilitator. All players then again use the facilitator to receive the encrypted shares from the other parties, which are then homomorphically added to compute \lstinline{e_r}.
+
+Then, we run the ZKPoPK protocol by calling \lstinline{make_zkpopk} with \lstinline{e_r_i} as input, and then calling \lstinline{verify_zkpopk} on the values received from the other players.
 
 Following this we compute the given players share of $\langle r \rangle$ with a call to \lstinline{p_angle} with \lstinline{r_i} and \lstinline{e_r} as arguments, which returns \lstinline{r_angle}.
 
@@ -148,9 +151,11 @@ Again, we use the trick explained in section \ref{section: Reuse}, so we don't n
 \subsubsection{triple}
 The triple function takes a \lstinline{Parameters} struct \lstinline{params}, along with a \lstinline{PlayerState} \lstinline{state} as arguments.
 
-First, we sample \lstinline{a_i}, \lstinline{b_i} uniformly at random from $Z_p$, which are both then encrypted, and the encrypted shares are then broadcast.
+First, we sample \lstinline{a_i}, \lstinline{b_i} uniformly at random from $\mathbb{Z}_p$, which are both then encrypted, and the encrypted shares are then broadcast.
 
-Then, when the player receives the encrypted shares of $a$ and $b$ from the other players, then these are homomorphically added to get \lstinline{e_a} and \lstinline{e_b}.
+Afterwards, we run the ZKPoPK protocol by calling \lstinline{make_zkpopk} first with \lstinline{e_a_i} as input, then \lstinline{e_b_i}, and then calling \lstinline{verify_zkpopk} on the values received from the other players.
+
+Then, when the player receives the encrypted shares of $a$ and $b$ from the other players, these are homomorphically added to get \lstinline{e_a} and \lstinline{e_b}.
 
 Following this, we generate shares \lstinline{a_angle} and \lstinline{b_angle} with calls to \lstinline{p_angle} using \lstinline{a_i}, \lstinline{e_a} and \lstinline{b_i}, \lstinline{e_b} as input respectively.
 

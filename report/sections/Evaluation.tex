@@ -10,13 +10,14 @@ In the following chapter we will first outline our process of picking parameters
 \section{Choosing parameters for our MPC system}
 We have in sections \ref{sec:lattice-reduction} and \ref{sec:choosing-parameters} previously outlined some limitations on the parameter sets that we can choose. We use the previously mentioned lattice reduction tool to evaluate the equivalent amount of bits of symmetric security level that we get. To ensure that our chosen values for $q$ and $r$ satisfy the requirements outlined in section \ref{sec:choosing-parameters}, we wrote a small program, which can be seen in appendix \ref{appendix:param-search}.
 
+We choose $f(x) = x^N + 1$ for $N = 2^k$ as our cyclotonmic polynomial as done in \cite{brakerski2011fully}, and for the standard deviations of the error distributions, we let $r = r'$ as done in \cite{damgaard2012multiparty}.
 With the script we found that a $512$ degree polynomial with $p = 127$ would result in $q$ being of $315$ bits in size, and our $r$ parameter (used for encryption in the mpc protocol) should be above $3.85 \cdot 10^{73}$.
 While these values provide enough security, the value of the noise standard deviation $r$ is way too high to be
 practical in any way, since we would likely end up with too much noise for us to decrypt, and as a consequence we need to decrease $r$ to avoid such a situation.
 
 By using the tool from Martin Albrecht \cite{cryptoeprint:2015:046}
 and using the values, which we got from the program above, we can see that setting $q$ to some prime
-of size $> 313$ bits and setting the degree of our polynomial to $N = 12900$, we will have around $627$ bits
+of size $> 313$ bits and setting the degree of our cyclotomic polynomial $f(x)$ to be $N = 12900$, we will have around $627$ bits
 of security against the BKZ lattice reduction.
 These tests also align with the how the parameters in \cite{damgaard2012multiparty} are chosen, as described in section \ref{sec:choosing-parameters}.
 

@@ -124,10 +124,10 @@ pub mod protocol {
         let b_angle = p_angle(params, b_i, e_b.clone(), state);
         let e_c = mul(params, &e_a, &e_b);
 
-        let (e_c_prime_opt, reshared) = reshare(params, &e_c, state, Enc::NewCiphertext);
+        let (e_c_prime_opt, c_i) = reshare(params, &e_c, state, Enc::NewCiphertext);
         let e_c_prime: Ciphertext = e_c_prime_opt.unwrap();
 
-        let c_angle = p_angle(params, reshared, e_c_prime, state);
+        let c_angle = p_angle(params, c_i, e_c_prime, state);
 
         (a_angle, b_angle, c_angle)
     }
